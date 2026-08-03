@@ -100,25 +100,31 @@ class DatabaseManager:
 
     async def init(self) -> None:
         """
-        Create the async engine and session factory.
+        Create the async engine and session factory, then apply migrations.
 
-        Also creates all tables defined in ORM models (CREATE TABLE IF NOT EXISTS).
+        Startup sequence:
+          1. Create the SQLAlchemy engine and session factory.
+          2. Run Alembic migrations to bring the schema to HEAD.
+             • Fresh databases: all tables are created by the initial migration.
+             • Phase 0.2 databases (created with create_all, no alembic_version
+               table): automatically detected and stamped at revision 0001,
+               then upgraded to HEAD.
+
         Call once at application startup.
         """
         if not _SQLALCHEMY_AVAILABLE:
             raise RuntimeError("SQLAlchemy async is required. See database/connection.py.")
 
         import database.models  # noqa: F401 — registers all ORM models with Base.metadata
-        from database.base import Base  # local import to avoid circular deps
 
-        # SQLite needs check_same_thread=False workaround via connect_args.
+        # SQLite needs check_same_thread=False via connect_args.
         connect_args = {}
         if self._database_url.startswith("sqlite"):
             connect_args = {"check_same_thread": False}
 
         self._engine = create_async_engine(
             self._database_url,
-            echo=False,  # Set True to log all SQL queries (dev only).
+            echo=False,
             connect_args=connect_args,
         )
 
@@ -128,11 +134,121 @@ class DatabaseManager:
             expire_on_commit=False,
         )
 
-        # Create all tables (idempotent).
+        # Apply Alembic migrations (handles both new and existing databases).
+        await self._run_migrations()
+
+        logger.info("Database connection established and schema at HEAD.")
+
+    async def _run_migrations(self) -> None:
+        """
+        Apply all pending Alembic migrations to the database.
+
+        Handles three scenarios:
+          A. Brand-new database  — runs every migration from 0001 to HEAD.
+          B. Phase 0.2 database  — tables exist but no alembic_version row;
+             stamps the DB at revision 0001 then upgrades to HEAD.
+          C. Versioned database  — already tracked by Alembic; runs only
+             the migrations that are newer than the current revision.
+
+        Alembic is invoked in a thread-pool executor so that the async event
+        loop is not blocked.  The thread-local asyncio.run() inside env.py
+        is safe because the executor thread has no running event loop.
+        """
+        import asyncio
+        from pathlib import Path
+        from sqlalchemy import text
+
+        # ── Detect unversioned Phase 0.2 databases ────────────────────────────
+        needs_stamp = await self._needs_phase02_stamp()
+
+        # ── Run Alembic in thread pool (sync API) ─────────────────────────────
+        ini_path = Path(__file__).parent.parent / "alembic.ini"
+
+        def _upgrade() -> None:
+            try:
+                from alembic.config import Config
+                from alembic import command as alembic_command
+
+                cfg = Config(str(ini_path))
+                cfg.set_main_option("sqlalchemy.url", self._database_url)
+
+                if needs_stamp:
+                    # Stamp the Phase 0.2 baseline so Alembic knows which
+                    # migrations have already been applied implicitly.
+                    logger.info(
+                        "Detected unversioned Phase 0.2 database — "
+                        "stamping at revision 0001 before upgrading."
+                    )
+                    alembic_command.stamp(cfg, "0001")
+
+                alembic_command.upgrade(cfg, "head")
+                logger.info("Alembic migrations applied — schema is at HEAD.")
+
+            except ImportError:
+                # Alembic not installed: fall back to create_all with a warning.
+                logger.warning(
+                    "Alembic is not installed — falling back to create_all(). "
+                    "Install alembic for proper migration support."
+                )
+                import asyncio as _asyncio
+                from database.base import Base
+                _asyncio.run(self._create_all_fallback())
+
+        await asyncio.to_thread(_upgrade)
+
+    async def _needs_phase02_stamp(self) -> bool:
+        """
+        Return True if the database has Phase 0.2 tables but no alembic_version.
+
+        This indicates a database created with create_all() before Alembic was
+        wired in.  We stamp it at revision 0001 so Alembic skips re-creating
+        the base tables and only applies newer migrations.
+        """
+        from sqlalchemy import text
+
+        is_sqlite = "sqlite" in self._database_url
+
+        async with self._engine.connect() as conn:
+            # Check for alembic_version table.
+            if is_sqlite:
+                result = await conn.execute(
+                    text(
+                        "SELECT name FROM sqlite_master "
+                        "WHERE type='table' AND name='alembic_version'"
+                    )
+                )
+            else:
+                result = await conn.execute(
+                    text(
+                        "SELECT tablename FROM pg_tables "
+                        "WHERE schemaname='public' AND tablename='alembic_version'"
+                    )
+                )
+            if result.scalar() is not None:
+                return False  # Already tracked — no stamp needed.
+
+            # Check for the settings table (Phase 0.2 indicator).
+            if is_sqlite:
+                result = await conn.execute(
+                    text(
+                        "SELECT name FROM sqlite_master "
+                        "WHERE type='table' AND name='settings'"
+                    )
+                )
+            else:
+                result = await conn.execute(
+                    text(
+                        "SELECT tablename FROM pg_tables "
+                        "WHERE schemaname='public' AND tablename='settings'"
+                    )
+                )
+            return result.scalar() is not None  # True = Phase 0.2 DB found.
+
+    async def _create_all_fallback(self) -> None:
+        """Fallback: create all tables via metadata.create_all (no migration tracking)."""
+        from database.base import Base
         async with self._engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-
-        logger.info("Database connection established and schema applied.")
 
     @asynccontextmanager
     async def session(self) -> AsyncGenerator["AsyncSession", None]:

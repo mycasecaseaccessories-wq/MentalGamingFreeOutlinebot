@@ -15,8 +15,8 @@ aiosqlite==0.20.0
 # Uncomment when deploying to production:
 # asyncpg==0.30.0
 
-# ORM schema migrations (Phase 1)
-# alembic==1.14.0
+# ORM schema migrations
+alembic==1.14.0
 
 # ── Validation ────────────────────────────────────────────────────────────────
 pydantic==2.10.3

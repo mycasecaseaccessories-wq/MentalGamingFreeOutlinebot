@@ -72,6 +72,61 @@ class Settings:
     )
     """Runtime environment tag: 'development' | 'staging' | 'production'."""
 
+    # ── Localisation & Time ───────────────────────────────────────────────────
+    timezone: str = field(
+        default_factory=lambda: os.getenv("TIMEZONE", "Asia/Yangon")
+    )
+    """IANA timezone name used for display and scheduling (e.g. 'Asia/Yangon')."""
+
+    # ── Bot Identity ──────────────────────────────────────────────────────────
+    bot_name: str = field(
+        default_factory=lambda: os.getenv("BOT_NAME", "Mental VPN")
+    )
+    """Display name of the bot, used in welcome messages and notifications."""
+
+    support_username: str = field(
+        default_factory=lambda: os.getenv("SUPPORT_USERNAME", "")
+    )
+    """
+    Telegram @username of the support account (without the '@' prefix).
+    Shown to users when they need help or encounter payment issues.
+    """
+
+    # ── Commerce ──────────────────────────────────────────────────────────────
+    default_currency: str = field(
+        default_factory=lambda: os.getenv("DEFAULT_CURRENCY", "MMK")
+    )
+    """ISO 4217-style currency code used for displaying prices (e.g. 'MMK', 'USD')."""
+
+    # ── Outline VPN API ───────────────────────────────────────────────────────
+    outline_api_timeout: int = field(
+        default_factory=lambda: _parse_int("OUTLINE_API_TIMEOUT", 10)
+    )
+    """
+    HTTP request timeout in seconds for calls to the Outline Management API.
+    Increase on slow or remote servers; keep low to detect unresponsive nodes fast.
+    """
+
+    # ── Resilience ────────────────────────────────────────────────────────────
+    max_retry: int = field(
+        default_factory=lambda: _parse_int("MAX_RETRY", 3)
+    )
+    """
+    Maximum number of automatic retries for transient failures
+    (e.g. Outline API calls, notification delivery).
+    """
+
+    # ── Security ──────────────────────────────────────────────────────────────
+    session_secret: str = field(
+        default_factory=lambda: _require("SESSION_SECRET")
+    )
+    """
+    Secret key used for signing session tokens and HMAC-protected payloads.
+    Must be a long random string; never commit the actual value.
+    """
+
+    # ── Properties ────────────────────────────────────────────────────────────
+
     @property
     def is_production(self) -> bool:
         """Return True when running in the production environment."""
@@ -81,6 +136,11 @@ class Settings:
     def is_development(self) -> bool:
         """Return True when running in the development environment."""
         return self.environment == "development"
+
+    @property
+    def is_staging(self) -> bool:
+        """Return True when running in the staging environment."""
+        return self.environment == "staging"
 
 
 # ---------------------------------------------------------------------------
@@ -118,6 +178,28 @@ def _require(key: str) -> str:
             "Check your .env file or Replit Secrets."
         )
     return value
+
+
+def _parse_int(key: str, default: int = 0) -> int:
+    """
+    Parse an integer from an environment variable.
+
+    Returns *default* when the variable is not set.
+    Raises ValueError when the value is set but is not a valid integer.
+
+    Example:
+        OUTLINE_API_TIMEOUT=10  →  10
+    """
+    raw = os.getenv(key, "")
+    if not raw.strip():
+        return default
+    try:
+        return int(raw.strip())
+    except ValueError as exc:
+        raise ValueError(
+            f"Environment variable '{key}' must be an integer. "
+            f"Got: '{raw}'"
+        ) from exc
 
 
 def _parse_int_list(key: str) -> List[int]:

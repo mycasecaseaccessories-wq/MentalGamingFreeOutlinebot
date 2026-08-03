@@ -101,3 +101,31 @@ class SettingsRepository(BaseRepository[SettingORM, SettingORM]):
         stmt = select(SettingORM).where(SettingORM.is_public.is_(True))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def list_all(self) -> list[SettingORM]:
+        """
+        Return every setting row in the table.
+
+        Used by SettingsService to populate the in-memory cache on startup.
+        """
+        stmt = select(SettingORM).order_by(SettingORM.key)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def list_by_category(self, category: str) -> list[SettingORM]:
+        """
+        Return all settings belonging to *category*.
+
+        Args:
+            category: Category slug (e.g. 'general', 'vpn', 'features').
+
+        Returns:
+            List of SettingORM rows ordered by key.
+        """
+        stmt = (
+            select(SettingORM)
+            .where(SettingORM.category == category)
+            .order_by(SettingORM.key)
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())

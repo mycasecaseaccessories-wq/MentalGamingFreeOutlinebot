@@ -34,8 +34,19 @@ class SettingORM(BaseModel):
     """
     Runtime configuration key-value pair.
 
-    Phase 0.2: table created with schema, populated in Phase 2 seeding.
-    Phase 2:   SettingsRepository exposes typed get/set helpers.
+    Phase 0.2: table schema created; populated by SettingsService.seed_defaults().
+    Phase 0.3: category column added for grouped admin panel display.
+    Phase 2:   SettingsService wraps get/set with in-memory caching.
+               Admin panel calls set() to update runtime configuration.
+
+    Columns
+    -------
+    key          Unique setting identifier (snake_case).
+    value        Stored value as a string — cast using the type column.
+    type         Value type hint: str | int | float | bool | json | list.
+    category     Admin panel category slug (e.g. 'general', 'vpn').
+    description  Human-readable label shown in the admin settings panel.
+    is_public    True if non-admin code may read this setting.
     """
 
     __tablename__ = "settings"
@@ -56,7 +67,14 @@ class SettingORM(BaseModel):
         String(16),
         nullable=False,
         default="str",
-        comment="Value type hint: str | int | float | bool | json",
+        comment="Value type hint: str | int | float | bool | json | list",
+    )
+    category: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+        default="general",
+        comment="Admin panel category slug — see SettingCategory in config.defaults",
     )
     description: Mapped[str | None] = mapped_column(
         Text,

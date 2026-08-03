@@ -8,6 +8,7 @@ Services MUST NOT import from handlers or keyboards.
 Services MAY import from repositories and other services.
 
 Available services:
+    SettingsService      — Runtime configuration, feature flags, and settings cache.
     UserService          — User account management and profile operations.
     PackageService       — VPN subscription package catalogue.
     WalletService        — In-platform wallet and balance management.
@@ -17,6 +18,7 @@ Available services:
     NotificationService  — Multi-channel notification dispatch.
 """
 
+from .settings_service import SettingsService
 from .user_service import UserService
 from .package_service import PackageService
 from .wallet_service import WalletService
@@ -26,6 +28,7 @@ from .growth_service import GrowthService
 from .notification_service import NotificationService
 
 __all__ = [
+    "SettingsService",
     "UserService",
     "PackageService",
     "WalletService",

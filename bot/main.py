@@ -4,11 +4,12 @@ Mental Outline VPN Platform — application entry point.
 Startup sequence:
   1. Initialise logging (must be first).
   2. Load and validate settings from environment.
-  3. Initialise the database (create engine + schema).
-  4. Build the Telegram Application.
-  5. Register handlers (start, admin, error).
-  6. Start the scheduler.
-  7. Run the bot (polling).
+  3. Initialise the database (run Alembic migrations to HEAD).
+  4. Seed default settings and feature flags (SettingsService.seed_defaults).
+  5. Build the Telegram Application.
+  6. Register handlers (start, admin, error).
+  7. Start the scheduler.
+  8. Run the bot (polling).
 
 To add a new handler group:
   - Create app/handlers/my_feature.py with register(application).
@@ -50,7 +51,15 @@ async def main() -> None:
     await db.init()
     logger.info("Database ready — url=%s", settings.database_url.split("://")[0])
 
-    # ── 4. Build Telegram Application ─────────────────────────────────────
+    # ── 4. Settings seed ───────────────────────────────────────────────────
+    # Insert default settings and feature flags that are missing from the DB.
+    # Safe to call on every startup — existing rows are never overwritten.
+    from app.services import SettingsService
+
+    await SettingsService(db).seed_defaults()
+    logger.info("Settings seed complete.")
+
+    # ── 5. Build Telegram Application ─────────────────────────────────────
     from telegram.ext import Application
 
     application = (
@@ -59,7 +68,7 @@ async def main() -> None:
         .build()
     )
 
-    # ── 5. Register handlers ───────────────────────────────────────────────
+    # ── 6. Register handlers ───────────────────────────────────────────────
     from app.handlers import register_start, register_admin, register_error
 
     register_start(application)
@@ -67,14 +76,14 @@ async def main() -> None:
     register_error(application)   # Error handler must be last.
     logger.info("All handlers registered.")
 
-    # ── 6. Scheduler ──────────────────────────────────────────────────────
+    # ── 7. Scheduler ──────────────────────────────────────────────────────
     from app.scheduler import Scheduler
 
     scheduler = Scheduler()
     scheduler.register_jobs()
     scheduler.start()
 
-    # ── 7. Run (polling) ───────────────────────────────────────────────────
+    # ── 8. Run (polling) ───────────────────────────────────────────────────
     logger.info("Bot is starting — polling for updates…")
     try:
         await application.initialize()

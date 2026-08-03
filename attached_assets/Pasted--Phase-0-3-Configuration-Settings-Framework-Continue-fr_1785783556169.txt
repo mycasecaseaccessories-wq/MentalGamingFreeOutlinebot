@@ -1,0 +1,301 @@
+# Phase 0.3 — Configuration & Settings Framework
+
+Continue from Phase 0.2.
+
+Do NOT rewrite any existing code.
+
+Only extend the current architecture.
+
+====================================================
+GOAL
+====================================================
+
+Build a centralized Configuration & Settings Framework.
+
+The project must support:
+
+• Environment Variables
+• System Settings
+• Runtime Configuration
+• Future Admin Settings
+• Feature Flags
+
+The architecture must be scalable and production-ready.
+
+====================================================
+ENVIRONMENT CONFIGURATION
+====================================================
+
+Improve the configuration system.
+
+Support:
+
+BOT_TOKEN
+
+ADMIN_IDS
+
+DATABASE_URL
+
+DEFAULT_LANGUAGE
+
+LOG_LEVEL
+
+TIMEZONE
+
+BOT_NAME
+
+SUPPORT_USERNAME
+
+DEFAULT_CURRENCY
+
+OUTLINE_API_TIMEOUT
+
+MAX_RETRY
+
+SESSION_SECRET
+
+Future environment variables must be easy to add.
+
+Never hardcode configuration values.
+
+====================================================
+SYSTEM SETTINGS
+====================================================
+
+Create a Settings Service.
+
+Settings must be loaded from the database.
+
+If a setting does not exist:
+
+Automatically create it with default value.
+
+Cache settings for better performance.
+
+====================================================
+FEATURE FLAGS
+====================================================
+
+Prepare a Feature Flag system.
+
+Examples:
+
+Enable Wallet
+
+Enable Purchase
+
+Enable Free Trial
+
+Enable Referral
+
+Enable Force Join
+
+Enable Maintenance
+
+Enable Broadcast
+
+Enable Notifications
+
+Enable Analytics
+
+Features should be switchable without modifying source code.
+
+====================================================
+SETTINGS CATEGORIES
+====================================================
+
+Prepare categories.
+
+General
+
+Language
+
+Wallet
+
+VPN
+
+Packages
+
+Servers
+
+Growth
+
+Notifications
+
+Security
+
+Maintenance
+
+Analytics
+
+Future modules should automatically fit into this structure.
+
+====================================================
+DEFAULT SETTINGS
+====================================================
+
+Prepare default values.
+
+Examples:
+
+Bot Name
+
+Support Username
+
+Default Language
+
+Timezone
+
+Currency
+
+Maintenance Mode
+
+Max Devices
+
+Auto Sync Interval
+
+Server Selection Mode
+
+All default values must be configurable later.
+
+====================================================
+CACHE
+====================================================
+
+Implement configuration cache.
+
+Requirements:
+
+Fast reads
+
+Manual refresh
+
+Automatic refresh support (future)
+
+====================================================
+SETTINGS SERVICE
+====================================================
+
+Create:
+
+SettingsService
+
+Functions:
+
+get()
+
+set()
+
+delete()
+
+exists()
+
+reload_cache()
+
+get_category()
+
+No business logic.
+
+====================================================
+VALIDATION
+====================================================
+
+Prepare validation.
+
+Example:
+
+Boolean
+
+Integer
+
+Float
+
+String
+
+List
+
+JSON
+
+Reject invalid values.
+
+====================================================
+SECURITY
+====================================================
+
+Sensitive settings should never be exposed to customers.
+
+Prepare role-aware access.
+
+====================================================
+FUTURE ADMIN PANEL
+====================================================
+
+This architecture must support future Admin Settings UI.
+
+Example:
+
+⚙ Settings
+
+General
+
+VPN
+
+Wallet
+
+Growth
+
+Notifications
+
+Servers
+
+Maintenance
+
+Security
+
+====================================================
+CODE STYLE
+====================================================
+
+PEP8
+
+Type Hints
+
+Async
+
+Service Layer
+
+Clean Architecture
+
+====================================================
+DO NOT IMPLEMENT
+====================================================
+
+Do not implement:
+
+Wallet logic
+
+Payment
+
+VPN
+
+Outline API
+
+Packages
+
+Orders
+
+Referral
+
+Free Trial
+
+Only create the configuration architecture.
+
+====================================================
+OUTPUT
+====================================================
+
+Extend the existing project.
+
+Keep compatibility with Phase 0.1 and Phase 0.2.
+
+The project must be ready for Phase 0.4.
