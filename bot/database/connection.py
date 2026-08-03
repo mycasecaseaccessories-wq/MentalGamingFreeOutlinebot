@@ -108,6 +108,7 @@ class DatabaseManager:
         if not _SQLALCHEMY_AVAILABLE:
             raise RuntimeError("SQLAlchemy async is required. See database/connection.py.")
 
+        import database.models  # noqa: F401 — registers all ORM models with Base.metadata
         from database.base import Base  # local import to avoid circular deps
 
         # SQLite needs check_same_thread=False workaround via connect_args.

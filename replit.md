@@ -17,26 +17,38 @@ A scalable, commercial Telegram VPN platform powered by Outline VPN. Phase 0.1 �
 ## Where things live
 
 ```
-bot/                    ← Telegram bot (Python)
-  main.py               ← Entry point
-  config/settings.py    ← All env-var config (source of truth)
-  app/handlers/         ← Telegram update handlers
-  app/services/         ← Business logic stubs
-  app/repositories/     ← Data access layer (repository pattern)
-  app/models/           ← Domain models + enums (UserRole, Language)
-  app/keyboards/        ← Inline keyboard builders
-  app/middlewares/      ← Auth + logging middleware stubs
-  app/utils/logger.py   ← Rotating file + console logging
-  app/scheduler/        ← APScheduler wrapper
-  database/             ← Async SQLAlchemy engine + ORM base
-  locales/              ← i18n system (en + my translations)
-artifacts/api-server/   ← Node.js Express API (separate service)
+bot/                         ← Telegram bot (Python)
+  main.py                    ← Entry point
+  config/settings.py         ← All env-var config (source of truth)
+  app/handlers/              ← Telegram update handlers
+  app/services/              ← Business logic stubs (7 services)
+  app/repositories/          ← Compatibility shims → database/repositories/
+  app/models/                ← Domain models + enums (UserRole, Language)
+  app/keyboards/             ← Inline keyboard builders
+  app/middlewares/           ← Auth + logging middleware stubs
+  app/utils/logger.py        ← Rotating file + console logging
+  app/scheduler/             ← APScheduler wrapper
+  database/
+    base.py                  ← DeclarativeBase + BaseModel (id, created_at, updated_at)
+    connection.py            ← DatabaseManager singleton (async SQLAlchemy engine)
+    session.py               ← get_session() context manager
+    models/                  ← 13 ORM models (users, roles, packages, servers,
+                             │   vpn_keys, orders, wallets, transactions,
+                             │   referrals, free_trials, settings,
+                             │   notifications, audit_logs)
+    repositories/            ← 9 async repositories with typed CRUD
+    migrations/              ← Alembic migration scripts (Phase 0.3)
+  locales/                   ← i18n system (en + my translations)
+  data/                      ← SQLite database file (dev)
+artifacts/api-server/        ← Node.js Express API (separate service)
 ```
 
 ## Architecture decisions
 
 - **BOT_DATABASE_URL** (not DATABASE_URL) — keeps bot's SQLite separate from the Node.js server's Postgres; auto-upgrades sync URL schemes to async equivalents.
-- **Repository pattern** — all SQL lives in `repositories/`; services never write queries directly.
+- **BaseModel** — every ORM table inherits `id` / `created_at` / `updated_at` from `database/base.py`; no table is missing audit timestamps.
+- **Repository pattern** — all SQL lives in `database/repositories/`; services never write queries directly. `app/repositories/` is a compatibility shim that re-exports from there.
+- **All models imported in `database/__init__.py`** — guarantees `Base.metadata.create_all()` discovers every table at startup; never skip this import chain.
 - **Handlers register via `register(app)`** — each handler module exports a single function; main.py wires them all up. Adding a new group = one import + one call.
 - **Service stubs with `NotImplementedError`** — every future service method is scaffolded with a phase tag (e.g. `# TODO (Phase 1)`) so the roadmap is visible in code.
 - **Logging** — rotating file handler (5 × 10 MB) in `bot/logs/bot.log` + console; set LOG_LEVEL env var to control verbosity.
@@ -76,7 +88,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 | Phase | Scope | Status |
 |---|---|---|
 | 0.1 | Foundation, architecture, scaffolding | ✅ Complete |
-| 0.2 | Auth middleware, Alembic migrations, UserORM | 🔜 Next |
+| 0.2 | Database layer — 13 ORM models, 9 repositories, session module | ✅ Complete |
+| 0.3 | Alembic migrations, auth middleware, UserORM → User domain mapping | 🔜 Next |
 | 1 | User registration, language selection, main menu | 📋 Planned |
 | 2 | Packages catalogue, admin UI | 📋 Planned |
 | 3 | Wallet, payments | 📋 Planned |

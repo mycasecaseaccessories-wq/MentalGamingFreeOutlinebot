@@ -1,22 +1,44 @@
 """
-Database package.
+Database package — Phase 0.2.
 
-Manages async database connectivity for the platform.
+Public surface
+--------------
+DatabaseManager     Singleton async engine + session factory (connection.py).
+Base                SQLAlchemy DeclarativeBase (base.py).
+BaseModel           Abstract ORM base with id / created_at / updated_at (base.py).
+get_session         Async context manager yielding a committed session (session.py).
 
-Design decisions:
-  • SQLAlchemy 2.x async engine is used for both SQLite (dev) and
-    PostgreSQL (production) — the switch is transparent to the rest of the app.
-  • All database access goes through async sessions obtained via
-    DatabaseManager.session().
-  • The ORM base class (Base) is defined in database/base.py; all mapped
-    models must inherit from it.
+ORM models (database/models/)
+    UserORM, RoleORM, PackageORM, ServerORM, VPNKeyORM, OrderORM,
+    WalletORM, TransactionORM, ReferralORM, FreeTrialORM,
+    SettingORM, NotificationORM, AuditLogORM
 
-Initialisation (in main.py):
+Repositories (database/repositories/)
+    UserRepository, PackageRepository, ServerRepository, VPNKeyRepository,
+    WalletRepository, OrderRepository, GrowthRepository,
+    SettingsRepository, NotificationRepository
+
+Initialisation (called once in main.py)
+-----------------------------------------
     from database import DatabaseManager
-    await DatabaseManager.get_instance().init()
+    db = DatabaseManager.initialise(settings.database_url)
+    await db.init()   # creates engine + runs create_all() for every model
+
+NOTE: All ORM models are imported below so that Base.metadata is populated
+before DatabaseManager.init() calls create_all().  Never remove these imports.
 """
 
-from .connection import DatabaseManager
-from .base import Base
+from database.base import Base, BaseModel
+from database.connection import DatabaseManager
+from database.session import get_session
 
-__all__ = ["DatabaseManager", "Base"]
+# ── Import every ORM model so Base.metadata discovers all tables ──────────────
+# This must happen before DatabaseManager.init() → create_all() is called.
+import database.models  # noqa: F401  (side-effect import — registers all models)
+
+__all__ = [
+    "Base",
+    "BaseModel",
+    "DatabaseManager",
+    "get_session",
+]

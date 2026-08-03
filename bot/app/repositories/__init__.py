@@ -1,18 +1,40 @@
 """
-Repositories package.
+App-level repositories package.
 
-Implements the Repository pattern — each repository wraps all database
-access for a single aggregate root (entity family).
+In Phase 0.2 the canonical repository implementations moved to
+database/repositories/ to keep all database code in one place.
 
-Rules:
-  • Repositories MUST NOT contain business logic.
-  • Repositories MUST return domain model objects, not raw ORM rows.
-  • Services MUST NOT write SQL directly; they call repository methods.
+This module re-exports them for backward compatibility so existing
+service code importing from app.repositories continues to work without
+changes.
 
-Current repositories:
-    UserRepository  — CRUD for User records.
+Prefer importing directly from database.repositories in new code:
+    from database.repositories import UserRepository
 """
 
-from .user_repository import UserRepository
+# Re-export everything from the canonical location.
+from database.repositories import (  # noqa: F401
+    BaseRepository,
+    UserRepository,
+    PackageRepository,
+    ServerRepository,
+    VPNKeyRepository,
+    WalletRepository,
+    OrderRepository,
+    GrowthRepository,
+    SettingsRepository,
+    NotificationRepository,
+)
 
-__all__ = ["UserRepository"]
+__all__ = [
+    "BaseRepository",
+    "UserRepository",
+    "PackageRepository",
+    "ServerRepository",
+    "VPNKeyRepository",
+    "WalletRepository",
+    "OrderRepository",
+    "GrowthRepository",
+    "SettingsRepository",
+    "NotificationRepository",
+]

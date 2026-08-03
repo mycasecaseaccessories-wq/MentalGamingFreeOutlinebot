@@ -1,0 +1,241 @@
+# Phase 0.2 — Database Architecture & Repository Layer
+
+Continue from Phase 0.1.
+
+Do NOT rewrite the existing project.
+
+Only extend the current architecture.
+
+====================================================
+GOAL
+====================================================
+
+Build a scalable database architecture for the Mental Outline VPN Platform.
+
+Do NOT implement business features yet.
+
+Only prepare the database layer.
+
+The architecture must support SQLite now and PostgreSQL later without major code changes.
+
+====================================================
+DATABASE LAYER
+====================================================
+
+Create a centralized database module.
+
+Requirements:
+
+• Single database connection manager
+• Async compatible
+• Easy migration to PostgreSQL
+• Repository pattern
+• Transaction support
+
+====================================================
+DATABASE STRUCTURE
+====================================================
+
+Prepare folders:
+
+database/
+
+database/models/
+
+database/repositories/
+
+database/migrations/
+
+database/session.py
+
+database/base.py
+
+====================================================
+BASE MODEL
+====================================================
+
+Create a reusable BaseModel.
+
+Include common fields:
+
+id
+
+created_at
+
+updated_at
+
+All future tables must inherit from BaseModel.
+
+====================================================
+REPOSITORY PATTERN
+====================================================
+
+Prepare repositories.
+
+Example:
+
+UserRepository
+
+PackageRepository
+
+ServerRepository
+
+VPNKeyRepository
+
+WalletRepository
+
+OrderRepository
+
+GrowthRepository
+
+SettingsRepository
+
+NotificationRepository
+
+Only create repository structure.
+
+Do NOT implement business logic.
+
+====================================================
+PREPARE TABLE MODELS
+====================================================
+
+Create model placeholders only.
+
+Do NOT implement application logic.
+
+Prepare empty models for:
+
+users
+
+roles
+
+packages
+
+servers
+
+vpn_keys
+
+orders
+
+wallets
+
+transactions
+
+referrals
+
+free_trials
+
+settings
+
+notifications
+
+audit_logs
+
+====================================================
+SETTINGS TABLE
+====================================================
+
+Prepare a flexible settings table.
+
+Example:
+
+key
+
+value
+
+type
+
+description
+
+This table will store future configuration.
+
+Examples:
+
+Force Join Enabled
+
+Free Trial Enabled
+
+Default Language
+
+Exchange Rate
+
+Maintenance Mode
+
+Referral Rules
+
+====================================================
+AUDIT LOGS
+====================================================
+
+Prepare audit log model.
+
+Future usage:
+
+Admin Actions
+
+User Actions
+
+Server Events
+
+Wallet Events
+
+====================================================
+DATABASE INITIALIZATION
+====================================================
+
+Create initialization system.
+
+On first startup:
+
+Create database automatically.
+
+Create all prepared tables.
+
+Never delete existing data.
+
+====================================================
+MIGRATION READY
+====================================================
+
+Prepare architecture for future migrations.
+
+Do not hardcode SQLite specific logic.
+
+====================================================
+DOCUMENTATION
+====================================================
+
+Comment every model.
+
+Explain the purpose of every repository.
+
+====================================================
+DO NOT IMPLEMENT
+====================================================
+
+No package logic.
+
+No payment.
+
+No wallet logic.
+
+No VPN logic.
+
+No server logic.
+
+No referral logic.
+
+No free trial logic.
+
+Only prepare the database architecture.
+
+====================================================
+OUTPUT
+====================================================
+
+Extend the existing project.
+
+Keep compatibility with Phase 0.1.
+
+The project must be ready for Phase 0.3.
