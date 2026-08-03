@@ -13,7 +13,9 @@ Related tables (added in later phases):
 
 from __future__ import annotations
 
-from sqlalchemy import BigInteger, Boolean, String
+from datetime import datetime
+
+from sqlalchemy import BigInteger, Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database.base import BaseModel
@@ -23,7 +25,9 @@ class UserORM(BaseModel):
     """
     Persisted user account.
 
-    Phase 0.2: schema placeholder — all columns defined, no FKs yet.
+    Phase 0.2: base schema — telegram_id, username, full_name, role, language,
+               is_active, is_verified, referred_by.
+    Phase 0.4: added first_name, last_name, status, last_active.
     Phase 1:   wire up relationships, add WalletORM FK.
     """
 
@@ -47,13 +51,23 @@ class UserORM(BaseModel):
         nullable=False,
         comment="Display name from the Telegram client",
     )
+    first_name: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+        comment="First name from Telegram (Phase 0.4+)",
+    )
+    last_name: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+        comment="Last name from Telegram (optional)",
+    )
 
     # ── Platform identity ─────────────────────────────────────────────────
     role: Mapped[str] = mapped_column(
         String(32),
         nullable=False,
         default="customer",
-        comment="UserRole enum value: admin | customer | reseller | affiliate",
+        comment="UserRole value: admin | customer | reseller | affiliate | moderator | vip",
     )
     language: Mapped[str] = mapped_column(
         String(8),
@@ -62,18 +76,31 @@ class UserORM(BaseModel):
         comment="Preferred UI language code: en | my",
     )
 
-    # ── Status flags ──────────────────────────────────────────────────────
+    # ── Account status ────────────────────────────────────────────────────
+    status: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default="active",
+        comment="UserStatus: active | inactive | suspended | banned | pending",
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
         default=True,
-        comment="False when the account is suspended",
+        comment="Legacy flag — kept for backward compat; use status instead",
     )
     is_verified: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
         default=False,
         comment="True after identity verification (Phase 3+)",
+    )
+
+    # ── Activity ──────────────────────────────────────────────────────────
+    last_active: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="UTC timestamp of the user's last interaction with the bot",
     )
 
     # ── Referral ──────────────────────────────────────────────────────────

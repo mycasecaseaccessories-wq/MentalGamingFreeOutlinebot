@@ -35,7 +35,7 @@ class RoleORM(BaseModel):
         String(32),
         unique=True,
         nullable=False,
-        comment="Role identifier: admin | customer | reseller | affiliate",
+        comment="Role identifier: admin | customer | reseller | affiliate | moderator | vip",
     )
     label: Mapped[str] = mapped_column(
         String(64),
@@ -52,4 +52,13 @@ class RoleORM(BaseModel):
         nullable=False,
         default=False,
         comment="True for built-in roles that cannot be deleted via the UI",
+    )
+    permissions: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment=(
+            "JSON array of Permission values held by this role "
+            "(e.g. '[\"manage_users\",\"view_analytics\"]'). "
+            "NULL means the role has no permissions beyond the defaults."
+        ),
     )

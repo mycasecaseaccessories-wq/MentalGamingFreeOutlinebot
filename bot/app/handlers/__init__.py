@@ -20,5 +20,13 @@ Adding a new handler group:
 from .start import register as register_start
 from .admin import register as register_admin
 from .error import register as register_error
+from .router import get_menu_type, get_welcome_flow, MenuType
 
-__all__ = ["register_start", "register_admin", "register_error"]
+__all__ = [
+    "register_start",
+    "register_admin",
+    "register_error",
+    "get_menu_type",
+    "get_welcome_flow",
+    "MenuType",
+]

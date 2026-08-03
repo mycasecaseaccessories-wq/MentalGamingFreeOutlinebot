@@ -9,6 +9,7 @@ Services MAY import from repositories and other services.
 
 Available services:
     SettingsService      — Runtime configuration, feature flags, and settings cache.
+    LanguageService      — Multilingual translation and per-user language preferences.
     UserService          — User account management and profile operations.
     PackageService       — VPN subscription package catalogue.
     WalletService        — In-platform wallet and balance management.
@@ -19,6 +20,7 @@ Available services:
 """
 
 from .settings_service import SettingsService
+from .language_service import LanguageService
 from .user_service import UserService
 from .package_service import PackageService
 from .wallet_service import WalletService
@@ -29,6 +31,7 @@ from .notification_service import NotificationService
 
 __all__ = [
     "SettingsService",
+    "LanguageService",
     "UserService",
     "PackageService",
     "WalletService",
