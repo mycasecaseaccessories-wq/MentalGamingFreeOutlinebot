@@ -33,12 +33,19 @@ class Settings:
 
     # ── Database ──────────────────────────────────────────────────────────────
     database_url: str = field(
-        default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///./data/mental_vpn.db")
+        default_factory=lambda: _resolve_database_url()
     )
     """
-    Database connection string.
-    Defaults to a local SQLite file for development.
-    Set to a PostgreSQL URL (postgresql+asyncpg://...) for production.
+    Async database connection string for the bot.
+
+    Reads BOT_DATABASE_URL first (bot-specific override).
+    Falls back to a local SQLite file so the bot stays independent from any
+    other service that owns DATABASE_URL in the same environment.
+
+    Sync scheme prefixes are auto-upgraded to their async equivalents:
+      sqlite://         → sqlite+aiosqlite://
+      postgresql://     → postgresql+asyncpg://
+      postgres://       → postgresql+asyncpg://
     """
 
     # ── Internationalisation ──────────────────────────────────────────────────
@@ -79,6 +86,28 @@ class Settings:
 # ---------------------------------------------------------------------------
 # Private helpers
 # ---------------------------------------------------------------------------
+
+def _resolve_database_url() -> str:
+    """
+    Return the async database URL for the bot.
+
+    Priority:
+      1. BOT_DATABASE_URL environment variable (explicit bot override).
+      2. SQLite development default.
+
+    The DATABASE_URL variable is intentionally ignored here — on Replit it is
+    a runtime-managed key that points to the shared PostgreSQL instance used
+    by other services (e.g. the Node.js API server).
+    """
+    raw = os.getenv("BOT_DATABASE_URL", "sqlite+aiosqlite:///./data/mental_vpn.db")
+    # Auto-upgrade sync scheme prefixes to their async equivalents.
+    if raw.startswith("postgresql://") or raw.startswith("postgres://"):
+        raw = raw.replace("postgresql://", "postgresql+asyncpg://", 1)
+        raw = raw.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif raw.startswith("sqlite:///") and "+aiosqlite" not in raw:
+        raw = raw.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
+    return raw
+
 
 def _require(key: str) -> str:
     """Read a required environment variable; raise ValueError when absent."""
