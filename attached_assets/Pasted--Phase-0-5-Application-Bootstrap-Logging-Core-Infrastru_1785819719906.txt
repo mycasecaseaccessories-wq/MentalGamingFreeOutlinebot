@@ -1,0 +1,323 @@
+# Phase 0.5 — Application Bootstrap, Logging & Core Infrastructure
+
+Continue from Phase 0.4.
+
+Do NOT rewrite any existing code.
+
+Only extend the current architecture.
+
+====================================================
+GOAL
+====================================================
+
+Prepare the application startup process and core infrastructure.
+
+The bot must be production-ready before implementing business features.
+
+Do NOT implement VPN, Wallet, Packages or Customer features yet.
+
+====================================================
+APPLICATION BOOTSTRAP
+====================================================
+
+Create a centralized application startup process.
+
+The startup sequence should be:
+
+1. Load environment variables
+
+2. Initialize configuration
+
+3. Initialize logger
+
+4. Initialize database
+
+5. Initialize repositories
+
+6. Initialize services
+
+7. Initialize scheduler
+
+8. Register handlers
+
+9. Register middlewares
+
+10. Register global error handler
+
+11. Start Telegram Bot
+
+Every step must be logged.
+
+====================================================
+STARTUP CHECKS
+====================================================
+
+Before starting:
+
+Check BOT_TOKEN
+
+Check Database Connection
+
+Check Required Directories
+
+Check Configuration
+
+Check Localization Files
+
+If any critical error occurs:
+
+Log error
+
+Stop startup safely
+
+====================================================
+DIRECTORY INITIALIZATION
+====================================================
+
+Automatically create if missing:
+
+logs/
+
+database/
+
+backups/
+
+temp/
+
+exports/
+
+uploads/
+
+====================================================
+LOGGING
+====================================================
+
+Improve logging system.
+
+Requirements:
+
+Console logging
+
+File logging
+
+Daily log files
+
+Log rotation
+
+Different log levels
+
+INFO
+
+WARNING
+
+ERROR
+
+DEBUG
+
+CRITICAL
+
+Format should include:
+
+Timestamp
+
+Module
+
+Function
+
+Log Level
+
+Message
+
+====================================================
+GLOBAL ERROR HANDLER
+====================================================
+
+Register one global error handler.
+
+Catch:
+
+Telegram API errors
+
+Database errors
+
+Configuration errors
+
+Unexpected exceptions
+
+Never crash the bot.
+
+Always log the error.
+
+====================================================
+HEALTH CHECK
+====================================================
+
+Prepare health check service.
+
+Functions:
+
+Database Status
+
+Bot Status
+
+Scheduler Status
+
+Configuration Status
+
+Future:
+
+Outline Server Status
+
+====================================================
+BACKGROUND SERVICES
+====================================================
+
+Prepare scheduler architecture.
+
+Do NOT create business jobs yet.
+
+Only prepare scheduler service.
+
+Future jobs:
+
+Usage Sync
+
+Expiration Check
+
+Notification Queue
+
+Cleanup
+
+Backup
+
+Analytics
+
+====================================================
+EVENT SYSTEM
+====================================================
+
+Prepare application events.
+
+Example:
+
+Application Started
+
+Application Stopped
+
+User Registered
+
+Settings Changed
+
+Server Added
+
+Future modules should easily subscribe to events.
+
+====================================================
+SERVICE REGISTRY
+====================================================
+
+Prepare dependency registration.
+
+Services should be initialized only once.
+
+Avoid duplicate instances.
+
+====================================================
+MIDDLEWARE REGISTRATION
+====================================================
+
+Register:
+
+Authentication
+
+Language
+
+Role
+
+Activity
+
+Logging
+
+Error Middleware
+
+====================================================
+SHUTDOWN
+====================================================
+
+Gracefully shutdown.
+
+Close database
+
+Stop scheduler
+
+Flush logs
+
+Release resources
+
+====================================================
+DEVELOPER MODE
+====================================================
+
+Support:
+
+Development Mode
+
+Production Mode
+
+Future Debug Mode
+
+Behavior should depend on configuration.
+
+====================================================
+PROJECT DOCUMENTATION
+====================================================
+
+Update README.
+
+Document:
+
+Startup Flow
+
+Project Structure
+
+Environment Variables
+
+Architecture Overview
+
+====================================================
+DO NOT IMPLEMENT
+====================================================
+
+Do NOT implement:
+
+Customer UI
+
+Admin Panel
+
+Wallet
+
+Orders
+
+Packages
+
+VPN
+
+Outline API
+
+Payments
+
+Referral
+
+Free Trial
+
+Only prepare the application infrastructure.
+
+====================================================
+OUTPUT
+====================================================
+
+Extend the existing project.
+
+Keep compatibility with all previous phases.
+
+The project should now have a complete production-ready foundation and be ready to begin Phase 1 (Customer Experience).
