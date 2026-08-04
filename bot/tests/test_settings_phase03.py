@@ -94,7 +94,7 @@ async def test_migration_alembic_version_at_head(tmp_path):
         revision = result.scalar()
 
     await db.close()
-    assert revision == "0002", f"Expected HEAD revision 0002, got {revision!r}"
+    assert revision == "0003", f"Expected HEAD revision 0003, got {revision!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -104,13 +104,19 @@ async def test_migration_alembic_version_at_head(tmp_path):
 async def _build_phase02_db(url: str) -> None:
     """
     Create a raw SQLite database that mimics Phase 0.2 state:
-      • settings table WITHOUT the category column.
+      • All 13 core tables created via create_all() (no Alembic).
+      • settings table WITHOUT the category column (added in 0002).
+      • users table WITHOUT first_name/last_name/status/last_active (added in 0003).
+      • roles table WITHOUT permissions column (added in 0003).
       • No alembic_version table.
-    This simulates a database created with create_all() before Alembic was wired in.
+
+    Only the tables touched by migrations 0002 and 0003 need to be precise;
+    other tables are created with minimal schemas sufficient for migration to run.
     """
     import aiosqlite
     db_path = url.replace("sqlite+aiosqlite:///", "")
     async with aiosqlite.connect(db_path) as conn:
+        # settings — Phase 0.2 schema (no category column)
         await conn.execute("""
             CREATE TABLE settings (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -128,6 +134,37 @@ async def _build_phase02_db(url: str) -> None:
             "INSERT INTO settings (key, value, type, is_public) VALUES (?, ?, ?, ?)",
             ("legacy_key", "legacy_value", "str", 0),
         )
+
+        # users — Phase 0.2 schema (no first_name / last_name / status / last_active)
+        await conn.execute("""
+            CREATE TABLE users (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                telegram_id INTEGER NOT NULL UNIQUE,
+                full_name   TEXT    NOT NULL,
+                username    TEXT,
+                role        TEXT    NOT NULL DEFAULT 'customer',
+                language    TEXT    NOT NULL DEFAULT 'en',
+                is_active   INTEGER NOT NULL DEFAULT 1,
+                is_verified INTEGER NOT NULL DEFAULT 0,
+                referred_by INTEGER,
+                created_at  TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at  TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # roles — Phase 0.2 schema (no permissions column)
+        await conn.execute("""
+            CREATE TABLE roles (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                name        TEXT    NOT NULL UNIQUE,
+                label       TEXT    NOT NULL,
+                description TEXT,
+                is_system   INTEGER NOT NULL DEFAULT 0,
+                created_at  TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at  TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         await conn.commit()
 
 
@@ -170,7 +207,7 @@ async def test_migration_phase02_database_gets_category_column(tmp_path):
         "category column not added to Phase 0.2 database by migration 0002"
     )
     assert legacy_value == "legacy_value", "Existing data was lost during migration"
-    assert revision == "0002", f"Expected HEAD 0002 after upgrade, got {revision!r}"
+    assert revision == "0003", f"Expected HEAD 0003 after upgrade, got {revision!r}"
 
 
 # ---------------------------------------------------------------------------

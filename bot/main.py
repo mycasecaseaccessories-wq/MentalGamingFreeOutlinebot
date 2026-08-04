@@ -6,10 +6,12 @@ Startup sequence:
   2. Load and validate settings from environment.
   3. Initialise the database (run Alembic migrations to HEAD).
   4. Seed default settings and feature flags (SettingsService.seed_defaults).
-  5. Build the Telegram Application.
-  6. Register handlers (start, admin, error).
-  7. Start the scheduler.
-  8. Run the bot (polling).
+  5. Initialise shared services (UserService, LanguageService).
+  6. Build the Telegram Application.
+  7. Register middlewares (TypeHandler at group=-1, ordered: auth → language → activity).
+  8. Register handlers (start, admin, error).
+  9. Start the scheduler.
+ 10. Run the bot (polling).
 
 To add a new handler group:
   - Create app/handlers/my_feature.py with register(application).
@@ -59,7 +61,14 @@ async def main() -> None:
     await SettingsService(db).seed_defaults()
     logger.info("Settings seed complete.")
 
-    # ── 5. Build Telegram Application ─────────────────────────────────────
+    # ── 5. Shared services ─────────────────────────────────────────────────
+    from app.services import LanguageService, UserService
+
+    user_service = UserService(db)
+    language_service = LanguageService(db)
+    logger.info("Services initialised.")
+
+    # ── 6. Build Telegram Application ─────────────────────────────────────
     from telegram.ext import Application
 
     application = (
@@ -68,7 +77,29 @@ async def main() -> None:
         .build()
     )
 
-    # ── 6. Register handlers ───────────────────────────────────────────────
+    # Expose shared resources to handlers via bot_data.
+    # Handlers access these as: context.bot_data["db"], etc.
+    application.bot_data["db"] = db
+    application.bot_data["user_service"] = user_service
+    application.bot_data["language_service"] = language_service
+
+    # ── 7. Register middlewares ────────────────────────────────────────────
+    # TypeHandler at group=-1 fires before all regular handlers (group 0+).
+    # Registration order here is the execution order.
+    from telegram.ext import TypeHandler
+    from telegram import Update
+    from app.middlewares import (
+        auth_middleware_handler,
+        language_middleware_handler,
+        activity_middleware_handler,
+    )
+
+    application.add_handler(TypeHandler(Update, auth_middleware_handler),     group=-1)
+    application.add_handler(TypeHandler(Update, language_middleware_handler), group=-1)
+    application.add_handler(TypeHandler(Update, activity_middleware_handler), group=-1)
+    logger.info("Middlewares registered.")
+
+    # ── 8. Register handlers ───────────────────────────────────────────────
     from app.handlers import register_start, register_admin, register_error
 
     register_start(application)
@@ -76,14 +107,14 @@ async def main() -> None:
     register_error(application)   # Error handler must be last.
     logger.info("All handlers registered.")
 
-    # ── 7. Scheduler ──────────────────────────────────────────────────────
+    # ── 9. Scheduler ──────────────────────────────────────────────────────
     from app.scheduler import Scheduler
 
     scheduler = Scheduler()
     scheduler.register_jobs()
     scheduler.start()
 
-    # ── 8. Run (polling) ───────────────────────────────────────────────────
+    # ── 10. Run (polling) ──────────────────────────────────────────────────
     logger.info("Bot is starting — polling for updates…")
     try:
         await application.initialize()
