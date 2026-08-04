@@ -10,22 +10,24 @@ when DatabaseManager.init() calls create_all().
 
 Table inventory
 ---------------
-users           Core user accounts (telegram_id, role, language, …)
-roles           Role definitions and permission bitfields
-packages        VPN subscription packages (name, price, duration, …)
-servers         Outline VPN server instances (api_url, cert, region, …)
-vpn_keys        Issued Outline access keys linked to users and servers
-orders          Purchase orders linking users to packages
-wallets         Per-user wallet balances
-transactions    Wallet debit/credit ledger entries
-referrals       Referral relationships between users
-free_trials     Free trial allocations and usage tracking
-settings        Key-value platform configuration store
-notifications   Scheduled or sent notification records
-audit_logs      Immutable log of admin/user/system actions
+users              Core user accounts (telegram_id, role, language, …)
+user_preferences   Per-user configurable preferences (language, tz, theme, …)
+roles              Role definitions and permission bitfields
+packages           VPN subscription packages (name, price, duration, …)
+servers            Outline VPN server instances (api_url, cert, region, …)
+vpn_keys           Issued Outline access keys linked to users and servers
+orders             Purchase orders linking users to packages
+wallets            Per-user wallet balances
+transactions       Wallet debit/credit ledger entries
+referrals          Referral relationships between users
+free_trials        Free trial allocations and usage tracking
+settings           Key-value platform configuration store
+notifications      Scheduled or sent notification records
+audit_logs         Immutable log of admin/user/system actions
 """
 
 from .user import UserORM
+from .user_preference import UserPreferenceORM
 from .role import RoleORM
 from .package import PackageORM
 from .server import ServerORM
@@ -41,6 +43,7 @@ from .audit_log import AuditLogORM
 
 __all__ = [
     "UserORM",
+    "UserPreferenceORM",
     "RoleORM",
     "PackageORM",
     "ServerORM",

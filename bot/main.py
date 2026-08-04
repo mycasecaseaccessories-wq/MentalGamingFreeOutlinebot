@@ -62,10 +62,11 @@ async def main() -> None:
     logger.info("Settings seed complete.")
 
     # ── 5. Shared services ─────────────────────────────────────────────────
-    from app.services import LanguageService, UserService
+    from app.services import LanguageService, PreferenceService, UserService
 
     user_service = UserService(db)
     language_service = LanguageService(db)
+    preference_service = PreferenceService(db)
     logger.info("Services initialised.")
 
     # ── 6. Build Telegram Application ─────────────────────────────────────
@@ -82,6 +83,7 @@ async def main() -> None:
     application.bot_data["db"] = db
     application.bot_data["user_service"] = user_service
     application.bot_data["language_service"] = language_service
+    application.bot_data["preference_service"] = preference_service
 
     # ── 7. Register middlewares ────────────────────────────────────────────
     # TypeHandler at group=-1 fires before all regular handlers (group 0+).

@@ -11,6 +11,7 @@ Available services:
     SettingsService      — Runtime configuration, feature flags, and settings cache.
     LanguageService      — Multilingual translation and per-user language preferences.
     UserService          — User account management and profile operations.
+    PreferenceService    — Per-user configurable preferences (language, theme, tz, …).
     PackageService       — VPN subscription package catalogue.
     WalletService        — In-platform wallet and balance management.
     ServerService        — Outline VPN server lifecycle management.
@@ -22,6 +23,7 @@ Available services:
 from .settings_service import SettingsService
 from .language_service import LanguageService
 from .user_service import UserService
+from .preference_service import PreferenceService
 from .package_service import PackageService
 from .wallet_service import WalletService
 from .server_service import ServerService
@@ -33,6 +35,7 @@ __all__ = [
     "SettingsService",
     "LanguageService",
     "UserService",
+    "PreferenceService",
     "PackageService",
     "WalletService",
     "ServerService",

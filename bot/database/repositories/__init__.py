@@ -14,6 +14,7 @@ Rules
 Available repositories
 ----------------------
 UserRepository         — users table CRUD and lookup helpers.
+PreferenceRepository   — per-user configurable preferences.
 PackageRepository      — package catalogue management.
 ServerRepository       — Outline server fleet management.
 VPNKeyRepository       — key issuance, revocation, and expiry queries.
@@ -26,6 +27,7 @@ NotificationRepository — notification dispatch queue and delivery status.
 
 from .base import BaseRepository
 from .user_repository import UserRepository
+from .preference_repository import PreferenceRepository
 from .package_repository import PackageRepository
 from .server_repository import ServerRepository
 from .vpn_key_repository import VPNKeyRepository
@@ -38,6 +40,7 @@ from .notification_repository import NotificationRepository
 __all__ = [
     "BaseRepository",
     "UserRepository",
+    "PreferenceRepository",
     "PackageRepository",
     "ServerRepository",
     "VPNKeyRepository",
