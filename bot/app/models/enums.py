@@ -110,6 +110,139 @@ class Language(str, Enum):
     MYANMAR = "my"
 
 
+@unique
+class PackageType(str, Enum):
+    """
+    VPN package types.
+
+    PAID       — Standard paid subscription.
+    FREE_TRIAL — Limited trial given to new users.
+    PROMOTION  — Discounted or time-limited promotional package.
+    REWARD     — Package awarded via referral, competition, etc.
+    VIP        — Premium package with elevated quotas / priority.
+    """
+    PAID       = "paid"
+    FREE_TRIAL = "free_trial"
+    PROMOTION  = "promotion"
+    REWARD     = "reward"
+    VIP        = "vip"
+
+
+@unique
+class PackageStatus(str, Enum):
+    """
+    Lifecycle status of a VPN package offering.
+
+    DRAFT    — Being configured; not visible to customers.
+    ACTIVE   — Published and available for purchase.
+    HIDDEN   — Exists but not shown in catalogues (e.g. legacy or invite-only).
+    DISABLED — Temporarily unavailable.
+    ARCHIVED — Retired; kept for historical orders only.
+    """
+    DRAFT    = "draft"
+    ACTIVE   = "active"
+    HIDDEN   = "hidden"
+    DISABLED = "disabled"
+    ARCHIVED = "archived"
+
+
+@unique
+class VPNKeyStatus(str, Enum):
+    """
+    Lifecycle status of a VPN access key.
+
+    PENDING   — Created but not yet activated on the Outline server.
+    ACTIVE    — Operational; user can connect.
+    EXPIRED   — Subscription period ended.
+    SUSPENDED — Temporarily deactivated (e.g. payment overdue).
+    REVOKED   — Permanently cancelled; cannot be reinstated.
+    RENEWING  — Automated renewal in progress.
+    """
+    PENDING   = "pending"
+    ACTIVE    = "active"
+    EXPIRED   = "expired"
+    SUSPENDED = "suspended"
+    REVOKED   = "revoked"
+    RENEWING  = "renewing"
+
+
+@unique
+class ServerStatus(str, Enum):
+    """
+    Operational status of an Outline VPN server.
+
+    ONLINE        — Healthy and accepting connections.
+    OFFLINE       — Unreachable or shut down.
+    MAINTENANCE   — Intentionally taken offline for maintenance.
+    DISABLED      — Excluded from key allocation.
+    PROVISIONING  — Being set up; not yet ready for use.
+    """
+    ONLINE       = "online"
+    OFFLINE      = "offline"
+    MAINTENANCE  = "maintenance"
+    DISABLED     = "disabled"
+    PROVISIONING = "provisioning"
+
+
+@unique
+class OrderStatus(str, Enum):
+    """
+    Lifecycle status of a purchase order.
+
+    PENDING         — Created; awaiting payment selection.
+    WAITING_PAYMENT — Payment instructions sent; awaiting confirmation.
+    PAID            — Payment confirmed; VPN key being provisioned.
+    CANCELLED       — Order cancelled by user or admin.
+    EXPIRED         — Payment window elapsed without payment.
+    REFUNDED        — Payment returned to user's wallet.
+    COMPLETED       — VPN key successfully issued.
+    """
+    PENDING         = "pending"
+    WAITING_PAYMENT = "waiting_payment"
+    PAID            = "paid"
+    CANCELLED       = "cancelled"
+    EXPIRED         = "expired"
+    REFUNDED        = "refunded"
+    COMPLETED       = "completed"
+
+
+@unique
+class PaymentMethod(str, Enum):
+    """
+    Supported payment methods.
+
+    WALLET — Deducted from the user's platform wallet balance.
+    MANUAL — Manual transfer verified by an admin.
+    USDT   — USDT (Tether) stablecoin transfer.
+    BANK   — Bank transfer / mobile banking.
+    """
+    WALLET = "wallet"
+    MANUAL = "manual"
+    USDT   = "usdt"
+    BANK   = "bank"
+    # Future: KPAY = "kpay", WAVEPAY = "wavepay", STRIPE = "stripe"
+
+
+@unique
+class NotificationType(str, Enum):
+    """
+    Categories of user notifications.
+
+    SYSTEM    — Platform-wide announcements or alerts.
+    WALLET    — Top-up confirmations, low-balance warnings.
+    ORDER     — Order status updates (paid, completed, cancelled).
+    PROMOTION — Marketing messages and special offers.
+    BROADCAST — Admin-sent mass messages.
+    SECURITY  — Suspicious activity or account-action alerts.
+    """
+    SYSTEM    = "system"
+    WALLET    = "wallet"
+    ORDER     = "order"
+    PROMOTION = "promotion"
+    BROADCAST = "broadcast"
+    SECURITY  = "security"
+
+
 # ---------------------------------------------------------------------------
 # Role → permission mapping
 # ---------------------------------------------------------------------------
