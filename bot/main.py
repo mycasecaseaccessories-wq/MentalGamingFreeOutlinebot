@@ -1,21 +1,36 @@
 """
 Mental Outline VPN Platform — application entry point.
 
-Startup sequence:
-  1. Initialise logging (must be first).
-  2. Load and validate settings from environment.
-  3. Initialise the database (run Alembic migrations to HEAD).
-  4. Seed default settings and feature flags (SettingsService.seed_defaults).
-  5. Initialise shared services (UserService, LanguageService).
-  6. Build the Telegram Application.
-  7. Register middlewares (TypeHandler at group=-1, ordered: auth → language → activity).
-  8. Register handlers (start, admin, error).
-  9. Start the scheduler.
- 10. Run the bot (polling).
+Bootstrap sequence (Phase 0.5):
+  1.  Load environment variables (python-dotenv).
+  2.  Load and validate configuration (Settings).
+  3.  Initialise logger (setup_logging — must run before any other import).
+  4.  Initialise database (Alembic migrations to HEAD).
+  5.  Initialise cache (CacheService / MemoryCache).
+  6.  Initialise service registry (all Phase 0.x services).
+  7.  Load localisation (Translator warm-up).
+  8.  Register event bus subscribers.
+  9.  Initialise scheduler (APScheduler, no jobs yet).
+ 10.  Register middlewares (group=-2: request_context; group=-1: auth, language, activity).
+ 11.  Register handlers (start, admin, error).
+ 12.  Register global error handler (must be last).
+ 13.  Run startup health check (all subsystems).
+ 14.  Transition lifecycle to RUNNING.
+ 15.  Start Telegram bot (polling).
+
+Graceful shutdown sequence:
+  a. Stop accepting new updates (updater.stop).
+  b. Finish in-flight handlers (application.stop).
+  c. Stop scheduler.
+  d. Stop cache background tasks.
+  e. Close database.
+  f. Flush logs.
+  g. Transition lifecycle to STOPPED.
+  h. Log shutdown summary.
 
 To add a new handler group:
   - Create app/handlers/my_feature.py with register(application).
-  - Import and call it below in the "Register handlers" section.
+  - Import and call it in the "Register handlers" section below.
 """
 
 from __future__ import annotations
@@ -23,54 +38,107 @@ from __future__ import annotations
 import asyncio
 import logging
 import sys
+import time
 from pathlib import Path
 
 # Ensure the bot/ directory is on sys.path when running as `python main.py`
 # from inside the bot/ folder or from the repo root.
 sys.path.insert(0, str(Path(__file__).parent))
 
-# ── 1. Logging must be set up before any module that uses logging is imported.
+# ── Step 1: Load environment variables ────────────────────────────────────────
+# python-dotenv is a soft dependency; the bot runs without a .env file
+# when secrets are injected via the environment (Replit Secrets, Docker, etc.).
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass   # dotenv not installed — rely on OS environment.
+
+# ── Step 3 (early): Logger must be ready before any other module uses it. ─────
+# Imported at top level so setup_logging() is callable immediately.
 from app.utils.logger import setup_logging  # noqa: E402
 
 
 async def main() -> None:
-    """Async application bootstrap."""
-    # ── 2. Settings ────────────────────────────────────────────────────────
-    from config import settings  # imported here so setup_logging runs first
+    """Async application bootstrap — runs the full 15-step startup sequence."""
+    _boot_start = time.monotonic()
 
-    setup_logging(level=settings.log_level)
+    # ── Step 2: Configuration ─────────────────────────────────────────────
+    from config import settings  # imported after dotenv so env vars are loaded
+
+    # ── Step 3: Logger ────────────────────────────────────────────────────
+    setup_logging(
+        level=settings.log_level,
+        is_development=settings.is_development,
+    )
     logger = logging.getLogger(__name__)
     logger.info(
-        "Starting Mental Outline VPN Platform — env=%s language=%s",
+        "━━━ Mental Outline VPN Platform — starting ━━━  env=%s  lang=%s",
         settings.environment,
         settings.default_language,
     )
 
-    # ── 3. Database ────────────────────────────────────────────────────────
-    from database import DatabaseManager
+    # ── Lifecycle: STARTING ───────────────────────────────────────────────
+    from app.lifecycle import lifecycle, AppState
+    # lifecycle is already in STARTING state at import time.
+    logger.info("Lifecycle state: %s", lifecycle.state.value.upper())
 
+    # ── Step 4: Database ──────────────────────────────────────────────────
+    logger.info("[4/15] Initialising database…")
+    from database import DatabaseManager
     db = DatabaseManager.initialise(settings.database_url)
     await db.init()
-    logger.info("Database ready — url=%s", settings.database_url.split("://")[0])
+    logger.info("       Database ready — scheme=%s", settings.database_url.split("://")[0])
 
-    # ── 4. Settings seed ───────────────────────────────────────────────────
-    # Insert default settings and feature flags that are missing from the DB.
-    # Safe to call on every startup — existing rows are never overwritten.
+    # ── Step 5: Cache ─────────────────────────────────────────────────────
+    logger.info("[5/15] Initialising cache…")
+    from app.cache import cache
+    cache.start()
+    logger.info("       Cache ready — backend=%s", type(cache._backend).__name__)
+
+    # ── Step 6: Service registry ──────────────────────────────────────────
+    logger.info("[6/15] Initialising service registry…")
+    from app.services.registry import ServiceRegistry
     from app.services import SettingsService
+    registry = ServiceRegistry(db)
+    registry.initialise_all()
+    # Seed default settings and feature flags (safe on every startup).
+    settings_service = registry.get(SettingsService)
+    await settings_service.seed_defaults()
+    logger.info("       Registry ready — %d services", len(registry.list_registered()))
 
-    await SettingsService(db).seed_defaults()
-    logger.info("Settings seed complete.")
+    # ── Step 7: Localisation ──────────────────────────────────────────────
+    logger.info("[7/15] Loading localisation…")
+    from locales.translator import Translator
+    _translator = Translator(settings.default_language)   # warm-up
+    logger.info("       Localisation ready — default_lang=%s", settings.default_language)
 
-    # ── 5. Shared services ─────────────────────────────────────────────────
-    from app.services import LanguageService, PreferenceService, UserService
+    # ── Step 8: Event bus ─────────────────────────────────────────────────
+    logger.info("[8/15] Registering event bus subscribers…")
+    from app.events import bus, EventType
 
-    user_service = UserService(db)
-    language_service = LanguageService(db)
-    preference_service = PreferenceService(db)
-    logger.info("Services initialised.")
+    @bus.on(EventType.APP_STARTED)
+    async def _on_app_started(**_: object) -> None:
+        logger.info("EventBus: APP_STARTED received")
 
-    # ── 6. Build Telegram Application ─────────────────────────────────────
-    from telegram.ext import Application
+    @bus.on(EventType.APP_STOPPED)
+    async def _on_app_stopped(**_: object) -> None:
+        logger.info("EventBus: APP_STOPPED received")
+
+    logger.info("       Event bus ready — 2 core subscriber(s) registered")
+
+    # ── Step 9: Scheduler ─────────────────────────────────────────────────
+    logger.info("[9/15] Initialising scheduler…")
+    from app.scheduler import Scheduler
+    scheduler = Scheduler()
+    scheduler.register_jobs()
+    scheduler.start()
+    registry.inject_scheduler(scheduler)
+    logger.info("       Scheduler ready")
+
+    # ── Step 10: Build Telegram application ───────────────────────────────
+    from telegram.ext import Application, TypeHandler
+    from telegram import Update
 
     application = (
         Application.builder()
@@ -79,63 +147,164 @@ async def main() -> None:
     )
 
     # Expose shared resources to handlers via bot_data.
-    # Handlers access these as: context.bot_data["db"], etc.
-    application.bot_data["db"] = db
-    application.bot_data["user_service"] = user_service
-    application.bot_data["language_service"] = language_service
-    application.bot_data["preference_service"] = preference_service
+    application.bot_data["db"]              = db
+    application.bot_data["registry"]        = registry
+    application.bot_data["cache"]           = cache
+    application.bot_data["scheduler"]       = scheduler
+    application.bot_data["settings"]        = settings
 
-    # ── 7. Register middlewares ────────────────────────────────────────────
-    # TypeHandler at group=-1 fires before all regular handlers (group 0+).
-    # Registration order here is the execution order.
-    from telegram.ext import TypeHandler
-    from telegram import Update
+    # ── Step 10: Register middlewares ─────────────────────────────────────
+    logger.info("[10/15] Registering middlewares…")
     from app.middlewares import (
+        request_context_middleware_handler,
         auth_middleware_handler,
         language_middleware_handler,
         activity_middleware_handler,
     )
 
+    # group=-2: request context (must run first — stamps request_id)
+    application.add_handler(
+        TypeHandler(Update, request_context_middleware_handler), group=-2
+    )
+    # group=-1: auth → language → activity
     application.add_handler(TypeHandler(Update, auth_middleware_handler),     group=-1)
     application.add_handler(TypeHandler(Update, language_middleware_handler), group=-1)
     application.add_handler(TypeHandler(Update, activity_middleware_handler), group=-1)
-    logger.info("Middlewares registered.")
+    logger.info("       Middlewares registered: request_context, auth, language, activity")
 
-    # ── 8. Register handlers ───────────────────────────────────────────────
+    # ── Step 11: Register handlers ────────────────────────────────────────
+    logger.info("[11/15] Registering handlers…")
     from app.handlers import register_start, register_admin, register_error
 
     register_start(application)
     register_admin(application)
-    register_error(application)   # Error handler must be last.
-    logger.info("All handlers registered.")
+    logger.info("       Handlers registered: start, admin")
 
-    # ── 9. Scheduler ──────────────────────────────────────────────────────
-    from app.scheduler import Scheduler
+    # ── Step 12: Global error handler (must be last) ──────────────────────
+    logger.info("[12/15] Registering global error handler…")
+    register_error(application)
+    logger.info("       Error handler registered")
 
-    scheduler = Scheduler()
-    scheduler.register_jobs()
-    scheduler.start()
+    # ── Step 13: Startup health check ─────────────────────────────────────
+    logger.info("[13/15] Running startup health check…")
+    from app.utils.startup_checks import run_all_checks, StartupError
+    try:
+        await run_all_checks(
+            settings=settings,
+            db=db,
+            scheduler=scheduler,
+            cache_service=cache,
+        )
+    except StartupError as exc:
+        logger.critical("Startup validation failed: %s", exc)
+        await _shutdown(scheduler, cache, db, application, lifecycle, started=False)
+        sys.exit(1)
+    logger.info("       All health checks passed ✓")
 
-    # ── 10. Run (polling) ──────────────────────────────────────────────────
-    logger.info("Bot is starting — polling for updates…")
+    # ── Step 14: Lifecycle → RUNNING ──────────────────────────────────────
+    logger.info("[14/15] Transitioning lifecycle to RUNNING…")
+    lifecycle.set_state(AppState.RUNNING)
+    await bus.emit(EventType.APP_STARTED, settings=settings)
+
+    # ── Step 15: Run the bot (polling) ────────────────────────────────────
+    _boot_ms = (time.monotonic() - _boot_start) * 1000
+    logger.info(
+        "[15/15] Bot is starting — polling for updates… (boot=%.0fms)",
+        _boot_ms,
+    )
     try:
         await application.initialize()
         await application.start()
+
+        # Inject bot into registry/HealthService after initialize().
+        registry.inject_bot(application.bot)
+
         await application.updater.start_polling(drop_pending_updates=True)
 
-        # Block until a shutdown signal is received.
-        logger.info("Bot is running. Press Ctrl+C to stop.")
-        await asyncio.Event().wait()
+        logger.info("━━━ Bot is running ━━━  Press Ctrl+C to stop.")
+        await asyncio.Event().wait()   # Block until shutdown signal.
 
     except (KeyboardInterrupt, SystemExit):
         logger.info("Shutdown signal received.")
     finally:
-        scheduler.shutdown()
-        await application.updater.stop()
-        await application.stop()
+        lifecycle.set_state(AppState.STOPPING)
+        await _shutdown(scheduler, cache, db, application, lifecycle, started=True)
+
+
+async def _shutdown(
+    scheduler,
+    cache,
+    db,
+    application,
+    lifecycle,
+    *,
+    started: bool,
+) -> None:
+    """
+    Execute the graceful shutdown sequence.
+
+    Steps:
+      a. Stop accepting new updates (updater.stop / application.stop).
+      b. Stop the scheduler (finish running jobs).
+      c. Stop cache background tasks.
+      d. Close database connections.
+      e. Flush logs.
+      f. Transition lifecycle to STOPPED.
+      g. Log shutdown summary.
+    """
+    logger = logging.getLogger(__name__)
+    _shutdown_start = time.monotonic()
+
+    from app.events import bus, EventType
+    from app.lifecycle import AppState
+
+    logger.info("Shutdown: stopping Telegram updater…")
+    try:
+        if started and application.updater and application.updater.running:
+            await application.updater.stop()
+        if started:
+            await application.stop()
         await application.shutdown()
+    except Exception as exc:
+        logger.warning("Shutdown: application stop raised: %s", exc)
+
+    logger.info("Shutdown: stopping scheduler…")
+    try:
+        scheduler.shutdown()
+    except Exception as exc:
+        logger.warning("Shutdown: scheduler stop raised: %s", exc)
+
+    logger.info("Shutdown: stopping cache…")
+    try:
+        cache.stop()
+    except Exception as exc:
+        logger.warning("Shutdown: cache stop raised: %s", exc)
+
+    logger.info("Shutdown: closing database…")
+    try:
         await db.close()
-        logger.info("Bot stopped gracefully.")
+    except Exception as exc:
+        logger.warning("Shutdown: db close raised: %s", exc)
+
+    # Emit stopped event before flushing logs.
+    try:
+        await bus.emit(EventType.APP_STOPPED)
+    except Exception:
+        pass
+
+    _shutdown_ms = (time.monotonic() - _shutdown_start) * 1000
+    logger.info(
+        "━━━ Bot stopped gracefully ━━━  shutdown took %.0fms", _shutdown_ms
+    )
+
+    # Lifecycle → STOPPED.
+    try:
+        lifecycle.set_state(AppState.STOPPED)
+    except Exception:
+        pass
+
+    # Flush log handlers.
+    logging.shutdown()
 
 
 if __name__ == "__main__":

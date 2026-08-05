@@ -39,6 +39,8 @@ REQUIRED_DIRECTORIES: list[Path] = [
     _PROJECT_ROOT / "temp",
     _PROJECT_ROOT / "exports",
     _PROJECT_ROOT / "uploads",
+    _PROJECT_ROOT / "cache",
+    _PROJECT_ROOT / "docs",
 ]
 
 
@@ -119,7 +121,7 @@ def get_directory(name: str) -> Path:
     Return the absolute path for a named application directory.
 
     Args:
-        name: One of 'logs', 'database', 'backups', 'temp', 'exports', 'uploads'.
+        name: One of 'logs', 'database', 'backups', 'temp', 'exports', 'uploads', 'cache', 'docs'.
 
     Returns:
         Absolute Path to the directory.

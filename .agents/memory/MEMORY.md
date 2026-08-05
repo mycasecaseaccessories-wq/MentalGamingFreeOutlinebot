@@ -1,0 +1,2 @@
+- [Phase 0.5 infrastructure](phase05-infra.md) — lifecycle, cache, observability, request_id logging all implemented; bot is in RUNNING state.
+- [Bot stack conventions](bot-stack.md) — python-telegram-bot v21, SQLAlchemy async, middleware group=-2 for request_context, group=-1 for auth/language/activity.

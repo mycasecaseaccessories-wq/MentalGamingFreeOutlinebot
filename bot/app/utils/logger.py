@@ -22,6 +22,9 @@ import logging.handlers
 import sys
 from pathlib import Path
 
+# Imported lazily to avoid circular imports; filter reads ContextVar at runtime.
+# from app.observability import RequestIdFilter  ← done below in setup_logging()
+
 
 # Default log directory: project_root/logs/ (three levels up from this file).
 _LOG_DIR = Path(__file__).resolve().parents[3] / "logs"
@@ -58,16 +61,23 @@ def setup_logging(level: str = "INFO", is_development: bool = False) -> None:
     console_level = logging.DEBUG if is_development else numeric_level
 
     # ── Shared formatter ───────────────────────────────────────────────────
-    # Includes: timestamp, level, module:function, message.
+    # Includes: timestamp, level, module:function, request_id, message.
     fmt = logging.Formatter(
-        fmt="%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s | %(message)s",
+        fmt="%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s | [%(request_id)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+
+    # ── Request-ID filter ──────────────────────────────────────────────────
+    # Injects request_id into every LogRecord (set by request_context middleware).
+    # Imported here to avoid circular import at module load time.
+    from app.observability import RequestIdFilter
+    rid_filter = RequestIdFilter()
 
     # ── Console handler ────────────────────────────────────────────────────
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(fmt)
     console_handler.setLevel(console_level)
+    console_handler.addFilter(rid_filter)
 
     # ── Rotating file handler (size-based, 10 MB × 5) ─────────────────────
     rotating_handler = logging.handlers.RotatingFileHandler(
@@ -78,6 +88,7 @@ def setup_logging(level: str = "INFO", is_development: bool = False) -> None:
     )
     rotating_handler.setFormatter(fmt)
     rotating_handler.setLevel(logging.DEBUG)
+    rotating_handler.addFilter(rid_filter)
 
     # ── Daily rotating file handler (one file per day, 30 days) ───────────
     daily_handler = logging.handlers.TimedRotatingFileHandler(
@@ -90,6 +101,7 @@ def setup_logging(level: str = "INFO", is_development: bool = False) -> None:
     )
     daily_handler.setFormatter(fmt)
     daily_handler.setLevel(logging.DEBUG)
+    daily_handler.addFilter(rid_filter)
 
     # ── Root logger ────────────────────────────────────────────────────────
     root_logger = logging.getLogger()

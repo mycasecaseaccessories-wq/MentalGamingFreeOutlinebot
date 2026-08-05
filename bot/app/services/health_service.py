@@ -133,6 +133,7 @@ class HealthService:
         scheduler=None,
         bot=None,
         settings=None,
+        cache=None,
     ) -> None:
         """
         Args:
@@ -140,11 +141,13 @@ class HealthService:
             scheduler: Scheduler instance (optional).
             bot:       telegram.Bot instance (optional, available post-init).
             settings:  Application Settings instance (optional).
+            cache:     CacheService instance (optional).
         """
         self._db        = db
         self._scheduler = scheduler
         self._bot       = bot
         self._settings  = settings
+        self._cache     = cache
 
     # ── Individual checks ─────────────────────────────────────────────────
 
@@ -208,6 +211,34 @@ class HealthService:
         except Exception as exc:
             return SubsystemHealth("Configuration", HealthStatus.UNKNOWN, str(exc))
 
+    def check_cache(self) -> SubsystemHealth:
+        """Verify the cache service is initialised."""
+        if self._cache is None:
+            return SubsystemHealth("Cache", HealthStatus.UNKNOWN, "not injected")
+        try:
+            backend = type(self._cache._backend).__name__
+            return SubsystemHealth("Cache", HealthStatus.OK, f"backend={backend}")
+        except Exception as exc:
+            return SubsystemHealth("Cache", HealthStatus.UNKNOWN, str(exc))
+
+    def check_localization(self) -> SubsystemHealth:
+        """Verify that at least one locale can be loaded."""
+        try:
+            from locales.translator import _get_registry
+            registry = _get_registry()
+            loaded = [lang for lang in ("en", "my") if registry.get(lang)]
+            if not loaded:
+                return SubsystemHealth(
+                    "Localisation", HealthStatus.DOWN, "no locales loaded"
+                )
+            return SubsystemHealth(
+                "Localisation", HealthStatus.OK,
+                f"langs={loaded}",
+            )
+        except Exception as exc:
+            logger.error("Health check — localization DOWN: %s", exc)
+            return SubsystemHealth("Localisation", HealthStatus.DOWN, str(exc))
+
     # ── Composite check ───────────────────────────────────────────────────
 
     async def check_all(self) -> HealthReport:
@@ -219,8 +250,10 @@ class HealthService:
         """
         report = HealthReport()
         report.add(self.check_configuration())
+        report.add(self.check_localization())
         report.add(await self.check_database())
         report.add(self.check_scheduler())
+        report.add(self.check_cache())
         # Bot check is last as it makes a network call.
         report.add(await self.check_bot())
 

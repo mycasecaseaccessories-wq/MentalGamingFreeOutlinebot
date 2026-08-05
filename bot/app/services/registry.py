@@ -142,7 +142,8 @@ class ServiceRegistry:
 
         # HealthService needs additional dependencies set after bot init.
         if not self.is_registered(HealthService):
-            health = HealthService(db=self._db)
+            from app.cache import cache as default_cache
+            health = HealthService(db=self._db, cache=default_cache)
             self.register(HealthService, health)
             logger.info("  ✓ HealthService initialised")
 

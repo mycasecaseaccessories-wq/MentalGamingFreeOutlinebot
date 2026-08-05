@@ -184,22 +184,91 @@ def check_localization() -> None:
 # Composite runner
 # ---------------------------------------------------------------------------
 
-async def run_all_checks(settings, db=None) -> None:
+def check_admin_ids(settings) -> None:
     """
-    Execute all pre-flight checks in order.
-
-    Runs synchronous checks first, then async checks (database).
-    Stops at the first critical failure and re-raises StartupError.
+    Verify that ADMIN_IDS is set and contains at least one valid integer.
 
     Args:
         settings: Application Settings instance.
-        db:       Optional initialised DatabaseManager (required for DB check).
+
+    Raises:
+        StartupError: If ADMIN_IDS is missing or contains no valid IDs.
+    """
+    admin_ids = getattr(settings, "admin_ids", [])
+    if not admin_ids:
+        raise StartupError(
+            "ADMIN_IDS environment variable is not set or contains no valid IDs. "
+            "Add at least one Telegram user ID to ADMIN_IDS in your .env file or Replit Secrets."
+        )
+    logger.debug("check_admin_ids: OK — %d admin(s) configured", len(admin_ids))
+
+
+def check_scheduler(scheduler) -> None:
+    """
+    Verify the scheduler has been instantiated (not necessarily started yet).
+
+    Args:
+        scheduler: Scheduler instance (may be None if APScheduler unavailable).
+
+    Raises:
+        StartupError: If the scheduler object is None (APScheduler not installed).
+    """
+    if scheduler is None:
+        raise StartupError(
+            "Scheduler is not available. "
+            "Ensure 'apscheduler' is listed in requirements.txt and installed."
+        )
+    logger.debug("check_scheduler: OK")
+
+
+async def check_cache(cache_service) -> None:
+    """
+    Verify the cache can store and retrieve a value.
+
+    Args:
+        cache_service: CacheService instance.
+
+    Raises:
+        StartupError: If the cache round-trip fails.
+    """
+    try:
+        probe_key = "__startup_probe__"
+        await cache_service.set(probe_key, "ok", ttl=5)
+        value = await cache_service.get(probe_key)
+        await cache_service.delete(probe_key)
+        if value != "ok":
+            raise StartupError("Cache probe returned unexpected value.")
+        logger.debug("check_cache: OK")
+    except StartupError:
+        raise
+    except Exception as exc:
+        raise StartupError(f"Cache is not working: {exc}") from exc
+
+
+async def run_all_checks(
+    settings,
+    db=None,
+    scheduler=None,
+    cache_service=None,
+) -> None:
+    """
+    Execute all pre-flight checks in order.
+
+    Runs synchronous checks first, then async checks (database, cache).
+    Stops at the first critical failure and re-raises StartupError.
+
+    Args:
+        settings:      Application Settings instance.
+        db:            Optional initialised DatabaseManager (required for DB check).
+        scheduler:     Optional Scheduler instance (required for scheduler check).
+        cache_service: Optional CacheService instance (required for cache check).
 
     Raises:
         StartupError: On the first check that fails.
     """
     checks = [
         ("BOT_TOKEN",      lambda: check_bot_token()),
+        ("ADMIN_IDS",      lambda: check_admin_ids(settings)),
         ("Directories",    lambda: check_directories()),
         ("Configuration",  lambda: check_configuration(settings)),
         ("Localisation",   lambda: check_localization()),
@@ -213,4 +282,12 @@ async def run_all_checks(settings, db=None) -> None:
         logger.info("  ✓ Checking Database…")
         await check_database(db)
 
-    logger.info("All startup checks passed.")
+    if scheduler is not None:
+        logger.info("  ✓ Checking Scheduler…")
+        check_scheduler(scheduler)
+
+    if cache_service is not None:
+        logger.info("  ✓ Checking Cache…")
+        await check_cache(cache_service)
+
+    logger.info("All startup checks passed ✓")
