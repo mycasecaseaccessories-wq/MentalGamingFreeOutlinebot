@@ -2,8 +2,9 @@
 
 A scalable, commercial Telegram VPN bot powered by [Outline VPN](https://getoutline.org/).
 
-> **Phase 0.5 — Application Bootstrap, Lifecycle, Infrastructure & Observability**
-> Runtime infrastructure is complete. The platform is fully prepared for Phase 1 (user registration, language selection).
+> **Phase 0.6 — Core Foundation, Shared Components & Developer Standards**
+> Reusable enums, DTOs, response/pagination contracts, cache tags, event types,
+> request context fields, security helpers, and project standards are in place.
 
 ---
 
@@ -330,6 +331,7 @@ Controlled by `ENVIRONMENT`:
 | 0.3   | Settings service, category column              | ✅ Complete  |
 | 0.4   | Role system, authentication, multi-language    | ✅ Complete  |
 | 0.5   | Bootstrap, lifecycle, cache, observability     | ✅ Complete  |
+| 0.6   | Shared foundation, DTOs, contracts, standards  | ✅ Complete  |
 | 1     | User registration, language selection          | 📋 Planned   |
 | 2     | Packages catalogue, admin UI                   | 📋 Planned   |
 | 3     | Wallet, payments                               | 📋 Planned   |

@@ -56,6 +56,9 @@ async def request_context_middleware_handler(
     """
     # 1. Create and activate request context.
     ctx = new_request_context()
+    # Capture stable request-scoped settings at the boundary. User and role
+    # are filled by auth middleware after the account has been resolved.
+    ctx.current_settings = context.bot_data.get("settings")
 
     # 2. Store in user_data for handler access (no contextvars needed).
     if context.user_data is not None:

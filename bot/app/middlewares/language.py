@@ -29,6 +29,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from app.middlewares.auth import PLATFORM_USER_KEY, TRANSLATOR_KEY
+from app.observability import request_ctx
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,9 @@ async def language_middleware_handler(
         return  # Auth middleware either not run yet or user not found.
 
     lang = user.language.value if user.language else "en"
+    request = request_ctx.get()
+    if request is not None:
+        request.language = lang
 
     # Build a Translator bound to the user's language.
     from locales.translator import Translator

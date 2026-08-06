@@ -19,7 +19,7 @@ Phase 0.6: Interface definitions only.  Concrete implementations in Phase 3+.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, Iterable, Optional
 
 
 # ---------------------------------------------------------------------------
@@ -38,8 +38,15 @@ class CacheProvider(ABC):
         """Return the value for *key*, or None if missing/expired."""
 
     @abstractmethod
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
-        """Store *value* under *key* with optional TTL (seconds)."""
+    async def set(
+        self,
+        key: str,
+        value: Any,
+        ttl: Optional[int] = None,
+        *,
+        tags: Iterable[str] = (),
+    ) -> None:
+        """Store *value* under *key* with optional TTL and invalidation tags."""
 
     @abstractmethod
     async def delete(self, key: str) -> bool:
@@ -52,6 +59,10 @@ class CacheProvider(ABC):
     @abstractmethod
     async def clear(self, prefix: Optional[str] = None) -> int:
         """Remove all keys (or those with *prefix*). Return count removed."""
+
+    @abstractmethod
+    async def invalidate_tags(self, *tags: str) -> int:
+        """Remove entries carrying any of *tags*. Return count removed."""
 
 
 # ---------------------------------------------------------------------------

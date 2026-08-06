@@ -26,6 +26,8 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from app.observability import request_ctx
+
 logger = logging.getLogger(__name__)
 
 # Keys used in context.user_data to share state between middleware and handlers.
@@ -71,6 +73,12 @@ async def auth_middleware_handler(
 
     # Attach to context so handlers don't need to call UserService themselves.
     context.user_data[PLATFORM_USER_KEY] = user
+    request = request_ctx.get()
+    if request is not None:
+        request.current_user = user
+        request.user_id = user.telegram_id
+        request.username = user.username or user.full_name
+        request.current_role = user.role.value
 
     # Block banned or suspended accounts before any handler runs.
     if not user.can_use_bot and update.message:

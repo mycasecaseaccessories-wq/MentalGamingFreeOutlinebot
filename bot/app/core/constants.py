@@ -76,6 +76,20 @@ class CacheTTL:
     LONG:         int = 3_600  # Generic long TTL
 
 
+# Serialisable cache policies for adapters and future API clients.
+CACHE_TTL: dict[str, int] = {
+    "settings": CacheTTL.SETTINGS,
+    "user": CacheTTL.USER,
+    "language": CacheTTL.LANGUAGE,
+    "session": CacheTTL.SESSION,
+    "health": CacheTTL.HEALTH,
+    "package": CacheTTL.PACKAGE,
+    "server": CacheTTL.SERVER,
+    "short": CacheTTL.SHORT,
+    "long": CacheTTL.LONG,
+}
+
+
 # ---------------------------------------------------------------------------
 # Session / security
 # ---------------------------------------------------------------------------

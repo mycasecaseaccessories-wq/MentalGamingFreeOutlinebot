@@ -61,6 +61,8 @@ class EventType(str, Enum):
 
     # ── User events ───────────────────────────────────────────────────────
     USER_REGISTERED    = "user.registered"       # New user created
+    USER_CREATED       = "user.created"
+    USER_UPDATED       = "user.updated"
     USER_RETURNED      = "user.returned"          # Existing user /start
     USER_BANNED        = "user.banned"
     USER_UNBANNED      = "user.unbanned"
@@ -79,11 +81,15 @@ class EventType(str, Enum):
     ORDER_CREATED      = "order.created"
     ORDER_COMPLETED    = "order.completed"
     ORDER_CANCELLED    = "order.cancelled"
+    PACKAGE_PURCHASED  = "package.purchased"
 
     # ── Key events (Phase 1+) ─────────────────────────────────────────────
     KEY_ISSUED         = "key.issued"
     KEY_REVOKED        = "key.revoked"
     KEY_EXPIRED        = "key.expired"
+    VPN_GENERATED      = "vpn.generated"
+    WALLET_UPDATED     = "wallet.updated"
+    NOTIFICATION_SENT  = "notification.sent"
 
 
 # ---------------------------------------------------------------------------

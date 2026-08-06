@@ -57,6 +57,7 @@ class UserStatus(str, Enum):
     SUSPENDED = "suspended"
     BANNED = "banned"
     PENDING = "pending"
+    DELETED = "deleted"
 
 
 @unique

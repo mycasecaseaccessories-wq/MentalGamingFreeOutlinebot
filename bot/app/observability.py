@@ -44,6 +44,7 @@ from collections import defaultdict
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Optional
 
 logger = logging.getLogger(__name__)
@@ -73,6 +74,10 @@ class RequestContext:
     user_id:        Optional[int]  = field(default=None)
     username:       Optional[str]  = field(default=None)
     language:       Optional[str]  = field(default=None)
+    current_user:   Any = field(default=None, repr=False)
+    current_role:   Optional[str] = field(default=None)
+    current_settings: Any = field(default=None, repr=False)
+    timestamp:       datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def __post_init__(self) -> None:
         if not self.correlation_id:
@@ -90,6 +95,8 @@ class RequestContext:
             "correlation_id": self.correlation_id,
             "user_id":        self.user_id,
             "language":       self.language,
+            "role":           self.current_role,
+            "timestamp":      self.timestamp.isoformat(),
         }
 
     def __repr__(self) -> str:
