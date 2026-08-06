@@ -57,3 +57,25 @@ class PaginatedResult(BaseModel, Generic[T]):
 
     items: list[T] = Field(default_factory=list)
     meta: PaginationMeta
+
+
+# Public aliases used by API adapters without breaking the original names.
+PaginationRequest = PaginationParams
+PaginationResponse = PaginatedResult
+
+
+class PageInfo(BaseModel):
+    has_next_page: bool = False
+    has_previous_page: bool = False
+    next_cursor: Optional[str] = None
+    previous_cursor: Optional[str] = None
+
+
+class CursorPagination(BaseModel):
+    limit: int = Field(default=10, ge=1, le=100)
+    after: Optional[str] = None
+    before: Optional[str] = None
+
+    @property
+    def direction(self) -> str:
+        return "before" if self.before else "after"

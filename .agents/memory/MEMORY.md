@@ -1,3 +1,4 @@
 - [Phase 0.5 infrastructure](phase05-infra.md) — lifecycle, cache, observability, request_id logging all implemented; bot is in RUNNING state.
 - [Bot stack conventions](bot-stack.md) — python-telegram-bot v21, SQLAlchemy async, middleware group=-2 for request_context, group=-1 for auth/language/activity.
 - [Python runtime compatibility](python-runtime-compatibility.md) — root dependency metadata must remain compatible with the configured Python 3.12 runtime.
+- [Phase 0.6.1 architecture](phase061-architecture.md) — opt-in plugin/provider/event/hook/result contracts preserve existing APIs and keep business features disabled.

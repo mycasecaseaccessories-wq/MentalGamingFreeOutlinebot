@@ -39,6 +39,7 @@ from typing import Any, Callable, Coroutine
 logger = logging.getLogger(__name__)
 
 Handler = Callable[..., Coroutine[Any, Any, None]]
+PrioritisedHandler = tuple[int, Handler]
 
 
 # ---------------------------------------------------------------------------
@@ -115,9 +116,14 @@ class EventBus:
     """
 
     def __init__(self) -> None:
-        self._subscribers: dict[EventType, list[Handler]] = {}
+        self._subscribers: dict[EventType, list[PrioritisedHandler]] = {}
 
-    def on(self, event_type: EventType) -> Callable[[Handler], Handler]:
+    def on(
+        self,
+        event_type: EventType,
+        *,
+        priority: int = 0,
+    ) -> Callable[[Handler], Handler]:
         """
         Decorator to register a handler for *event_type*.
 
@@ -133,11 +139,17 @@ class EventBus:
                 ...
         """
         def decorator(handler: Handler) -> Handler:
-            self.subscribe(event_type, handler)
+            self.subscribe(event_type, handler, priority=priority)
             return handler
         return decorator
 
-    def subscribe(self, event_type: EventType, handler: Handler) -> None:
+    def subscribe(
+        self,
+        event_type: EventType,
+        handler: Handler,
+        *,
+        priority: int = 0,
+    ) -> None:
         """
         Register *handler* to be called when *event_type* is emitted.
 
@@ -147,7 +159,8 @@ class EventBus:
         """
         if event_type not in self._subscribers:
             self._subscribers[event_type] = []
-        self._subscribers[event_type].append(handler)
+        self._subscribers[event_type].append((priority, handler))
+        self._subscribers[event_type].sort(key=lambda item: item[0], reverse=True)
         logger.debug(
             "EventBus: subscribed %s → %s", event_type.value, handler.__qualname__
         )
@@ -164,9 +177,10 @@ class EventBus:
             True if the handler was found and removed, False otherwise.
         """
         handlers = self._subscribers.get(event_type, [])
-        if handler in handlers:
-            handlers.remove(handler)
-            return True
+        for index, (_, candidate) in enumerate(handlers):
+            if candidate is handler:
+                handlers.pop(index)
+                return True
         return False
 
     async def emit(self, event_type: EventType, **payload: Any) -> None:
@@ -181,7 +195,7 @@ class EventBus:
             event_type: The event to emit.
             **payload:  Keyword arguments passed to every handler.
         """
-        handlers = self._subscribers.get(event_type, [])
+        handlers = [handler for _, handler in self._subscribers.get(event_type, [])]
         if not handlers:
             logger.debug("EventBus: emit %s — no subscribers", event_type.value)
             return
@@ -216,6 +230,40 @@ class EventBus:
     def subscriber_count(self, event_type: EventType) -> int:
         """Return the number of subscribers registered for *event_type*."""
         return len(self._subscribers.get(event_type, []))
+
+
+class EventDispatcher:
+    """Transport-neutral facade for ordered event publication.
+
+    ``EventBus.emit`` remains available for existing callers. New modules can
+    use this facade's publish/broadcast vocabulary without depending on the
+    singleton or on Telegram.
+    """
+
+    def __init__(self, event_bus: EventBus | None = None) -> None:
+        self.bus = event_bus or EventBus()
+
+    def subscribe(
+        self,
+        event_type: EventType,
+        handler: Handler,
+        *,
+        priority: int = 0,
+    ) -> Handler:
+        self.bus.subscribe(event_type, handler, priority=priority)
+        return handler
+
+    def unsubscribe(self, event_type: EventType, handler: Handler) -> bool:
+        return self.bus.unsubscribe(event_type, handler)
+
+    async def publish(self, event_type: EventType, **payload: Any) -> None:
+        await self.bus.emit(event_type, **payload)
+
+    async def broadcast(self, event_types: list[EventType], **payload: Any) -> None:
+        """Publish one payload to multiple event channels concurrently."""
+        await asyncio.gather(
+            *(self.publish(event_type, **payload) for event_type in event_types)
+        )
 
 
 # ---------------------------------------------------------------------------

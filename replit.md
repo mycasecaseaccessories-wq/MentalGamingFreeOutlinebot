@@ -38,6 +38,7 @@ All bot code lives in `bot/`. See `bot/README.md` for detailed architecture docs
 | 0.1 | Foundation, architecture, scaffolding | ✅ Complete |
 | 0.2 | Auth middleware, database migrations | ✅ Complete |
 | 0.6 | Shared foundation, DTOs, contracts, standards | ✅ Complete |
+| 0.6.1 | Plugin/provider/event/task architecture | ✅ Complete |
 | 1 | User registration, language selection | 📋 Planned |
 | 2 | Packages catalogue, admin UI | 📋 Planned |
 | 3 | Wallet, payments | 📋 Planned |

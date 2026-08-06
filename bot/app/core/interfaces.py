@@ -12,6 +12,8 @@ CacheProvider        — get / set / delete / clear / exists.
 NotificationProvider — send a notification to a user.
 VPNProvider          — create / revoke / sync VPN keys.
 PaymentProvider      — initiate / verify payments.
+StorageProvider      — put / get / delete opaque objects.
+AuthenticationProvider — authenticate and revoke identities.
 
 Phase 0.6: Interface definitions only.  Concrete implementations in Phase 3+.
 """
@@ -207,3 +209,35 @@ class PaymentProvider(ABC):
     @abstractmethod
     async def refund(self, reference: str, amount: float) -> bool:
         """Initiate a refund. Return True if successful."""
+
+
+# ---------------------------------------------------------------------------
+# Cross-channel provider contracts
+# ---------------------------------------------------------------------------
+
+class StorageProvider(ABC):
+    """Opaque object storage contract for local or hosted backends."""
+
+    @abstractmethod
+    async def put(self, key: str, data: bytes, *, content_type: str = "application/octet-stream") -> str:
+        """Store bytes and return a stable object identifier."""
+
+    @abstractmethod
+    async def get(self, key: str) -> Optional[bytes]:
+        """Return object bytes, or None when the object is absent."""
+
+    @abstractmethod
+    async def delete(self, key: str) -> bool:
+        """Delete an object and return whether it existed."""
+
+
+class AuthenticationProvider(ABC):
+    """Identity provider contract independent of Telegram or a web framework."""
+
+    @abstractmethod
+    async def authenticate(self, credential: str) -> Optional[dict[str, Any]]:
+        """Resolve a credential to an identity payload."""
+
+    @abstractmethod
+    async def revoke(self, identity: str) -> bool:
+        """Revoke an identity/session and return whether it was found."""

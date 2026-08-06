@@ -1,0 +1,431 @@
+# Phase 0.6.1 — Core Foundation Enhancement
+
+Continue from Phase 0.6.
+
+IMPORTANT:
+
+Do NOT rewrite existing code.
+
+Do NOT rename existing modules.
+
+Do NOT remove existing architecture.
+
+Only extend and improve the current project.
+
+Everything must remain backward compatible.
+
+====================================================
+GOAL
+====================================================
+
+Upgrade the project foundation to enterprise-grade quality.
+
+Only improve reusable architecture.
+
+No business logic.
+
+====================================================
+PLUGIN FOUNDATION
+====================================================
+
+Prepare plugin architecture.
+
+Create:
+
+app/plugins/
+
+base_plugin.py
+
+plugin_loader.py
+
+plugin_manager.py
+
+plugin_registry.py
+
+Every future feature should be able to become a plugin.
+
+Examples:
+
+Lucky Spin
+
+VIP
+
+Mini App
+
+Analytics
+
+Affiliate
+
+API
+
+====================================================
+PLUGIN MANIFEST
+====================================================
+
+Prepare plugin metadata.
+
+Example fields:
+
+Plugin Name
+
+Version
+
+Author
+
+Description
+
+Dependencies
+
+Status
+
+Permissions
+
+====================================================
+EVENT BUS
+====================================================
+
+Improve event system.
+
+Create:
+
+EventBus
+
+EventDispatcher
+
+Support:
+
+subscribe()
+
+unsubscribe()
+
+publish()
+
+broadcast()
+
+priority
+
+Future modules must communicate through events.
+
+====================================================
+HOOK SYSTEM
+====================================================
+
+Prepare extension hooks.
+
+Examples:
+
+Before User Register
+
+After User Register
+
+Before Purchase
+
+After Purchase
+
+Before VPN Create
+
+After VPN Create
+
+Future plugins must hook into events without modifying existing modules.
+
+====================================================
+PROVIDER REGISTRY
+====================================================
+
+Create provider registry.
+
+Providers:
+
+VPNProvider
+
+PaymentProvider
+
+NotificationProvider
+
+StorageProvider
+
+AuthenticationProvider
+
+Future providers:
+
+Outline
+
+WireGuard
+
+OpenVPN
+
+Binance
+
+Telegram
+
+Email
+
+====================================================
+DEPENDENCY INJECTION
+====================================================
+
+Improve Service Registry.
+
+Support automatic dependency resolution.
+
+Avoid manual service creation.
+
+====================================================
+BASE CLASSES
+====================================================
+
+Create reusable base classes.
+
+BaseService
+
+BaseRepository
+
+BaseHandler
+
+BaseKeyboard
+
+BaseMiddleware
+
+BaseProvider
+
+BasePlugin
+
+Future modules should inherit from them.
+
+====================================================
+RESULT PATTERN
+====================================================
+
+Create reusable Result object.
+
+Support:
+
+Success()
+
+Failure()
+
+ValidationError()
+
+PermissionError()
+
+NotFound()
+
+Services should return Result objects where appropriate.
+
+====================================================
+PAGINATION FOUNDATION
+====================================================
+
+Prepare reusable pagination.
+
+PaginationRequest
+
+PaginationResponse
+
+CursorPagination
+
+PageInfo
+
+====================================================
+FILTER FOUNDATION
+====================================================
+
+Prepare reusable filters.
+
+UserFilter
+
+OrderFilter
+
+ServerFilter
+
+WalletFilter
+
+VPNFilter
+
+====================================================
+SEARCH FOUNDATION
+====================================================
+
+Prepare reusable searching.
+
+Keyword
+
+Sorting
+
+Filtering
+
+Pagination
+
+Future REST API compatibility.
+
+====================================================
+SECURITY FOUNDATION
+====================================================
+
+Create security helpers.
+
+Secret Masking
+
+Token Masking
+
+Secure Random
+
+Hash Utilities
+
+Input Sanitization
+
+Permission Validation
+
+Sensitive Log Filter
+
+====================================================
+VERSION MANAGEMENT
+====================================================
+
+Prepare version manager.
+
+Support:
+
+Current Version
+
+Compatibility
+
+Migration Version
+
+Build Number
+
+Release Information
+
+====================================================
+FEATURE REGISTRY
+====================================================
+
+Create feature registry.
+
+Register:
+
+Wallet
+
+Purchase
+
+Referral
+
+Free Trial
+
+Broadcast
+
+Analytics
+
+VIP
+
+Mini App
+
+Features should be discoverable.
+
+====================================================
+MODULE REGISTRY
+====================================================
+
+Prepare module registry.
+
+Allow modules to self-register.
+
+Support dependency checking.
+
+====================================================
+BACKGROUND TASK FOUNDATION
+====================================================
+
+Prepare task infrastructure.
+
+tasks/
+
+workers/
+
+Future tasks:
+
+Usage Sync
+
+Server Sync
+
+Backup
+
+Notification Queue
+
+Cleanup
+
+Analytics
+
+====================================================
+METRICS FOUNDATION
+====================================================
+
+Prepare metrics interfaces.
+
+Execution Time
+
+Performance Counter
+
+Memory Usage
+
+Scheduler Metrics
+
+Future Prometheus compatibility.
+
+====================================================
+ARCHITECTURE DOCUMENTATION
+====================================================
+
+Update documentation.
+
+Document:
+
+Plugin Architecture
+
+Provider Pattern
+
+Event Bus
+
+Hook System
+
+Dependency Injection
+
+Base Classes
+
+====================================================
+DO NOT IMPLEMENT
+====================================================
+
+Do NOT implement:
+
+VPN
+
+Wallet
+
+Orders
+
+Packages
+
+Payments
+
+Free Trial
+
+Referral
+
+Servers
+
+Admin UI
+
+Customer UI
+
+Business Logic
+
+Only build reusable architecture.
+
+====================================================
+OUTPUT
+====================================================
+
+Keep full compatibility with every previous phase.
+
+The project foundation should now be enterprise-grade and ready for Phase 0.7.

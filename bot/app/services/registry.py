@@ -35,7 +35,8 @@ Future:    Additional services (WalletService, VPNKeyService, …) added in
 from __future__ import annotations
 
 import logging
-from typing import Any, Type, TypeVar
+import inspect
+from typing import Any, Callable, Type, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,7 @@ class ServiceRegistry:
         """
         self._db = db
         self._instances: dict[type, Any] = {}
+        self._factories: dict[type, Callable[..., Any]] = {}
 
     # ── Registration / lookup ─────────────────────────────────────────────
 
@@ -105,6 +107,42 @@ class ServiceRegistry:
         """Return True when *service_class* has a registered instance."""
         return service_class in self._instances
 
+    def register_factory(
+        self,
+        service_class: type[T],
+        factory: Callable[..., T],
+    ) -> None:
+        """Register a lazy factory for automatic dependency resolution."""
+        self._factories[service_class] = factory
+
+    def resolve(self, service_class: type[T]) -> T:
+        """Resolve a service lazily, injecting registered dependencies.
+
+        A factory takes precedence. For ordinary classes, constructor
+        annotations are inspected and resolved from this registry. The shared
+        database manager is injected for the existing service constructors.
+        """
+        existing = self.get_or_none(service_class)
+        if existing is not None:
+            return existing
+
+        factory = self._factories.get(service_class)
+        if factory is not None:
+            instance = factory()
+        else:
+            signature = inspect.signature(service_class)
+            kwargs: dict[str, Any] = {}
+            for name, parameter in signature.parameters.items():
+                if name == "db":
+                    kwargs[name] = self._db
+                elif parameter.annotation is not inspect.Parameter.empty:
+                    dependency = self.get_or_none(parameter.annotation)
+                    if dependency is not None:
+                        kwargs[name] = dependency
+            instance = service_class(**kwargs)
+        self.register(service_class, instance)
+        return instance
+
     # ── Bulk initialisation ───────────────────────────────────────────────
 
     def initialise_all(self) -> None:
@@ -136,8 +174,7 @@ class ServiceRegistry:
 
         for service_class in services_to_create:
             if not self.is_registered(service_class):
-                instance = service_class(self._db)
-                self.register(service_class, instance)
+                instance = self.resolve(service_class)
                 logger.info("  ✓ %s initialised", service_class.__name__)
 
         # HealthService needs additional dependencies set after bot init.

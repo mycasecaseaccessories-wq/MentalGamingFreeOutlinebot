@@ -17,7 +17,7 @@ from __future__ import annotations
 BOT_NAME: str = "Mental VPN"
 """Display name shown in welcome messages, notifications, and the admin panel."""
 
-BOT_VERSION: str = "0.6.0"
+BOT_VERSION: str = "0.6.1"
 """Semantic version of the current bot release."""
 
 PROJECT_NAME: str = "Mental Outline VPN Platform"
