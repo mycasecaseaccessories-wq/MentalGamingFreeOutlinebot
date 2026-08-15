@@ -99,9 +99,28 @@ async def main() -> None:
     # ── Step 6: Service registry ──────────────────────────────────────────
     logger.info("[6/15] Initialising service registry…")
     from app.services.registry import ServiceRegistry
-    from app.services import SettingsService
+    from app.services import SettingsService, LanguageService
     registry = ServiceRegistry(db)
     registry.initialise_all()
+    # Phase 1 services are intentionally explicit: business features do not
+    # auto-load from the foundation/plugin layer.
+    from app.services.customer_entry_service import CustomerEntryService
+    from app.services.customer_navigation_service import CustomerNavigationService
+    from app.services.customer_key_service import CustomerKeyService
+    from app.services.package_catalog_service import PackageCatalogService
+    from app.services.user_service import UserService
+    from app.services.preference_service import PreferenceService
+    entry_service = CustomerEntryService(db=db)
+    entry_service.configure_dependencies(
+        user_service=registry.get(UserService),
+        preference_service=registry.get(PreferenceService),
+    )
+    navigation_service = CustomerNavigationService(db=db)
+    navigation_service.configure_dependencies(preference_service=registry.get(PreferenceService))
+    registry.register(CustomerEntryService, entry_service)
+    registry.register(CustomerNavigationService, navigation_service)
+    registry.register(CustomerKeyService, CustomerKeyService(db=db))
+    registry.register(PackageCatalogService, PackageCatalogService(db=db))
     # Seed default settings and feature flags (safe on every startup).
     settings_service = registry.get(SettingsService)
     await settings_service.seed_defaults()
@@ -152,6 +171,13 @@ async def main() -> None:
     application.bot_data["cache"]           = cache
     application.bot_data["scheduler"]       = scheduler
     application.bot_data["settings"]        = settings
+    application.bot_data["user_service"]   = registry.get(UserService)
+    application.bot_data["language_service"] = registry.get(LanguageService)
+    application.bot_data["preference_service"] = registry.get(PreferenceService)
+    application.bot_data["customer_entry_service"] = entry_service
+    application.bot_data["customer_navigation_service"] = navigation_service
+    application.bot_data["customer_key_service"] = registry.get(CustomerKeyService)
+    application.bot_data["package_catalog_service"] = registry.get(PackageCatalogService)
 
     # ── Step 10: Register middlewares ─────────────────────────────────────
     logger.info("[10/15] Registering middlewares…")
@@ -174,11 +200,21 @@ async def main() -> None:
 
     # ── Step 11: Register handlers ────────────────────────────────────────
     logger.info("[11/15] Registering handlers…")
-    from app.handlers import register_start, register_admin, register_error
+    from app.handlers import (
+        register_start,
+        register_admin,
+        register_error,
+        register_customer_navigation,
+        register_package_catalog,
+        register_customer_keys,
+    )
 
     register_start(application)
     register_admin(application)
-    logger.info("       Handlers registered: start, admin")
+    register_customer_navigation(application)
+    register_package_catalog(application)
+    register_customer_keys(application)
+    logger.info("       Handlers registered: start, admin, customer navigation, package catalog, keys")
 
     # ── Step 12: Global error handler (must be last) ──────────────────────
     logger.info("[12/15] Registering global error handler…")

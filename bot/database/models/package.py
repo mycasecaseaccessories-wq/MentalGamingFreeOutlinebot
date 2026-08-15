@@ -83,3 +83,13 @@ class PackageORM(BaseModel):
         default=0,
         comment="Display order — ascending, lower = shown first",
     )
+    package_type: Mapped[str] = mapped_column(String(32), nullable=False, default="paid")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
+    visible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    renewable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    priority: Mapped[str] = mapped_column(String(32), nullable=False, default="normal")
+    server_policy: Mapped[str] = mapped_column(String(32), nullable=False, default="auto")
+    server_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    country: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    badge: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    promo_label: Mapped[str | None] = mapped_column(String(128), nullable=True)

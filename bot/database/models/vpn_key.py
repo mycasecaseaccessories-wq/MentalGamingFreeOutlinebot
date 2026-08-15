@@ -79,3 +79,9 @@ class VPNKeyORM(BaseModel):
         nullable=True,
         comment="UTC expiry timestamp — scheduler auto-revokes after this",
     )
+    used_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    device_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    package_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    key_type: Mapped[str] = mapped_column(String(32), nullable=False, default="paid")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="active", index=True)
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

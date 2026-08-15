@@ -1065,22 +1065,32 @@ dependencies = [
     { name = "aiosqlite" },
     { name = "alembic" },
     { name = "apscheduler" },
+    { name = "faker" },
+    { name = "hypothesis" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "python-dotenv" },
+    { name = "python-telegram-bot", extra = ["job-queue"] },
+    { name = "ruff" },
+    { name = "sqlalchemy", extra = ["asyncio"] },
+]
+
+[package.optional-dependencies]
+dev = [
     { name = "black" },
     { name = "faker" },
     { name = "hypothesis" },
     { name = "isort" },
     { name = "mypy" },
     { name = "pre-commit" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-mock" },
-    { name = "python-dotenv" },
-    { name = "python-telegram-bot", extra = ["job-queue"] },
     { name = "ruff" },
-    { name = "sqlalchemy", extra = ["asyncio"] },
 ]
 
 [package.metadata]
@@ -1088,23 +1098,30 @@ requires-dist = [
     { name = "aiosqlite", specifier = "==0.20.0" },
     { name = "alembic", specifier = "==1.14.0" },
     { name = "apscheduler", specifier = "==3.10.4" },
-    { name = "black", specifier = ">=25.0.0" },
+    { name = "black", marker = "extra == 'dev'", specifier = ">=25.0.0" },
     { name = "faker", specifier = ">=37.0.0" },
+    { name = "faker", marker = "extra == 'dev'", specifier = ">=37.0.0" },
     { name = "hypothesis", specifier = ">=6.130.0" },
-    { name = "isort", specifier = ">=5.13.0" },
-    { name = "mypy", specifier = ">=1.14.0" },
-    { name = "pre-commit", specifier = ">=4.0.0" },
+    { name = "hypothesis", marker = "extra == 'dev'", specifier = ">=6.130.0" },
+    { name = "isort", marker = "extra == 'dev'", specifier = ">=5.13.0" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.14.0" },
+    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "pydantic", specifier = "==2.10.3" },
     { name = "pydantic-settings", specifier = "==2.7.0" },
     { name = "pytest", specifier = ">=9.1.1" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.1.1" },
     { name = "pytest-asyncio", specifier = ">=1.4.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=1.4.0" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
-    { name = "pytest-mock", specifier = ">=3.14.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0.0" },
+    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.0" },
     { name = "python-dotenv", specifier = "==1.0.1" },
     { name = "python-telegram-bot", extras = ["job-queue"], specifier = "==21.9" },
     { name = "ruff", specifier = ">=0.9.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9.0" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = "==2.0.36" },
 ]
+provides-extras = ["dev"]
 
 [[package]]
 name = "ruff"

@@ -231,6 +231,15 @@ class UserService(BaseService):
         )
         return _orm_to_domain(row)
 
+    async def change_role(self, telegram_id: int, role: str) -> Optional[User]:
+        """Change a user's role after validating the role value."""
+        valid = {item.value for item in UserRole}
+        if role not in valid:
+            raise ValueError(f"Invalid role {role!r}. Valid: {sorted(valid)}")
+        async with self.db.session() as session:
+            row = await UserRepository(session).update_role(telegram_id, role)
+        return _orm_to_domain(row) if row else None
+
     async def change_status(self, telegram_id: int, status: str) -> Optional[User]:
         """
         Change the lifecycle status of a user account.

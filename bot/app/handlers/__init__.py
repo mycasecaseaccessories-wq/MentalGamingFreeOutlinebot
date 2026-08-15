@@ -21,6 +21,9 @@ from .start import register as register_start
 from .admin import register as register_admin
 from .error import register as register_error
 from .router import get_menu_type, get_welcome_flow, MenuType
+from .customer_navigation import register as register_customer_navigation
+from .package_catalog import register as register_package_catalog
+from .customer_keys import register as register_customer_keys
 
 __all__ = [
     "register_start",
@@ -29,4 +32,7 @@ __all__ = [
     "get_menu_type",
     "get_welcome_flow",
     "MenuType",
+    "register_customer_navigation",
+    "register_package_catalog",
+    "register_customer_keys",
 ]

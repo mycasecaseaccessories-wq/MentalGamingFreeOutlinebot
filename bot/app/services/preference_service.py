@@ -46,6 +46,7 @@ def _orm_to_domain(row: UserPreferenceORM) -> UserPreference:
         theme=row.theme,
         last_menu=row.last_menu,
         preferred_server_country=row.preferred_server_country,
+        language_selected=getattr(row, "language_selected", False),
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
@@ -71,6 +72,7 @@ class PreferenceService(BaseService):
         PreferenceKey.PRIVACY_MODE:             False,
         PreferenceKey.THEME:                    "default",
         PreferenceKey.LAST_MENU:                None,
+        PreferenceKey.LANGUAGE_SELECTED:       False,
         PreferenceKey.PREFERRED_SERVER_COUNTRY: None,
     }
 
@@ -117,6 +119,7 @@ class PreferenceService(BaseService):
             PreferenceKey.NOTIFICATION_ENABLED,
             PreferenceKey.BROADCAST_ENABLED,
             PreferenceKey.PRIVACY_MODE,
+            PreferenceKey.LANGUAGE_SELECTED,
         ):
             # Accept bool or bool-ish strings/ints.
             if isinstance(value, str):

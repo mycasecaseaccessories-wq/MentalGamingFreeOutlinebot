@@ -110,6 +110,12 @@ class UserPreferenceORM(BaseModel):
             "'wallet').  Used to restore navigation state on /start."
         ),
     )
+    language_selected: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="True after the user explicitly confirms a language during onboarding",
+    )
 
     # ── Server preference ─────────────────────────────────────────────────
     preferred_server_country: Mapped[str | None] = mapped_column(

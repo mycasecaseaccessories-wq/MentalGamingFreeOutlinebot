@@ -53,6 +53,7 @@ class PreferenceKey:
     # UI / theme
     THEME:                     str = "theme"
     LAST_MENU:                 str = "last_menu"
+    LANGUAGE_SELECTED:         str = "language_selected"
 
     # Server preference
     PREFERRED_SERVER_COUNTRY:  str = "preferred_server_country"
@@ -67,6 +68,7 @@ class PreferenceKey:
         PRIVACY_MODE,
         THEME,
         LAST_MENU,
+        LANGUAGE_SELECTED,
         PREFERRED_SERVER_COUNTRY,
     })
 
@@ -117,6 +119,7 @@ class UserPreference:
     # UI / theme
     theme:                    str  = "default"
     last_menu:                Optional[str] = None
+    language_selected:       bool = False
 
     # Server preference
     preferred_server_country: Optional[str] = None

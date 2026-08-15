@@ -74,3 +74,13 @@ class VPNKeyRepository(BaseRepository[VPNKeyORM, VPNKeyORM]):
         )
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def list_owned(self, user_id: int) -> List[VPNKeyORM]:
+        stmt = select(VPNKeyORM).where(VPNKeyORM.user_id == user_id).order_by(VPNKeyORM.id.desc())
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_owned(self, key_id: int, user_id: int) -> Optional[VPNKeyORM]:
+        stmt = select(VPNKeyORM).where(VPNKeyORM.id == key_id, VPNKeyORM.user_id == user_id)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()

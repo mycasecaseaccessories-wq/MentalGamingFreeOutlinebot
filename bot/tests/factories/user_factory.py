@@ -11,7 +11,12 @@ from faker import Faker
 from tests.fixtures.users import FakeUser
 
 _faker = Faker()
-_faker_my = Faker("my_MM")
+try:
+    _faker_my = Faker("my_MM")
+except AttributeError:
+    # Faker installations differ in whether the Myanmar locale provider is
+    # bundled.  Tests only need deterministic names, not locale-specific data.
+    _faker_my = _faker
 
 
 class UserFactory:

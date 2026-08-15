@@ -73,6 +73,7 @@ async def auth_middleware_handler(
 
     # Attach to context so handlers don't need to call UserService themselves.
     context.user_data[PLATFORM_USER_KEY] = user
+    context.user_data["is_new_user"] = created
     request = request_ctx.get()
     if request is not None:
         request.current_user = user
