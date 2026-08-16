@@ -238,6 +238,16 @@ class SettingsService(BaseService):
             if type_.strip().lower() in {"int", "float"} and float(raw) < 0:
                 raise ValueError("Mission policy value must be non-negative")
 
+        if key.startswith("promo_"):
+            if type_.strip().lower() in {"int", "float"}:
+                numeric = float(raw)
+                if numeric < 0:
+                    raise ValueError("Promo policy value must be non-negative")
+                if key == "promo_invalid_attempt_limit" and numeric < 1:
+                    raise ValueError("Promo invalid-attempt limit must be positive")
+                if key == "promo_max_discount_percent" and numeric > 100:
+                    raise ValueError("Promo discount percentage cannot exceed 100")
+
         async with self.db.session() as session:
             repo = SettingsRepository(session)
             row = await repo.get(key)

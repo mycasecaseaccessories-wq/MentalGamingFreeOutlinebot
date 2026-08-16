@@ -58,7 +58,7 @@ class ReferralRewardService:
             results.append(await self._create_and_grant(referral_id, beneficiary, user_id, reward_type, value, cycle, policy, source_type="referral", source_reference=str(referral_id)))
         return Success({"created": len(results), "rewards": results, "qualified_count": qualified_count, "cycle": cycle})
 
-    async def grant_reward(self, *, user_id: int, reward_type: str, reward_value: Decimal, source_reference: str, period_key: str, policy_revision: int = 1, reward_expiry_seconds: int = 0, delivery_mode: str = "auto_grant", apply_limits: bool = False):
+    async def grant_reward(self, *, user_id: int, reward_type: str, reward_value: Decimal, source_reference: str, period_key: str, policy_revision: int = 1, reward_expiry_seconds: int = 0, delivery_mode: str = "auto_grant", apply_limits: bool = False, source_type: str = "mission"):
         """Grant a non-referral reward through the same Phase 6.2 ledger/fulfillment path."""
         if delivery_mode not in {"auto_grant", "manual_claim"}:
             raise ValueError("unsupported_delivery_mode")
@@ -82,7 +82,7 @@ class ReferralRewardService:
             "expiry_seconds": max(0, int(reward_expiry_seconds)),
             "wallet_currency": str(await self.settings.get("currency", "MMK")).upper()[:3],
         }
-        return await self._create_and_grant(None, beneficiary, user_id, reward_type, Decimal(str(reward_value)), 1, policy, source_type="mission", source_reference=source_reference, apply_limits=apply_limits, explicit_key=f"mission:{source_reference}:{user_id}:{period_key}")
+        return await self._create_and_grant(None, beneficiary, user_id, reward_type, Decimal(str(reward_value)), 1, policy, source_type=source_type, source_reference=source_reference, apply_limits=apply_limits, explicit_key=f"{source_type}:{source_reference}:{user_id}:{period_key}")
 
     async def _policy_snapshot(self):
         return {

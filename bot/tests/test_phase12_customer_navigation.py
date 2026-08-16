@@ -70,6 +70,7 @@ def test_all_required_customer_destinations_exist() -> None:
         CustomerMenuItem.SUPPORT,
         CustomerMenuItem.REFER_FRIENDS,
         CustomerMenuItem.MISSIONS,
+        CustomerMenuItem.PROMO_CODE,
     }
 
 
@@ -79,11 +80,12 @@ def test_customer_keyboard_has_expected_layout() -> None:
 
     markup = build_customer_main_menu("en")
 
-    assert len(markup.keyboard) == 5
+    assert len(markup.keyboard) == 6
     assert [[button.text for button in row] for row in markup.keyboard] == [
         ["🛒 Buy VPN", "🎁 Free Trial"],
         ["🔑 My Keys", "💰 Wallet"],
         ["👤 Profile", "🎫 Support"],
         ["👥 Refer Friends"],
         ["🎯 Missions"],
+        ["🎟 Promo Code"],
     ]

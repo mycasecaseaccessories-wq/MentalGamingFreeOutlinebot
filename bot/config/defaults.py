@@ -116,6 +116,10 @@ class SettingKeys:
     MISSION_REWARD_COOLDOWN_SECONDS: str = "mission_reward_cooldown_seconds"
     MISSION_MENU_RATE_LIMIT_SECONDS: str = "mission_menu_rate_limit_seconds"
     MISSION_CLAIM_RATE_LIMIT_SECONDS: str = "mission_claim_rate_limit_seconds"
+    PROMO_ENTRY_RATE_LIMIT_SECONDS: str = "promo_entry_rate_limit_seconds"
+    PROMO_INVALID_ATTEMPT_LIMIT: str = "promo_invalid_attempt_limit"
+    PROMO_INVALID_COOLDOWN_SECONDS: str = "promo_invalid_cooldown_seconds"
+    PROMO_MAX_DISCOUNT_PERCENT: str = "promo_max_discount_percent"
 
     # Notifications
     EXPIRY_REMINDER_DAYS: str = "notifications_expiry_reminder_days"
@@ -289,6 +293,10 @@ DEFAULT_SETTINGS: list[dict] = [
     {"key": SettingKeys.MISSION_REWARD_COOLDOWN_SECONDS, "value": 0, "type": "int", "category": SettingCategory.GROWTH, "description": "Cooldown between mission rewards per beneficiary; zero disables cooldown.", "is_public": False},
     {"key": SettingKeys.MISSION_MENU_RATE_LIMIT_SECONDS, "value": 3, "type": "int", "category": SettingCategory.SECURITY, "description": "Minimum seconds between customer mission menu refreshes.", "is_public": False},
     {"key": SettingKeys.MISSION_CLAIM_RATE_LIMIT_SECONDS, "value": 2, "type": "int", "category": SettingCategory.SECURITY, "description": "Minimum seconds between manual mission reward claim attempts.", "is_public": False},
+    {"key": SettingKeys.PROMO_ENTRY_RATE_LIMIT_SECONDS, "value": 3, "type": "int", "category": SettingCategory.SECURITY, "description": "Minimum seconds between customer promo-code submissions.", "is_public": False},
+    {"key": SettingKeys.PROMO_INVALID_ATTEMPT_LIMIT, "value": 5, "type": "int", "category": SettingCategory.SECURITY, "description": "Invalid promo attempts before temporary promo-entry cooldown.", "is_public": False},
+    {"key": SettingKeys.PROMO_INVALID_COOLDOWN_SECONDS, "value": 300, "type": "int", "category": SettingCategory.SECURITY, "description": "Temporary cooldown after repeated invalid promo attempts.", "is_public": False},
+    {"key": SettingKeys.PROMO_MAX_DISCOUNT_PERCENT, "value": 100, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum percentage discount allowed for a promo campaign.", "is_public": False},
     {"key": SettingKeys.REFERRAL_REWARD_LIFETIME_LIMIT, "value": 0, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum lifetime referral rewards per beneficiary; zero means unlimited.", "is_public": False},
     {"key": SettingKeys.REFERRAL_REWARD_COOLDOWN_SECONDS, "value": 3600, "type": "int", "category": SettingCategory.GROWTH, "description": "Minimum time between rewards for one beneficiary.", "is_public": False},
     {"key": SettingKeys.REFERRAL_REWARD_EXPIRY_SECONDS, "value": 2592000, "type": "int", "category": SettingCategory.GROWTH, "description": "Expiry for time-limited referral entitlements.", "is_public": False},

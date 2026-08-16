@@ -146,6 +146,7 @@ def _label_map() -> dict[str, CustomerMenuItem]:
         CustomerMenuItem.PROFILE: "menu.profile",
         CustomerMenuItem.SUPPORT: "menu.support",
         CustomerMenuItem.MISSIONS: "menu.missions",
+        CustomerMenuItem.PROMO_CODE: "menu.promo_code",
     }
     for language in ("en", "my"):
         for item, key in key_map.items():
@@ -184,6 +185,10 @@ async def customer_menu_message(
     if item == CustomerMenuItem.MISSIONS:
         from app.handlers.customer_missions import show_missions
         await show_missions(update, context)
+        return
+    if item == CustomerMenuItem.PROMO_CODE:
+        from app.handlers.customer_promo import show_promo_entry
+        await show_promo_entry(update, context)
         return
 
     lang = _language(user)
@@ -235,6 +240,8 @@ def register(application: Application) -> None:
     register_referral(application)
     from app.handlers.customer_missions import register as register_missions
     register_missions(application)
+    from app.handlers.customer_promo import register as register_promo
+    register_promo(application)
     application.add_handler(
         MessageHandler(
             filters.TEXT & ~filters.COMMAND & filters.Regex(_LABEL_PATTERN),

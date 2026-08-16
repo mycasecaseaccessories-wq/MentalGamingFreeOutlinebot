@@ -68,6 +68,12 @@ _DESTINATIONS: dict[CustomerMenuItem, NavigationDestination] = {
         "missions.body",
         implemented=True,
     ),
+    CustomerMenuItem.PROMO_CODE: NavigationDestination(
+        CustomerMenuItem.PROMO_CODE,
+        "promo.title",
+        "promo.body",
+        implemented=True,
+    ),
 }
 
 
@@ -144,5 +150,6 @@ class CustomerNavigationService(BaseService):
                 CustomerMenuItem.SUPPORT,
                 CustomerMenuItem.REFER_FRIENDS,
                 CustomerMenuItem.MISSIONS,
+                CustomerMenuItem.PROMO_CODE,
             }
         )

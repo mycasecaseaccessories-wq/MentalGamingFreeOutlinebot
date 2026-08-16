@@ -209,6 +209,8 @@ class ServiceRegistry:
         from app.services.mission_condition_service import MissionConditionService
         from app.services.mission_service import MissionService
         from app.services.mission_progress_service import MissionProgressService
+        from app.services.promo_service import PromoService
+        from app.services.promo_redemption_service import PromoRedemptionService
 
         services_to_create = [
             SettingsService,
@@ -237,6 +239,11 @@ class ServiceRegistry:
         if not self.is_registered(ReferralQualificationService):
             self.register(ReferralQualificationService, ReferralQualificationService(db=self._db, settings_service=self.get(SettingsService), membership_service=self.get(MembershipVerificationService), reward_service=self.get(ReferralRewardService), abuse_service=self.get(ReferralAbuseService)))
             logger.info("  ✓ ReferralQualificationService initialised")
+        if not self.is_registered(PromoService):
+            self.register(PromoService, PromoService(db=self._db, settings_service=self.get(SettingsService)))
+        if not self.is_registered(PromoRedemptionService):
+            self.register(PromoRedemptionService, PromoRedemptionService(db=self._db, promo_service=self.get(PromoService), reward_service=self.get(ReferralRewardService)))
+            logger.info("  ✓ Phase 6.4 promo services initialised")
         if not self.is_registered(MissionConditionService):
             self.register(MissionConditionService, MissionConditionService())
         if not self.is_registered(MissionService):

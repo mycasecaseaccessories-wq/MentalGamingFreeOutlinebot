@@ -306,3 +306,15 @@
 - [x] Add Phase 6.3 migrations, focused tests, full regression validation, and Phase 6.4 handoff documentation.
 
 - [x] Fix Phase 6.3 regression expectations for the added Missions navigation item and migration head 0030 while preserving prior phase assertions.
+
+## Phase 6.4 — Promo Codes & Bonus Entitlements
+
+- [x] Inspect the complete Phase 6.4 specification and existing reward, entitlement, wallet, order/payment, mission, settings, permission, audit, rate-limit, task, event, admin, customer, localization, migration, and test contracts.
+- [x] Add normalized promo definitions, typed status/type, eligibility policy, reward/discount configuration, usage limits, availability windows, policy revisions, and immutable snapshots.
+- [x] Add redemption reservation and completion state machine with server-side validation, idempotency, concurrency-safe global/per-user limits, retries, expiry, and recovery.
+- [x] Reuse Phase 6.2/6.3 reward and entitlement foundations for Extra Trial, Wallet Credit, Bonus Data, Bonus Duration, and supported mission/entitlement rewards.
+- [x] Add secure order discount calculation/application boundaries for percentage/fixed discounts without making preview equal to paid or bypassing payment validation.
+- [x] Add authorized admin campaign management, customer promo input/preview/redeem/history UX, audit, rate limits, safe errors, and full EN/MY localization.
+- [x] Add Phase 6.4 migration, focused tests, full regression validation, and Phase 6.5 handoff documentation.
+
+- [x] Update legacy navigation and migration-head regression assertions to the Phase 6.4 Promo Code destination and migration 0031 while preserving prior behavior.

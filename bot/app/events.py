@@ -25,6 +25,7 @@ class EventType(str,Enum):
     KEY_ISSUED='key.issued'; KEY_REVOKED='key.revoked'; KEY_EXPIRED='key.expired'; VPN_GENERATED='vpn.generated'; VPN_AUTOMATION_READY='vpn.automation_ready'; WALLET_UPDATED='wallet.updated'; WALLET_DEBITED='wallet.debited'; WALLET_PAYMENT_COMPLETED='wallet.payment_completed'; ORDER_PAID='order.paid'; MANUAL_PAYMENT_SUBMITTED='manual_payment.submitted'; MANUAL_PAYMENT_APPROVED='manual_payment.approved'; MANUAL_PAYMENT_REJECTED='manual_payment.rejected'; PAYMENT_REVIEW_COMPLETED='payment_review.completed'; NOTIFICATION_SENT='notification.sent'
     FREE_TRIAL_ACTIVATED='free_trial.activated'
     MISSION_ACTIVATED='mission.activated'; MISSION_PROGRESS_UPDATED='mission.progress_updated'; MISSION_COMPLETED='mission.completed'; MISSION_REWARD_PENDING='mission.reward_pending'; MISSION_REWARD_GRANTED='mission.reward_granted'; MISSION_REWARD_FAILED='mission.reward_failed'; MISSION_EXPIRED='mission.expired'; MISSION_DAILY_CHECK_IN='mission.daily_check_in'
+    PROMO_CREATED='promo.created'; PROMO_ACTIVATED='promo.activated'; PROMO_REDEMPTION_RESERVED='promo.redemption_reserved'; PROMO_REDEEMED='promo.redeemed'; PROMO_REDEMPTION_FAILED='promo.redemption_failed'; PROMO_EXPIRED='promo.expired'; PROMO_LIMIT_REACHED='promo.limit_reached'
 class EventBus:
     def __init__(self): self._subscribers={}
     def on(self,event_type,*,priority=0):
