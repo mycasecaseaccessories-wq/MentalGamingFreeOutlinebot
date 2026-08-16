@@ -39,6 +39,10 @@ Customers receive a localized **Refer Friends** menu entry with their personal l
 
 English and Myanmar dictionaries contain referral menu labels, link instructions, status labels, invalid-link and self-referral outcomes, admin controls, and safe generic errors.
 
+## Localization audit
+
+The Referral Core localization audit now covers every `referral.*` and `admin.referrals.*` key in both English and Myanmar. There are no missing keys, no call-site keys missing from either language, and no placeholder mismatches. Myanmar wording was refined for the invalid-link onboarding fallback, already-registered account message, joined status, invalidation result, and admin source/status labels. Admin statistics and recent-referral listings use localized labels rather than raw internal status or source values. The bilingual localization tests also verify required customer/admin keys, placeholder preservation, and dynamic `{token}`, `{link}`, `{total}`, `{pending}`, `{qualified}`, and `{referral}` interpolation.
+
 ## Phase 6.2 handoff
 
 `ReferralQualificationService.evaluate()` is deliberately a reward-free extension point returning `pending_qualification`. Phase 6.2 may add qualification rules, but must preserve the Phase 6.1 attribution row, idempotency, privacy, and no-reward-before-qualification boundaries.

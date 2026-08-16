@@ -59,9 +59,14 @@ async def admin_referral_callback(update: Update, context: ContextTypes.DEFAULT_
             await query.answer(t("referral.generic_error", language=language), show_alert=True)
             return
         stats = result.unwrap()
+        enabled_label = t("admin.referrals.enabled" if bool(await settings.get("referral_enabled", True)) else "admin.referrals.disabled", language=language)
         text = (f"{t('admin.referrals.menu', language=language)}\n\n"
-                f"{t('admin.referrals.enabled', language=language)}\n"
-                f"Total: {stats['total']}\nPending: {stats['pending']}\nQualified: {stats['qualified']}\nRewarded: {stats['rewarded']}\nInvalid: {stats['invalid']}")
+                f"{enabled_label}\n"
+                f"{t('admin.referrals.total', language=language)}: {stats['total']}\n"
+                f"{t('admin.referrals.pending', language=language)}: {stats['pending']}\n"
+                f"{t('admin.referrals.qualified', language=language)}: {stats['qualified']}\n"
+                f"{t('admin.referrals.rewarded', language=language)}: {stats['rewarded']}\n"
+                f"{t('admin.referrals.invalid', language=language)}: {stats['invalid']}")
         await query.edit_message_text(text, reply_markup=_menu(language, bool(await settings.get("referral_enabled", True))))
         return
     if parts == ["admin", "ref", "recent"]:
@@ -71,7 +76,21 @@ async def admin_referral_callback(update: Update, context: ContextTypes.DEFAULT_
             return
         items = result.unwrap()
         text = t("admin.referrals.recent", language=language) + "\n\n"
-        text += "\n".join(f"{item['public_referral_id']} — {item['status']} — {item['source']}" for item in items) or t("referral.no_referrals", language=language)
+        status_keys = {
+            "pending_qualification": "referral.pending",
+            "qualified": "referral.qualified",
+            "rewarded": "referral.rewarded",
+            "invalid": "referral.invalid",
+        }
+        source_keys = {
+            "personal_link": "admin.referrals.source_personal_link",
+            "start_payload": "admin.referrals.source_start_payload",
+        }
+        text += "\n".join(
+            f"{item['public_referral_id']} — {t(status_keys.get(item['status'], 'referral.pending'), language=language)} — "
+            f"{t(source_keys.get(item['source'], 'admin.referrals.source'), language=language)}"
+            for item in items
+        ) or t("referral.no_referrals", language=language)
         await query.edit_message_text(text, reply_markup=_menu(language, bool(await settings.get("referral_enabled", True))))
         return
     if len(parts) == 5 and parts[:3] == ["admin", "ref", "invalidate"]:

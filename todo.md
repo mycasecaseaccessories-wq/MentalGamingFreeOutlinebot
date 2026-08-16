@@ -262,3 +262,10 @@
 - [x] Add authorized admin referral settings, statistics, listing, details, and invalidation foundation.
 - [x] Add EN/MY localization and Phase 6.1 boundary/privacy/security tests.
 - [x] Run full Phase 0–6.1 validation, document Phase 6.2 handoff, and push only validated Phase 6.1 code.
+
+## Referral Core Localization Audit — EN/MY
+
+- [x] Inventory every Referral Core translation key and customer/admin call site.
+- [x] Audit EN/MY terminology, grammar, placeholders, privacy wording, fallback behavior, and Telegram UI length.
+- [x] Fix localization gaps or unnatural wording and add bilingual completeness/behavior tests.
+- [x] Run localization-focused and full regression validation and document the audit result.
