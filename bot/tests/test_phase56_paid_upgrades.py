@@ -17,6 +17,7 @@ from app.services.free_trial_upgrade_service import (
 )
 from database.connection import DatabaseManager
 from database.models.free_trial_claim import FreeTrialClaimORM
+from database.models.free_trial_rate_limit import FreeTrialRateLimitORM
 from database.models.free_trial_upgrade import FreeTrialRestrictionORM, FreeTrialUpgradeOfferORM, FreeTrialUpgradeORM
 from database.models.order import OrderORM
 from database.models.package import PackageORM
@@ -136,6 +137,28 @@ async def test_duration_upgrade_and_paid_conversion_preserve_origin(tmp_path):
         assert key.package_id == target_package_id
         assert claim.source == "daily_free"
         assert key.activated_at is not None
+    await db.close()
+
+
+@pytest.mark.asyncio
+async def test_durable_abuse_limit_survives_service_restart_and_uses_policy_window(tmp_path):
+    db, user_id, *_ = await _seed(tmp_path)
+
+    class Settings:
+        async def get(self, key, default=None):
+            return 60 if key == "free_trial_abuse_rate_limit_seconds" else default
+
+    first = FreeTrialAbuseProtectionService(db, settings_service=Settings(), max_events=2)
+    assert (await first.evaluate_claim(user_id=user_id)).is_success
+    assert (await first.evaluate_claim(user_id=user_id)).is_success
+    assert (await first.evaluate_claim(user_id=user_id)).is_failure
+
+    second = FreeTrialAbuseProtectionService(db, settings_service=Settings(), max_events=2)
+    persisted = await second.evaluate_claim(user_id=user_id)
+    assert persisted.is_failure and persisted.error.code == "too_many_requests"
+    async with db.session() as session:
+        row = (await session.execute(select(FreeTrialRateLimitORM).where(FreeTrialRateLimitORM.user_id == user_id, FreeTrialRateLimitORM.action == "claim"))).scalar_one()
+        assert row.event_count == 2
     await db.close()
 
 

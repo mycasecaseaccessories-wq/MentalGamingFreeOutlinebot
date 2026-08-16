@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from collections import defaultdict, deque
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from app.core.result import Failure, Success
 from app.events import EventType, bus
+from database.models.free_trial_rate_limit import FreeTrialRateLimitORM
 from database.models.free_trial_upgrade import FreeTrialRestrictionORM
 from database.models.user import UserORM
 
@@ -19,7 +20,6 @@ class FreeTrialAbuseProtectionService:
         self.settings = settings_service
         self.window_seconds = max(1, int(window_seconds))
         self.max_events = max(1, int(max_events))
-        self._events: dict[tuple[int, str], deque[float]] = defaultdict(deque)
 
     async def evaluate_claim(self, *, user_id: int):
         return await self._evaluate(user_id=user_id, action="claim")
@@ -40,15 +40,57 @@ class FreeTrialAbuseProtectionService:
         if self.settings is not None:
             configured_window = await self.settings.get("free_trial_abuse_rate_limit_seconds", configured_window)
         window_seconds = max(1, int(configured_window))
-        now = datetime.now(timezone.utc).timestamp()
-        bucket = self._events[(user_id, action)]
-        while bucket and now - bucket[0] > window_seconds:
-            bucket.popleft()
-        if len(bucket) >= self.max_events:
+        allowed = await self._consume_velocity(
+            user_id=user_id,
+            action=action,
+            window_seconds=window_seconds,
+        )
+        if not allowed:
             return Failure("too_many_requests", "Please try again later.")
-        bucket.append(now)
         await bus.emit(EventType.FREE_TRIAL_RISK_EVALUATED, user_id=user_id, action=action, result="allow")
         return Success({"decision": "allow"})
+
+    async def _consume_velocity(self, *, user_id: int, action: str, window_seconds: int) -> bool:
+        """Atomically consume one durable action slot across all workers."""
+        now = datetime.now(timezone.utc)
+        for attempt in range(2):
+            try:
+                async with self.db.session() as session:
+                    row = (await session.execute(
+                        select(FreeTrialRateLimitORM)
+                        .where(
+                            FreeTrialRateLimitORM.user_id == user_id,
+                            FreeTrialRateLimitORM.action == action,
+                        )
+                        .with_for_update()
+                    )).scalar_one_or_none()
+                    if row is None:
+                        session.add(FreeTrialRateLimitORM(
+                            user_id=user_id,
+                            action=action,
+                            window_started_at=now,
+                            event_count=1,
+                        ))
+                        return True
+                    window_started_at = row.window_started_at
+                    if window_started_at.tzinfo is None:
+                        window_started_at = window_started_at.replace(tzinfo=timezone.utc)
+                    elapsed = (now - window_started_at).total_seconds()
+                    if elapsed >= window_seconds:
+                        row.window_started_at = now
+                        row.event_count = 1
+                        return True
+                    if row.event_count >= self.max_events:
+                        return False
+                    row.event_count += 1
+                    return True
+            except IntegrityError:
+                if attempt == 1:
+                    raise
+                # Two workers may race to create the unique first row. The
+                # second attempt observes the committed row under a lock.
+                continue
+        return False
 
     async def block_user(self, *, actor_user_id: int, user_id: int, reason: str):
         return await self._set_restriction(actor_user_id=actor_user_id, user_id=user_id, blocked=True, reason=reason)

@@ -94,7 +94,7 @@ async def test_migration_alembic_version_at_head(tmp_path):
         revision = result.scalar()
 
     await db.close()
-    assert revision == "0026_phase56_paid_trial_upgrade", f"Expected integrated HEAD 0026_phase56_paid_trial_upgrade, got {revision!r}"
+    assert revision == "0027_phase56_integrity_and_rate_limits", f"Expected integrated HEAD 0027_phase56_integrity_and_rate_limits, got {revision!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -207,7 +207,7 @@ async def test_migration_phase02_database_gets_category_column(tmp_path):
         "category column not added to Phase 0.2 database by migration 0002"
     )
     assert legacy_value == "legacy_value", "Existing data was lost during migration"
-    assert revision == "0026_phase56_paid_trial_upgrade", f"Expected integrated HEAD 0026_phase56_paid_trial_upgrade, got {revision!r}"
+    assert revision == "0027_phase56_integrity_and_rate_limits", f"Expected integrated HEAD 0027_phase56_integrity_and_rate_limits, got {revision!r}"
 
 
 # ---------------------------------------------------------------------------

@@ -24,7 +24,7 @@ The canonical policy keys are seeded in `config/defaults.py`: enablement, data p
 
 ## Abuse, monitoring, and recovery
 
-`FreeTrialAbuseProtectionService` provides account-state checks, trial-specific blocks/unblocks, and low-data action rate limiting without invasive fingerprinting. `FreeTrialAnalyticsService` exposes read-only admin totals for claims, reservations, active trials, upgrade states, revenue, conversions, and blocked users. `recover_pending_fulfillment` retries paid-but-unfulfilled upgrades idempotently; provider failure leaves payment successful and fulfillment pending for retry.
+`FreeTrialAbuseProtectionService` provides account-state checks, trial-specific blocks/unblocks, and low-data action rate limiting without invasive fingerprinting. Velocity counters are persisted in `free_trial_rate_limits` with a unique `(user_id, action)` key and row-locked updates, so separate workers share one enforcement boundary. The configured window is read from `SettingsService`. `FreeTrialAnalyticsService` exposes read-only admin totals for claims, reservations, active trials, upgrade states, revenue, conversions, and blocked users. `recover_pending_fulfillment` retries paid-but-unfulfilled upgrades idempotently; provider failure leaves payment successful and fulfillment pending for retry.
 
 ## Localization and UX boundaries
 
@@ -32,8 +32,8 @@ EN and MY include explicit messages for server preparation, ready state, payment
 
 ## Security invariants
 
-Customer-supplied values cannot override offer price, currency, bytes, duration, devices, server quota, payment status, or fulfillment. All upgrade lookups are ownership checked. Restriction changes require an active admin. Public identifiers and idempotency keys are used in the order boundary; secrets and access URLs are not included in upgrade events.
+Customer-supplied values cannot override offer price, currency, bytes, duration, devices, server quota, payment status, or fulfillment. All upgrade lookups are ownership checked. Restriction changes require an active admin. Migration `0027_phase56_integrity_and_rate_limits` enforces foreign keys for users, keys, claims, offers, packages, orders, and rate-limit rows. Public identifiers and idempotency keys are used in the order boundary; secrets and access URLs are not included in upgrade events.
 
 ## Validation
 
-The Phase 5.6 focused suite covers idempotent order creation, payment gating, additive data application, used-byte preservation, duration extension, paid conversion provenance, and trial-specific abuse restrictions. The complete repository regression suite passes with the Phase 5.6 migration head `0026_phase56_paid_trial_upgrade`.
+The Phase 5.6 focused suite covers idempotent order creation, payment gating, additive data application, used-byte preservation, duration extension, paid conversion provenance, trial-specific abuse restrictions, and durable rate-limit behavior. The complete repository regression suite passes with the hardened migration head `0027_phase56_integrity_and_rate_limits`.

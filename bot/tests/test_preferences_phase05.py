@@ -428,4 +428,4 @@ async def test_migration_head_is_current(tmp_path):
         )
         revision = result.scalar()
     await db.close()
-    assert revision == "0026_phase56_paid_trial_upgrade", f"Expected integrated HEAD 0026_phase56_paid_trial_upgrade, got {revision!r}"
+    assert revision == "0027_phase56_integrity_and_rate_limits", f"Expected integrated HEAD 0027_phase56_integrity_and_rate_limits, got {revision!r}"

@@ -231,8 +231,14 @@
 
 ## Audit — Commit 51e1a9e
 
-- [ ] Audit commit metadata and complete diff against parent commit.
-- [ ] Review Phase 5.6 services, models, migration, registry, localization, security, and transaction boundaries.
-- [ ] Run targeted tests, full regression checks, and static validation against commit 51e1a9e.
-- [ ] Apply and validate any necessary audit fixes, then update GitHub if required.
-- [ ] Deliver the commit audit findings and final repository status.
+- [x] Audit commit metadata and complete diff against parent commit.
+- [x] Review Phase 5.6 services, models, migration, registry, localization, security, and transaction boundaries.
+- [x] Run targeted tests, full regression checks, and static validation against commit 51e1a9e.
+- [x] Apply and validate any necessary audit fixes, then update GitHub if required.
+- [x] Deliver the commit audit findings and final repository status.
+
+## Residual Risk Remediation
+
+- [x] Replace process-local abuse velocity tracking with a durable database-backed atomic rate-limit boundary that works across workers.
+- [x] Add migration-safe foreign-key constraints for Phase 5.6 relationship columns and align ORM metadata.
+- [x] Add focused tests, run the complete regression suite, and push the hardened fixes to GitHub main.
