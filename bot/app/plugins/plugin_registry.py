@@ -22,11 +22,15 @@ class PluginRegistry:
             raise ValueError(f"Plugin {name!r} has missing dependencies: {missing}")
         self._plugins[name] = plugin
 
-    def get(self, name: str) -> BasePlugin:
-        return self._plugins[name]
+    def get(self, name: str) -> BasePlugin | None:
+        return self._plugins.get(name)
 
     def get_or_none(self, name: str) -> BasePlugin | None:
         return self._plugins.get(name)
+
+    @property
+    def count(self) -> int:
+        return len(self._plugins)
 
     def list(self) -> list[BasePlugin]:
         return [self._plugins[name] for name in sorted(self._plugins)]

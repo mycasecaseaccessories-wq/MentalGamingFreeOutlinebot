@@ -1,0 +1,339 @@
+# Phase 0.4 — Role System, Authentication & Multi-Language Framework
+
+Continue from Phase 0.3.
+
+Do NOT rewrite any existing code.
+
+Only extend the current architecture.
+
+====================================================
+GOAL
+====================================================
+
+Build the authentication, role management and multilingual framework.
+
+Do NOT implement customer or admin features yet.
+
+Only prepare the architecture.
+
+====================================================
+USER AUTHENTICATION
+====================================================
+
+Prepare user authentication architecture.
+
+Every Telegram user should have a profile.
+
+Store:
+
+Telegram ID
+
+Username
+
+First Name
+
+Last Name
+
+Language
+
+Role
+
+Status
+
+Created At
+
+Last Active
+
+Future fields should be easy to add.
+
+====================================================
+ROLE SYSTEM
+====================================================
+
+Prepare role architecture.
+
+Supported roles:
+
+Admin
+
+Customer
+
+Future:
+
+Reseller
+
+Affiliate
+
+Moderator
+
+VIP
+
+Roles should be database driven.
+
+Never hardcode permissions.
+
+====================================================
+PERMISSION SYSTEM
+====================================================
+
+Prepare permission framework.
+
+Example:
+
+Manage Users
+
+Manage Packages
+
+Manage Servers
+
+Manage Wallet
+
+Manage Orders
+
+Manage Settings
+
+View Analytics
+
+Broadcast
+
+Future permissions should be easy to add.
+
+Do not implement permission logic yet.
+
+====================================================
+USER STATUS
+====================================================
+
+Prepare status system.
+
+Supported:
+
+Active
+
+Inactive
+
+Suspended
+
+Banned
+
+Pending
+
+====================================================
+LANGUAGE SYSTEM
+====================================================
+
+Prepare multilingual architecture.
+
+Supported languages:
+
+Myanmar
+
+English
+
+The language system must be modular.
+
+Do not hardcode messages.
+
+====================================================
+LOCALE STRUCTURE
+====================================================
+
+Prepare locale folders.
+
+Example:
+
+locales/
+
+my/
+
+en/
+
+Prepare translation loader.
+
+====================================================
+LANGUAGE SERVICE
+====================================================
+
+Create LanguageService.
+
+Functions:
+
+load_language()
+
+translate()
+
+set_language()
+
+get_language()
+
+reload()
+
+====================================================
+FIRST START
+====================================================
+
+Prepare first-start flow.
+
+When a user starts the bot for the first time:
+
+Register the user.
+
+If language is not selected:
+
+Show language selection.
+
+Example:
+
+🇲🇲 မြန်မာ
+
+🇺🇸 English
+
+Save selected language.
+
+Never ask again unless changed.
+
+====================================================
+PROFILE SERVICE
+====================================================
+
+Prepare UserService.
+
+Functions:
+
+register_user()
+
+update_profile()
+
+get_profile()
+
+update_last_active()
+
+change_language()
+
+change_status()
+
+====================================================
+MIDDLEWARE
+====================================================
+
+Prepare middleware.
+
+Authentication Middleware
+
+Role Middleware
+
+Language Middleware
+
+Activity Middleware
+
+Do not implement business logic.
+
+====================================================
+DECORATORS / HELPERS
+====================================================
+
+Prepare helper functions.
+
+Examples:
+
+admin_required()
+
+customer_required()
+
+role_required()
+
+language_required()
+
+====================================================
+ROLE-BASED UI
+====================================================
+
+Prepare UI routing.
+
+Example:
+
+If Admin
+
+→ Admin Menu
+
+If Customer
+
+→ Customer Menu
+
+Future:
+
+Reseller Menu
+
+Affiliate Menu
+
+Do not create menus yet.
+
+Only create routing architecture.
+
+====================================================
+FUTURE COMPATIBILITY
+====================================================
+
+Architecture must support:
+
+Multiple Roles
+
+Multiple Languages
+
+Multiple Menus
+
+Dynamic Permissions
+
+====================================================
+CODE STYLE
+====================================================
+
+Use:
+
+PEP8
+
+Type Hints
+
+Async
+
+Clean Architecture
+
+Service Layer
+
+====================================================
+DO NOT IMPLEMENT
+====================================================
+
+Do NOT implement:
+
+Customer UI
+
+Admin Panel
+
+VPN
+
+Packages
+
+Wallet
+
+Orders
+
+Servers
+
+Free Trial
+
+Referral
+
+Payments
+
+Only prepare authentication, roles and language architecture.
+
+====================================================
+OUTPUT
+====================================================
+
+Extend the existing project.
+
+Keep compatibility with previous phases.
+
+The project must be ready for Phase 0.5.

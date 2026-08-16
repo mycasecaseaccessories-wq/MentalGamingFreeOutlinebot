@@ -1,0 +1,270 @@
+# Phase 0.1 — Project Foundation & Architecture
+
+You are a senior Python software engineer and software architect.
+
+Your task is to build the foundation for a production-ready Telegram Outline VPN Platform.
+
+IMPORTANT:
+This is NOT a simple Telegram bot.
+This is a scalable commercial VPN platform.
+
+Do NOT implement business features yet.
+Only create the project foundation and architecture.
+
+----------------------------------------------------
+PROJECT INFORMATION
+----------------------------------------------------
+
+Project Name:
+Mental Outline VPN Platform
+
+Version:
+v1.0
+
+Language:
+Python 3.12+
+
+Framework:
+python-telegram-bot v21+
+
+Hosting:
+Replit
+
+VPN:
+Outline VPN
+
+Database:
+SQLite (development)
+Future compatible with PostgreSQL
+
+Architecture:
+Modular
+
+----------------------------------------------------
+GOALS
+----------------------------------------------------
+
+Create a clean, scalable and maintainable architecture.
+
+Future modules must be easy to add without rewriting existing code.
+
+Follow SOLID principles.
+
+Use async programming.
+
+----------------------------------------------------
+PROJECT STRUCTURE
+----------------------------------------------------
+
+Create a clean folder structure.
+
+Example:
+
+app/
+    handlers/
+    services/
+    repositories/
+    models/
+    keyboards/
+    middlewares/
+    utils/
+    scheduler/
+
+config/
+database/
+locales/
+logs/
+
+main.py
+
+requirements.txt
+
+README.md
+
+.env.example
+
+----------------------------------------------------
+CONFIGURATION
+----------------------------------------------------
+
+Create a centralized configuration system.
+
+Read values from environment variables.
+
+Never hardcode secrets.
+
+Support:
+
+BOT_TOKEN
+
+ADMIN_IDS
+
+DATABASE_URL
+
+DEFAULT_LANGUAGE
+
+LOG_LEVEL
+
+----------------------------------------------------
+LOGGING
+----------------------------------------------------
+
+Create centralized logging.
+
+Save logs to:
+
+logs/
+
+Support:
+
+INFO
+
+WARNING
+
+ERROR
+
+DEBUG
+
+----------------------------------------------------
+ERROR HANDLING
+----------------------------------------------------
+
+Create a global error handler.
+
+Unexpected errors should never crash the bot.
+
+Log every exception.
+
+----------------------------------------------------
+DATABASE
+----------------------------------------------------
+
+Prepare database initialization.
+
+Do NOT create business tables yet.
+
+Only create database connection architecture.
+
+Repository pattern should be supported.
+
+----------------------------------------------------
+MULTI LANGUAGE
+----------------------------------------------------
+
+Prepare language system.
+
+Support:
+
+Myanmar
+
+English
+
+Do NOT implement translations yet.
+
+Only prepare architecture.
+
+----------------------------------------------------
+ROLES
+----------------------------------------------------
+
+Prepare role architecture.
+
+Supported roles:
+
+Admin
+
+Customer
+
+Future:
+
+Reseller
+
+Affiliate
+
+Do not implement permissions yet.
+
+----------------------------------------------------
+SERVICES
+----------------------------------------------------
+
+Prepare empty service classes.
+
+Example:
+
+UserService
+
+PackageService
+
+WalletService
+
+ServerService
+
+VPNService
+
+GrowthService
+
+NotificationService
+
+----------------------------------------------------
+HANDLERS
+----------------------------------------------------
+
+Prepare handler structure.
+
+Do not implement business logic.
+
+----------------------------------------------------
+CODE STYLE
+----------------------------------------------------
+
+Use:
+
+Type Hints
+
+PEP8
+
+Docstrings
+
+Async functions
+
+Clean Architecture
+
+Modular Design
+
+----------------------------------------------------
+DO NOT IMPLEMENT
+----------------------------------------------------
+
+Do NOT create:
+
+Packages
+
+Orders
+
+Wallet
+
+VPN Keys
+
+Outline API
+
+Server Integration
+
+Free Trial
+
+Referral
+
+Payments
+
+These will be implemented in later phases.
+
+----------------------------------------------------
+OUTPUT
+----------------------------------------------------
+
+Create the complete project structure.
+
+Generate all necessary starter files.
+
+Add comments explaining the purpose of each module.
+
+The project should be ready for Phase 0.2.

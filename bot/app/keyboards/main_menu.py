@@ -1,29 +1,64 @@
-"""
-Main menu keyboards.
+"""Main navigation keyboards.
 
-Provides the primary navigation keyboard shown after /start.
-Different keyboards are returned based on the user's role.
+Phase 1.2 introduces the persistent customer ReplyKeyboard while preserving
+the legacy ``build_main_menu`` API used by earlier phases.
 """
 
 from __future__ import annotations
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
+from telegram import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+)
 
 from app.models.enums import UserRole
+from locales.translator import t
+
+
+def build_customer_main_menu(language: str = "en") -> ReplyKeyboardMarkup:
+    """Return the persistent localized customer main menu."""
+    keyboard = [
+        [
+            KeyboardButton(t("menu.buy_vpn", language=language)),
+            KeyboardButton(t("menu.free_trial", language=language)),
+        ],
+        [
+            KeyboardButton(t("menu.my_keys", language=language)),
+            KeyboardButton(t("menu.wallet", language=language)),
+        ],
+        [
+            KeyboardButton(t("menu.profile", language=language)),
+            KeyboardButton(t("menu.support", language=language)),
+        ],
+    ]
+    return ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True,
+        is_persistent=True,
+        input_field_placeholder=t("menu.input_hint", language=language),
+    )
+
+
+def build_customer_page_navigation(language: str = "en") -> InlineKeyboardMarkup:
+    """Return lightweight navigation controls for placeholder feature pages."""
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    t("nav.home", language=language),
+                    callback_data="nav:home",
+                )
+            ]
+        ]
+    )
 
 
 def build_main_menu(role: UserRole = UserRole.CUSTOMER) -> InlineKeyboardMarkup:
-    """
-    Build the main navigation menu for the given user role.
+    """Backward-compatible legacy inline menu.
 
-    Args:
-        role: The current user's role (determines which buttons are shown).
-
-    Returns:
-        InlineKeyboardMarkup ready to pass to message.reply_text().
-
-    TODO (Phase 1): populate button labels from the i18n translation system.
-    TODO (Phase 1): add conditional admin row when role == UserRole.ADMIN.
+    New customer flows should use :func:`build_customer_main_menu`.
     """
     customer_buttons = [
         [InlineKeyboardButton("📦 Packages", callback_data="menu:packages")],
@@ -32,25 +67,19 @@ def build_main_menu(role: UserRole = UserRole.CUSTOMER) -> InlineKeyboardMarkup:
         [InlineKeyboardButton("🌐 Language", callback_data="menu:language")],
         [InlineKeyboardButton("ℹ️ Help", callback_data="menu:help")],
     ]
-
-    admin_row = [InlineKeyboardButton("🛠 Admin Panel", callback_data="menu:admin")]
-
-    buttons = customer_buttons
     if role == UserRole.ADMIN:
-        buttons = [admin_row] + customer_buttons
-
-    return InlineKeyboardMarkup(buttons)
+        return InlineKeyboardMarkup(
+            [[InlineKeyboardButton("🛠 Admin Panel", callback_data="menu:admin")]]
+            + customer_buttons
+        )
+    return InlineKeyboardMarkup(customer_buttons)
 
 
 def build_language_selector() -> InlineKeyboardMarkup:
-    """
-    Build a language selection keyboard.
-
-    Returns:
-        InlineKeyboardMarkup with one button per supported language.
-    """
-    buttons = [
-        [InlineKeyboardButton("🇬🇧 English", callback_data="lang:en")],
-        [InlineKeyboardButton("🇲🇲 မြန်မာဘာသာ", callback_data="lang:my")],
-    ]
-    return InlineKeyboardMarkup(buttons)
+    """Backward-compatible language selection keyboard."""
+    return InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton("🇬🇧 English", callback_data="lang:en")],
+            [InlineKeyboardButton("🇲🇲 မြန်မာဘာသာ", callback_data="lang:my")],
+        ]
+    )

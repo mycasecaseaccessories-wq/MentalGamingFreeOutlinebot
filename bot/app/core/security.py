@@ -59,8 +59,12 @@ def mask_secret(value: str, *, visible_chars: int = 4, mask_char: str = "*") -> 
 
 
 def mask_token(token: str) -> str:
-    """Mask a bearer/API token, keeping only the first 8 characters."""
-    return mask_secret(token, visible_chars=8)
+    """Mask a bearer/API token, keeping exactly the first eight characters."""
+    if not token:
+        return ""
+    if len(token) <= 8:
+        return "*" * len(token)
+    return token[:8] + "*" * (len(token) - 8)
 
 
 def mask_database_url(url: str) -> str:

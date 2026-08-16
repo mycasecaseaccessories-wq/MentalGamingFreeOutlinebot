@@ -69,6 +69,7 @@ class PageInfo(BaseModel):
     has_previous_page: bool = False
     next_cursor: Optional[str] = None
     previous_cursor: Optional[str] = None
+    total_count: int = Field(default=0, ge=0)
 
 
 class CursorPagination(BaseModel):
@@ -78,4 +79,8 @@ class CursorPagination(BaseModel):
 
     @property
     def direction(self) -> str:
-        return "before" if self.before else "after"
+        if self.before:
+            return "before"
+        if self.after:
+            return "after"
+        return "first"

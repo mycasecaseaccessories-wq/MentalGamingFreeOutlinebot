@@ -1,0 +1,603 @@
+# Phase 0.7 — Testing, Quality Assurance, Developer Experience & CI/CD Foundation (Final Enterprise Version)
+
+Continue from Phase 0.6.1.
+
+IMPORTANT
+
+Do NOT rewrite existing modules.
+
+Do NOT modify business architecture.
+
+Do NOT implement business features.
+
+Only extend the development foundation.
+
+Everything must remain fully backward compatible.
+
+====================================================
+GOAL
+====================================================
+
+Prepare an enterprise-grade testing ecosystem, development workflow,
+quality assurance process, code standards, CI/CD pipeline and project
+health monitoring.
+
+This phase focuses ONLY on developer productivity and project quality.
+
+====================================================
+TESTING FOUNDATION
+====================================================
+
+Create a complete testing architecture.
+
+tests/
+
+unit/
+
+integration/
+
+fixtures/
+
+mocks/
+
+factories/
+
+plugins/
+
+helpers/
+
+performance/
+
+security/
+
+compatibility/
+
+snapshots/
+
+golden/
+
+====================================================
+UNIT TESTING
+====================================================
+
+Prepare unit testing for:
+
+Services
+
+Repositories
+
+Utilities
+
+Validators
+
+Exceptions
+
+Events
+
+Plugins
+
+Providers
+
+DTOs
+
+Result Pattern
+
+====================================================
+INTEGRATION TESTING
+====================================================
+
+Prepare integration tests.
+
+Database
+
+Repository Layer
+
+Dependency Injection
+
+Service Registry
+
+Event Bus
+
+Plugin Manager
+
+Provider Registry
+
+Scheduler
+
+====================================================
+FIXTURE FOUNDATION
+====================================================
+
+Prepare reusable fixtures.
+
+Examples:
+
+Fake User
+
+Fake Wallet
+
+Fake Package
+
+Fake VPN Key
+
+Fake Server
+
+Fake Settings
+
+Fake Notification
+
+====================================================
+MOCK FOUNDATION
+====================================================
+
+Prepare reusable mocks.
+
+Telegram API
+
+Database
+
+Scheduler
+
+Cache
+
+Provider
+
+Notification
+
+VPN
+
+Storage
+
+====================================================
+FACTORY FOUNDATION
+====================================================
+
+Create object factories.
+
+UserFactory
+
+WalletFactory
+
+PackageFactory
+
+ServerFactory
+
+VPNFactory
+
+NotificationFactory
+
+====================================================
+SNAPSHOT TESTING
+====================================================
+
+Prepare snapshot testing foundation.
+
+Support:
+
+Message Output
+
+Keyboard Layout
+
+Configuration
+
+JSON Response
+
+====================================================
+GOLDEN FILE TESTING
+====================================================
+
+Prepare golden file testing.
+
+Useful for:
+
+Localization
+
+Configuration
+
+Export
+
+Generated Files
+
+====================================================
+PROPERTY-BASED TESTING
+====================================================
+
+Prepare Hypothesis-based testing.
+
+Automatically generate random test data.
+
+Validate edge cases.
+
+====================================================
+PERFORMANCE TESTING
+====================================================
+
+Prepare benchmark framework.
+
+Measure:
+
+Service Speed
+
+Repository Speed
+
+Plugin Loading
+
+Event Processing
+
+Cache Performance
+
+====================================================
+SECURITY TESTING
+====================================================
+
+Prepare security testing.
+
+Secret Detection
+
+Token Leak Detection
+
+Configuration Validation
+
+Unsafe Import Detection
+
+Dependency Audit
+
+====================================================
+COMPATIBILITY TESTING
+====================================================
+
+Prepare compatibility tests.
+
+Python Versions
+
+Operating Systems
+
+Dependency Compatibility
+
+Configuration Compatibility
+
+====================================================
+QUALITY ASSURANCE
+====================================================
+
+Project quality rules.
+
+No print()
+
+No wildcard imports
+
+Type hints required
+
+Docstrings required
+
+No TODO in production
+
+Consistent formatting
+
+====================================================
+STATIC ANALYSIS
+====================================================
+
+Configure:
+
+ruff
+
+black
+
+isort
+
+mypy
+
+====================================================
+PRE-COMMIT HOOKS
+====================================================
+
+Prepare automatic checks.
+
+Formatting
+
+Linting
+
+Import Sorting
+
+Type Checking
+
+Unit Tests
+
+====================================================
+CODE COVERAGE
+====================================================
+
+Prepare coverage reports.
+
+HTML
+
+XML
+
+Terminal Summary
+
+Target:
+
+90%+
+
+====================================================
+ARCHITECTURE VALIDATION
+====================================================
+
+Automatically validate:
+
+No circular dependency
+
+Layer separation
+
+Repository pattern
+
+Service boundaries
+
+Dependency rules
+
+Module isolation
+
+====================================================
+DEPENDENCY MANAGEMENT
+====================================================
+
+Prepare dependency management.
+
+Version Lock
+
+Dependency Audit
+
+Unused Dependency Detection
+
+License Validation
+
+Future update strategy
+
+====================================================
+PROJECT HEALTH REPORT
+====================================================
+
+Generate health reports.
+
+Show:
+
+Coverage
+
+Lint
+
+Type Check
+
+Security
+
+Dependencies
+
+Performance
+
+Architecture
+
+====================================================
+QUALITY DASHBOARD
+====================================================
+
+Prepare dashboard foundation.
+
+Future metrics:
+
+Coverage
+
+Build Status
+
+Security Score
+
+Performance Score
+
+Architecture Score
+
+====================================================
+GIT STANDARDS
+====================================================
+
+Prepare:
+
+.gitignore
+
+.editorconfig
+
+.gitattributes
+
+Commit Convention
+
+Branch Convention
+
+Semantic Version Tags
+
+====================================================
+CI/CD FOUNDATION
+====================================================
+
+Prepare GitHub Actions workflows.
+
+Jobs:
+
+Lint
+
+Formatting Check
+
+Type Check
+
+Unit Tests
+
+Integration Tests
+
+Coverage
+
+Security Audit
+
+Dependency Audit
+
+Architecture Validation
+
+Build Verification
+
+====================================================
+ENVIRONMENT PROFILES
+====================================================
+
+Support:
+
+Development
+
+Testing
+
+Staging
+
+Production
+
+Separate configuration.
+
+====================================================
+RELEASE MANAGEMENT
+====================================================
+
+Prepare release workflow.
+
+Development
+
+Testing
+
+Release Candidate
+
+Production
+
+Rollback Plan
+
+Semantic Versioning
+
+====================================================
+DEPLOYMENT READINESS
+====================================================
+
+Prepare deployment documentation.
+
+Future support:
+
+Docker
+
+Docker Compose
+
+Kubernetes
+
+Cloud Deployment
+
+IMPORTANT:
+
+Do NOT generate Dockerfiles, docker-compose.yml,
+Kubernetes manifests or deployment scripts.
+
+Only prepare documentation and architecture.
+
+====================================================
+BENCHMARK FOUNDATION
+====================================================
+
+Prepare benchmark utilities.
+
+Execution Time
+
+Memory Usage
+
+CPU Usage
+
+Plugin Loading
+
+Scheduler Performance
+
+====================================================
+DEVELOPER EXPERIENCE
+====================================================
+
+Prepare development tools.
+
+Developer Guide
+
+Coding Standards
+
+Debug Guide
+
+Testing Guide
+
+Architecture Guide
+
+Review Checklist
+
+====================================================
+CONTRIBUTING
+====================================================
+
+Create:
+
+CONTRIBUTING.md
+
+Development Workflow
+
+Review Rules
+
+Testing Rules
+
+Coding Rules
+
+====================================================
+CHANGELOG
+====================================================
+
+Prepare CHANGELOG.
+
+Use Semantic Versioning.
+
+====================================================
+DOCUMENTATION
+====================================================
+
+Update documentation.
+
+Testing Guide
+
+CI/CD Guide
+
+Quality Standards
+
+Architecture Validation
+
+Security Checks
+
+Developer Workflow
+
+====================================================
+QUALITY GATES
+====================================================
+
+The project must fail validation if:
+
+Lint fails
+
+Formatting fails
+
+Tests fail
+
+Coverage below target
+
+Security audit fails
+
+Architecture validation fails
+
+Dependency audit fails
+
+====================================================
+OUTPUT
+====================================================
+
+Keep full compatibility with all previous phases.
+
+The project should now have a complete enterprise-grade development
+foundation and be fully prepared for Phase 0.8.

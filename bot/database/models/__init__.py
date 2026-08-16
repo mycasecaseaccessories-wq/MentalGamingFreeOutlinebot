@@ -40,6 +40,10 @@ from .free_trial import FreeTrialORM
 from .setting import SettingORM
 from .notification import NotificationORM
 from .audit_log import AuditLogORM
+from .payment_submission import PaymentSubmissionORM
+from .server_reservation import ServerCapacityReservationORM
+from .vpn_provisioning_operation import VPNProvisioningOperationORM
+from .free_trial_claim import FreeTrialClaimORM
 
 __all__ = [
     "UserORM",
@@ -56,4 +60,8 @@ __all__ = [
     "SettingORM",
     "NotificationORM",
     "AuditLogORM",
+    "PaymentSubmissionORM",
+    "ServerCapacityReservationORM",
+    "VPNProvisioningOperationORM",
+    "FreeTrialClaimORM",
 ]

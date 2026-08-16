@@ -1,86 +1,26 @@
-"""
-Scheduler wrapper.
-
-Wraps APScheduler's AsyncIOScheduler to provide a clean interface for
-registering and managing background jobs.
-
-Usage in main.py:
-    from app.scheduler import Scheduler
-    scheduler = Scheduler()
-    scheduler.register_jobs()
-    scheduler.start()
-"""
-
 from __future__ import annotations
-
 import logging
 from typing import Callable
-
-logger = logging.getLogger(__name__)
-
+logger=logging.getLogger(__name__)
 try:
-    from apscheduler.schedulers.asyncio import AsyncIOScheduler
-    _APSCHEDULER_AVAILABLE = True
+ from apscheduler.schedulers.asyncio import AsyncIOScheduler
+ _APSCHEDULER_AVAILABLE=True
 except ImportError:
-    _APSCHEDULER_AVAILABLE = False
-    logger.warning(
-        "APScheduler is not installed. Scheduled jobs will not run. "
-        "Add 'apscheduler' to requirements.txt to enable them."
-    )
-
-
+ AsyncIOScheduler=None
+ _APSCHEDULER_AVAILABLE=False
 class Scheduler:
-    """
-    Application job scheduler.
-
-    Wraps AsyncIOScheduler and provides a central location for all
-    periodic task registrations.
-    """
-
-    def __init__(self) -> None:
-        if _APSCHEDULER_AVAILABLE:
-            self._scheduler = AsyncIOScheduler()
-        else:
-            self._scheduler = None
-        self.logger = logging.getLogger(__name__)
-
-    def register_jobs(self) -> None:
-        """
-        Register all background jobs.
-
-        Call once before start(). Add job registrations here as they
-        are implemented in later phases.
-
-        TODO (Phase 4): add_job(subscription_expiry_checker, 'interval', hours=1)
-        TODO (Phase 4): add_job(server_health_monitor, 'interval', minutes=5)
-        TODO (Phase 4): add_job(daily_stats_report, 'cron', hour=8, minute=0)
-        """
-        self.logger.debug("Scheduler.register_jobs — no jobs registered yet (Phase 4)")
-
-    def add_job(self, func: Callable, trigger: str, **trigger_args) -> None:
-        """
-        Register a single job with the scheduler.
-
-        Args:
-            func:         The async function to call.
-            trigger:      APScheduler trigger type: 'interval', 'cron', 'date'.
-            **trigger_args: Trigger-specific keyword arguments.
-        """
-        if self._scheduler is None:
-            self.logger.error("Cannot add job — APScheduler not available.")
-            return
-        self._scheduler.add_job(func, trigger, **trigger_args)
-        self.logger.info("Job registered — func=%s trigger=%s", func.__name__, trigger)
-
-    def start(self) -> None:
-        """Start the scheduler. Must be called after the event loop is running."""
-        if self._scheduler is None:
-            return
-        self._scheduler.start()
-        self.logger.info("Scheduler started")
-
-    def shutdown(self) -> None:
-        """Gracefully shut down the scheduler."""
-        if self._scheduler and self._scheduler.running:
-            self._scheduler.shutdown(wait=False)
-            self.logger.info("Scheduler stopped")
+ def __init__(self): self._scheduler=AsyncIOScheduler() if _APSCHEDULER_AVAILABLE else None; self.logger=logging.getLogger(__name__)
+ def register_jobs(self,*,sync_service=None,reservation_service=None,lifecycle_service=None,lifecycle_interval_seconds=120,lifecycle_batch_size=100):
+  if sync_service is not None:self.add_job(sync_service.sync_all,'interval',seconds=sync_service.policy.sync_interval_seconds,jitter=30,id='outline-server-sync',replace_existing=True,max_instances=1,coalesce=True)
+  if reservation_service is not None:self.add_job(reservation_service.expire_reservations,'interval',minutes=1,id='server-reservation-cleanup',replace_existing=True,max_instances=1,coalesce=True)
+  if lifecycle_service is not None:
+   from app.tasks.vpn_expiration import VPNExpirationSweepTask
+   sweep=VPNExpirationSweepTask(db=lifecycle_service.db,lifecycle_service=lifecycle_service,batch_size=lifecycle_batch_size)
+   self.add_job(sweep.run,'interval',seconds=max(60,int(lifecycle_interval_seconds)),id='vpn-expiration-sweep',replace_existing=True,max_instances=1,coalesce=True)
+ def add_job(self,func:Callable,trigger:str,**kwargs):
+  if self._scheduler is None:return
+  self._scheduler.add_job(func,trigger,**kwargs)
+ def start(self):
+  if self._scheduler is not None:self._scheduler.start()
+ def shutdown(self):
+  if self._scheduler is not None and self._scheduler.running:self._scheduler.shutdown(wait=False)

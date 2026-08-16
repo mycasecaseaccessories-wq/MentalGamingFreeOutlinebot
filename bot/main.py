@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import signal
 import sys
 import time
 from pathlib import Path
@@ -99,28 +100,9 @@ async def main() -> None:
     # ── Step 6: Service registry ──────────────────────────────────────────
     logger.info("[6/15] Initialising service registry…")
     from app.services.registry import ServiceRegistry
-    from app.services import SettingsService, LanguageService
+    from app.services import SettingsService
     registry = ServiceRegistry(db)
     registry.initialise_all()
-    # Phase 1 services are intentionally explicit: business features do not
-    # auto-load from the foundation/plugin layer.
-    from app.services.customer_entry_service import CustomerEntryService
-    from app.services.customer_navigation_service import CustomerNavigationService
-    from app.services.customer_key_service import CustomerKeyService
-    from app.services.package_catalog_service import PackageCatalogService
-    from app.services.user_service import UserService
-    from app.services.preference_service import PreferenceService
-    entry_service = CustomerEntryService(db=db)
-    entry_service.configure_dependencies(
-        user_service=registry.get(UserService),
-        preference_service=registry.get(PreferenceService),
-    )
-    navigation_service = CustomerNavigationService(db=db)
-    navigation_service.configure_dependencies(preference_service=registry.get(PreferenceService))
-    registry.register(CustomerEntryService, entry_service)
-    registry.register(CustomerNavigationService, navigation_service)
-    registry.register(CustomerKeyService, CustomerKeyService(db=db))
-    registry.register(PackageCatalogService, PackageCatalogService(db=db))
     # Seed default settings and feature flags (safe on every startup).
     settings_service = registry.get(SettingsService)
     await settings_service.seed_defaults()
@@ -150,7 +132,7 @@ async def main() -> None:
     logger.info("[9/15] Initialising scheduler…")
     from app.scheduler import Scheduler
     scheduler = Scheduler()
-    scheduler.register_jobs()
+    scheduler.register_jobs(sync_service=registry.get_or_none(__import__("app.services.outline_server_sync_service", fromlist=["OutlineServerSyncService"]).OutlineServerSyncService), reservation_service=registry.get_or_none(__import__("app.services.server_reservation_service", fromlist=["ServerReservationService"]).ServerReservationService), lifecycle_service=registry.get_or_none(__import__("app.services.vpn_lifecycle_service", fromlist=["VPNLifecycleService"]).VPNLifecycleService))
     scheduler.start()
     registry.inject_scheduler(scheduler)
     logger.info("       Scheduler ready")
@@ -171,13 +153,18 @@ async def main() -> None:
     application.bot_data["cache"]           = cache
     application.bot_data["scheduler"]       = scheduler
     application.bot_data["settings"]        = settings
-    application.bot_data["user_service"]   = registry.get(UserService)
+    from app.services import (
+        CustomerEntryService,
+        CustomerNavigationService,
+        LanguageService,
+        PreferenceService,
+        UserService,
+    )
+    application.bot_data["user_service"] = registry.get(UserService)
     application.bot_data["language_service"] = registry.get(LanguageService)
     application.bot_data["preference_service"] = registry.get(PreferenceService)
-    application.bot_data["customer_entry_service"] = entry_service
-    application.bot_data["customer_navigation_service"] = navigation_service
-    application.bot_data["customer_key_service"] = registry.get(CustomerKeyService)
-    application.bot_data["package_catalog_service"] = registry.get(PackageCatalogService)
+    application.bot_data["customer_entry_service"] = registry.get(CustomerEntryService)
+    application.bot_data["customer_navigation_service"] = registry.get(CustomerNavigationService)
 
     # ── Step 10: Register middlewares ─────────────────────────────────────
     logger.info("[10/15] Registering middlewares…")
@@ -188,13 +175,13 @@ async def main() -> None:
         activity_middleware_handler,
     )
 
-    # group=-2: request context (must run first — stamps request_id)
+    # PTB executes at most one matching handler per group, so every
+    # middleware gets its own group to guarantee deterministic ordering.
     application.add_handler(
-        TypeHandler(Update, request_context_middleware_handler), group=-2
+        TypeHandler(Update, request_context_middleware_handler), group=-4
     )
-    # group=-1: auth → language → activity
-    application.add_handler(TypeHandler(Update, auth_middleware_handler),     group=-1)
-    application.add_handler(TypeHandler(Update, language_middleware_handler), group=-1)
+    application.add_handler(TypeHandler(Update, auth_middleware_handler),     group=-3)
+    application.add_handler(TypeHandler(Update, language_middleware_handler), group=-2)
     application.add_handler(TypeHandler(Update, activity_middleware_handler), group=-1)
     logger.info("       Middlewares registered: request_context, auth, language, activity")
 
@@ -202,19 +189,25 @@ async def main() -> None:
     logger.info("[11/15] Registering handlers…")
     from app.handlers import (
         register_start,
-        register_admin,
-        register_error,
         register_customer_navigation,
+        register_customer_account,
         register_package_catalog,
         register_customer_keys,
+        register_admin,
+        register_admin_server,
+        register_admin_outline,
+        register_error,
     )
 
     register_start(application)
-    register_admin(application)
-    register_customer_navigation(application)
     register_package_catalog(application)
     register_customer_keys(application)
-    logger.info("       Handlers registered: start, admin, customer navigation, package catalog, keys")
+    register_customer_account(application)
+    register_customer_navigation(application)
+    register_admin(application)
+    register_admin_server(application)
+    register_admin_outline(application)
+    logger.info("       Handlers registered: start, package_catalog, customer_keys, customer_account, customer_navigation, admin, admin_server, admin_outline")
 
     # ── Step 12: Global error handler (must be last) ──────────────────────
     logger.info("[12/15] Registering global error handler…")
@@ -258,7 +251,28 @@ async def main() -> None:
         await application.updater.start_polling(drop_pending_updates=True)
 
         logger.info("━━━ Bot is running ━━━  Press Ctrl+C to stop.")
-        await asyncio.Event().wait()   # Block until shutdown signal.
+        stop_event = asyncio.Event()
+        loop = asyncio.get_running_loop()
+
+        def request_shutdown() -> None:
+            if not stop_event.is_set():
+                logger.info("Shutdown signal received.")
+                stop_event.set()
+
+        registered_signals: list[signal.Signals] = []
+        for shutdown_signal in (signal.SIGINT, signal.SIGTERM):
+            try:
+                loop.add_signal_handler(shutdown_signal, request_shutdown)
+                registered_signals.append(shutdown_signal)
+            except (NotImplementedError, RuntimeError):
+                # Some platforms do not expose event-loop signal handlers.
+                # KeyboardInterrupt is still handled by the outer exception path.
+                logger.debug("Signal handler unavailable for %s", shutdown_signal.name)
+
+        await stop_event.wait()
+
+        for shutdown_signal in registered_signals:
+            loop.remove_signal_handler(shutdown_signal)
 
     except (KeyboardInterrupt, SystemExit):
         logger.info("Shutdown signal received.")

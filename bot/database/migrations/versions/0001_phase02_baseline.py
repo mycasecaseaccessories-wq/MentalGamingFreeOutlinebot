@@ -39,6 +39,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of record creation"),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of last record update"),
         sa.PrimaryKeyConstraint("id"),
+        if_not_exists=True,
     )
     op.create_index("ix_users_telegram_id", "users", ["telegram_id"], unique=True)
 
@@ -54,6 +55,7 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of last record update"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("name"),
+        if_not_exists=True,
     )
 
     # ── packages ──────────────────────────────────────────────────────────────
@@ -72,6 +74,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of record creation"),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of last record update"),
         sa.PrimaryKeyConstraint("id"),
+        if_not_exists=True,
     )
 
     # ── servers ───────────────────────────────────────────────────────────────
@@ -90,6 +93,7 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of last record update"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("api_url"),
+        if_not_exists=True,
     )
 
     # ── vpn_keys ──────────────────────────────────────────────────────────────
@@ -107,6 +111,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of record creation"),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of last record update"),
         sa.PrimaryKeyConstraint("id"),
+        if_not_exists=True,
     )
     op.create_index("ix_vpn_keys_user_id", "vpn_keys", ["user_id"])
     op.create_index("ix_vpn_keys_server_id", "vpn_keys", ["server_id"])
@@ -122,6 +127,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of record creation"),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of last record update"),
         sa.PrimaryKeyConstraint("id"),
+        if_not_exists=True,
     )
     op.create_index("ix_wallets_user_id", "wallets", ["user_id"], unique=True)
 
@@ -140,6 +146,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of record creation"),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of last record update"),
         sa.PrimaryKeyConstraint("id"),
+        if_not_exists=True,
     )
     op.create_index("ix_orders_user_id", "orders", ["user_id"])
     op.create_index("ix_orders_status", "orders", ["status"])
@@ -157,6 +164,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of record creation"),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of last record update"),
         sa.PrimaryKeyConstraint("id"),
+        if_not_exists=True,
     )
     op.create_index("ix_transactions_wallet_id", "transactions", ["wallet_id"])
     op.create_index("ix_transactions_type", "transactions", ["type"])
@@ -175,6 +183,7 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of last record update"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("referred_id"),
+        if_not_exists=True,
     )
     op.create_index("ix_referrals_referrer_id", "referrals", ["referrer_id"])
     op.create_index("ix_referrals_status", "referrals", ["status"])
@@ -192,6 +201,7 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of last record update"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("user_id"),
+        if_not_exists=True,
     )
     op.create_index("ix_free_trials_user_id", "free_trials", ["user_id"])
 
@@ -209,6 +219,7 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of last record update"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("key"),
+        if_not_exists=True,
     )
     op.create_index("ix_settings_key", "settings", ["key"], unique=True)
 
@@ -227,6 +238,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of record creation"),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of last record update"),
         sa.PrimaryKeyConstraint("id"),
+        if_not_exists=True,
     )
     op.create_index("ix_notifications_user_id", "notifications", ["user_id"])
     op.create_index("ix_notifications_type", "notifications", ["type"])
@@ -247,6 +259,7 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of record creation"),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, comment="UTC timestamp of last record update"),
         sa.PrimaryKeyConstraint("id"),
+        if_not_exists=True,
     )
     op.create_index("ix_audit_logs_actor_id", "audit_logs", ["actor_id"])
     op.create_index("ix_audit_logs_action", "audit_logs", ["action"])

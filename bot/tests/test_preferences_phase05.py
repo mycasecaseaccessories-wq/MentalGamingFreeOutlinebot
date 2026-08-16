@@ -418,8 +418,8 @@ async def test_migration_0004_columns(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_migration_head_is_0004(tmp_path):
-    """After init(), alembic_version must record revision 0004 (HEAD)."""
+async def test_migration_head_is_current(tmp_path):
+    """After init(), alembic_version must record the current migration HEAD."""
     from sqlalchemy import text
     db = await _fresh_db(_tmp_url(tmp_path, "head_check.db"))
     async with db.session() as session:
@@ -428,4 +428,4 @@ async def test_migration_head_is_0004(tmp_path):
         )
         revision = result.scalar()
     await db.close()
-    assert revision == "0004", f"Expected HEAD 0004, got {revision!r}"
+    assert revision == "0025_phase55_claim_key_binding", f"Expected integrated HEAD 0025_phase55_claim_key_binding, got {revision!r}"

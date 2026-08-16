@@ -227,22 +227,34 @@ class DatabaseManager:
             if result.scalar() is not None:
                 return False  # Already tracked — no stamp needed.
 
-            # Check for the settings table (Phase 0.2 indicator).
+            # Stamp only a complete unversioned Phase 0.2 database. A partial
+            # database (for example, one containing only settings from a test
+            # fixture) must run the base migration instead of skipping table
+            # creation and failing on a later ALTER TABLE.
+            # Legacy fixtures and early Phase 0.2 deployments may contain only
+            # the core tables touched by the first follow-up migrations.  Those
+            # databases must still be stamped rather than replaying 0001.
+            required_tables = {
+                "users", "roles", "packages", "servers", "vpn_keys", "wallets",
+                "orders", "transactions", "referrals", "free_trials", "settings",
+                "notifications", "audit_logs",
+            }
             if is_sqlite:
                 result = await conn.execute(
                     text(
                         "SELECT name FROM sqlite_master "
-                        "WHERE type='table' AND name='settings'"
+                        "WHERE type='table' AND name NOT LIKE 'sqlite_%'"
                     )
                 )
             else:
                 result = await conn.execute(
                     text(
                         "SELECT tablename FROM pg_tables "
-                        "WHERE schemaname='public' AND tablename='settings'"
+                        "WHERE schemaname='public'"
                     )
                 )
-            return result.scalar() is not None  # True = Phase 0.2 DB found.
+            existing_tables = {row[0] for row in result.fetchall()}
+            return required_tables.issubset(existing_tables)
 
     async def _create_all_fallback(self) -> None:
         """Fallback: create all tables via metadata.create_all (no migration tracking)."""

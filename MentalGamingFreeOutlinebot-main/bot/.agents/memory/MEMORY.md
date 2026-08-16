@@ -1,0 +1,4 @@
+- [Phase completion tracker](phase-tracker.md) — track which phases are done and what's next.
+- [Alembic startup pattern](alembic-startup.md) — migration/stamp logic wired into DatabaseManager.init(); test revision assertions must be updated on each new migration.
+- [Middleware registration](middleware-registration.md) — TypeHandler(Update, fn, group=-1) pattern; auth → language → activity order matters.
+- [Preference architecture](preference-architecture.md) — one row per user, typed columns (not EAV); PreferenceKey constants prevent typos.

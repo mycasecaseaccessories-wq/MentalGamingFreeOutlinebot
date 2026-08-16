@@ -83,7 +83,7 @@ async def test_migration_fresh_database_creates_category_column(tmp_path):
 
 @pytest.mark.asyncio
 async def test_migration_alembic_version_at_head(tmp_path):
-    """After init(), alembic_version must record revision 0002 (HEAD)."""
+    """After init(), alembic_version must record current migration HEAD."""
     from sqlalchemy import text
     db = await _fresh_db(_tmp_url(tmp_path, "alembic_ver.db"))
 
@@ -94,7 +94,7 @@ async def test_migration_alembic_version_at_head(tmp_path):
         revision = result.scalar()
 
     await db.close()
-    assert revision == "0004", f"Expected HEAD revision 0004, got {revision!r}"
+    assert revision == "0025_phase55_claim_key_binding", f"Expected integrated HEAD 0025_phase55_claim_key_binding, got {revision!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -207,7 +207,7 @@ async def test_migration_phase02_database_gets_category_column(tmp_path):
         "category column not added to Phase 0.2 database by migration 0002"
     )
     assert legacy_value == "legacy_value", "Existing data was lost during migration"
-    assert revision == "0004", f"Expected HEAD 0004 after upgrade, got {revision!r}"
+    assert revision == "0025_phase55_claim_key_binding", f"Expected integrated HEAD 0025_phase55_claim_key_binding, got {revision!r}"
 
 
 # ---------------------------------------------------------------------------

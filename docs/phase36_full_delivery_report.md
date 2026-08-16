@@ -1,0 +1,13 @@
+# Phase 3.6 Full Specification Delivery Report
+
+Phase 3.6 provides a provider-neutral, read-only automatic server selection layer. `ServerSelectionRequest` accepts workload, package, provider, required/preferred country, required/preferred server, capabilities, exclusions, fallback permission, reservation intent, request reference, and freshness policy without accepting Telegram objects or credentials.
+
+Hard eligibility is centralized in `ServerEligibilityPolicy`. Archived, disabled, maintenance, provider-mismatched, offline, unhealthy, disallowed degraded/unknown, stale, capability-missing, country-mismatched, excluded, unknown/full capacity, and unknown/reached traffic candidates are rejected according to conservative defaults. Capacity and traffic headroom are applied before scoring. Preferred country/server can fall back only when explicitly allowed; required country/server constraints are never silently violated.
+
+`ServerScoringService` produces an explainable `ServerScore` with health, capacity, traffic, priority, country preference, freshness, and weight components. The result is a typed `SelectedServerResult` with strategy, fallback metadata, score breakdown, country, selection timestamp, and `phase4_key_creation_allowed=false`. It contains no credentials and does not call Outline API, SSH, create/delete/rename keys, create orders, debit wallets, assign users, or migrate existing keys.
+
+A non-credential `server_capacity_reservations` foundation is included with additive migration `0015`, pending/committed/released/expired state vocabulary, generic owner reference, idempotent terminal transitions, row-lock capacity check, and expiration cleanup through the existing scheduler. Pending reservations are counted during the atomic reservation check. Phase 4 can reserve after selection, then commit only after successful key creation or release on failure.
+
+The registry and bootstrap reuse the existing service container and Scheduler. Sync and reservation cleanup are registered as bounded, replace-existing jobs; no second scheduler or in-process timer is introduced. Admin routing preview remains dry-run only and displays that no VPN key was created. English/Myanmar selection strings and the existing admin-only handler boundary are reused.
+
+Verification completed with **16 focused tests passed**, Python compilation for app/database/config, and scheduler contract verification. Apply migrations `0014` and `0015` in order before production use. Phase 4 must revalidate eligibility, use the reservation token when required, create the key through the existing customer-key boundary, and commit/release the reservation idempotently.

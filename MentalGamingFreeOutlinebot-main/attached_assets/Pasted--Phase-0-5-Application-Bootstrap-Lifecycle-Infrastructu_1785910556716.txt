@@ -1,0 +1,469 @@
+# Phase 0.5 — Application Bootstrap, Lifecycle, Infrastructure & Observability
+
+Continue from Phase 0.4.
+
+Do NOT rewrite any existing modules.
+
+Only extend the current architecture.
+
+====================================================
+GOAL
+====================================================
+
+Prepare the complete application runtime infrastructure.
+
+This phase is ONLY responsible for:
+
+• Application Lifecycle
+• Startup Process
+• Shutdown Process
+• Infrastructure
+• Logging
+• Scheduler
+• Health Monitoring
+• Observability
+• Dependency Management
+
+Do NOT implement any business features.
+
+====================================================
+APPLICATION BOOTSTRAP
+====================================================
+
+Create a centralized application bootstrap.
+
+Startup Sequence:
+
+1. Load Environment Variables
+
+2. Load Configuration
+
+3. Initialize Logger
+
+4. Initialize Database
+
+5. Initialize Cache
+
+6. Initialize Repository Layer
+
+7. Initialize Services
+
+8. Load Localization
+
+9. Register Event Bus
+
+10. Initialize Scheduler
+
+11. Register Middlewares
+
+12. Register Handlers
+
+13. Register Global Error Handler
+
+14. Run Startup Health Check
+
+15. Start Telegram Bot
+
+Every startup step must be logged.
+
+====================================================
+APPLICATION LIFECYCLE
+====================================================
+
+Prepare lifecycle manager.
+
+States:
+
+Starting
+
+Running
+
+Maintenance
+
+Stopping
+
+Stopped
+
+Future modules should read application state.
+
+====================================================
+STARTUP VALIDATION
+====================================================
+
+Validate before startup.
+
+BOT_TOKEN
+
+ADMIN_IDS
+
+Database
+
+Configuration
+
+Localization
+
+Directories
+
+Scheduler
+
+Cache
+
+Stop safely if validation fails.
+
+====================================================
+DIRECTORY INITIALIZATION
+====================================================
+
+Create automatically if missing.
+
+logs/
+
+database/
+
+backups/
+
+temp/
+
+uploads/
+
+exports/
+
+cache/
+
+docs/
+
+====================================================
+SERVICE REGISTRY
+====================================================
+
+Prepare dependency injection / service registry.
+
+Each service must only be initialized once.
+
+Examples:
+
+ConfigService
+
+LanguageService
+
+SettingsService
+
+SchedulerService
+
+LoggerService
+
+CacheService
+
+HealthService
+
+====================================================
+CACHE FOUNDATION
+====================================================
+
+Prepare cache architecture.
+
+Support:
+
+Memory Cache
+
+TTL
+
+Cache Invalidation
+
+Future Redis Compatibility
+
+====================================================
+EVENT BUS
+====================================================
+
+Create application event system.
+
+Example Events:
+
+ApplicationStarted
+
+ApplicationStopped
+
+ConfigurationReloaded
+
+SettingsUpdated
+
+UserRegistered
+
+ServerAdded
+
+VPNCreated
+
+WalletUpdated
+
+Future modules should subscribe to events without modifying existing code.
+
+====================================================
+SCHEDULER FOUNDATION
+====================================================
+
+Prepare scheduler architecture.
+
+Do NOT implement jobs.
+
+Future Jobs:
+
+Usage Sync
+
+Expiration Check
+
+Free Trial Reset
+
+Server Sync
+
+Notification Queue
+
+Database Backup
+
+Cleanup
+
+Analytics
+
+====================================================
+HEALTH CHECK
+====================================================
+
+Create HealthCheckService.
+
+Support:
+
+Application
+
+Database
+
+Scheduler
+
+Cache
+
+Configuration
+
+Localization
+
+Future:
+
+Outline Server
+
+API
+
+Mini App
+
+====================================================
+OBSERVABILITY
+====================================================
+
+Prepare monitoring foundation.
+
+Support:
+
+Metrics
+
+Performance Timer
+
+Execution Duration
+
+Request ID
+
+Correlation ID
+
+Structured Logging
+
+Future Prometheus compatibility.
+
+====================================================
+LOGGING
+====================================================
+
+Production logging.
+
+Support:
+
+Console
+
+Daily File Logs
+
+Rotation
+
+Archive
+
+Levels:
+
+DEBUG
+
+INFO
+
+WARNING
+
+ERROR
+
+CRITICAL
+
+Each log should include:
+
+Timestamp
+
+Module
+
+Function
+
+Request ID
+
+Level
+
+Message
+
+====================================================
+GLOBAL ERROR HANDLER
+====================================================
+
+Catch:
+
+Telegram Errors
+
+Database Errors
+
+Configuration Errors
+
+Scheduler Errors
+
+Unhandled Exceptions
+
+Never crash the application.
+
+====================================================
+MIDDLEWARE REGISTRATION
+====================================================
+
+Register:
+
+Authentication
+
+Role
+
+Language
+
+Activity
+
+Logging
+
+Error
+
+Request Context
+
+====================================================
+REQUEST CONTEXT
+====================================================
+
+Prepare request context.
+
+Each request should contain:
+
+Current User
+
+Current Language
+
+Current Settings
+
+Request ID
+
+Timestamp
+
+====================================================
+DEVELOPER MODES
+====================================================
+
+Support:
+
+Development
+
+Production
+
+Debug
+
+Testing
+
+Behavior should depend on configuration.
+
+====================================================
+GRACEFUL SHUTDOWN
+====================================================
+
+Shutdown sequence:
+
+Stop accepting updates
+
+Finish running tasks
+
+Stop Scheduler
+
+Close Database
+
+Flush Logs
+
+Clear Cache
+
+Release Resources
+
+Log shutdown summary
+
+====================================================
+DOCUMENTATION
+====================================================
+
+Update README.
+
+Document:
+
+Startup Flow
+
+Lifecycle
+
+Application State
+
+Health Check
+
+Scheduler
+
+Observability
+
+Service Registry
+
+====================================================
+DO NOT IMPLEMENT
+====================================================
+
+No Customer UI
+
+No Admin UI
+
+No Wallet
+
+No VPN
+
+No Servers
+
+No Packages
+
+No Orders
+
+No Payments
+
+No Referral
+
+No Free Trial
+
+No Outline API
+
+Only runtime infrastructure.
+
+====================================================
+OUTPUT
+====================================================
+
+Keep compatibility with previous phases.
+
+The project should be fully prepared for Phase 0.6.

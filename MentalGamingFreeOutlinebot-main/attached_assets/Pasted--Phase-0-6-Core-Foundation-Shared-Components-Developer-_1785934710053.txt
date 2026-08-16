@@ -1,0 +1,681 @@
+# Phase 0.6 — Core Foundation, Shared Components & Developer Standards
+
+Continue from Phase 0.5.
+
+Do NOT rewrite existing modules.
+
+Only extend the current architecture.
+
+====================================================
+GOAL
+====================================================
+
+Build the shared core foundation for the entire project.
+
+Everything created in this phase must be reusable across all future modules.
+
+This phase must NOT implement business logic.
+
+Only build reusable infrastructure.
+
+====================================================
+CORE ENUMS
+====================================================
+
+Create reusable Enum classes.
+
+Prepare enums for:
+
+UserRole
+
+Admin
+
+Customer
+
+Reseller
+
+Affiliate
+
+VIP
+
+Moderator
+
+----------------------------------------------------
+
+UserStatus
+
+Pending
+
+Active
+
+Inactive
+
+Suspended
+
+Banned
+
+Deleted
+
+----------------------------------------------------
+
+PackageType
+
+Paid
+
+Free Trial
+
+Promotion
+
+Reward
+
+VIP
+
+----------------------------------------------------
+
+PackageStatus
+
+Draft
+
+Active
+
+Hidden
+
+Disabled
+
+Archived
+
+----------------------------------------------------
+
+VPNKeyStatus
+
+Pending
+
+Active
+
+Expired
+
+Suspended
+
+Revoked
+
+Renewing
+
+----------------------------------------------------
+
+ServerStatus
+
+Online
+
+Offline
+
+Maintenance
+
+Disabled
+
+Provisioning
+
+----------------------------------------------------
+
+OrderStatus
+
+Pending
+
+WaitingPayment
+
+Paid
+
+Cancelled
+
+Expired
+
+Refunded
+
+Completed
+
+----------------------------------------------------
+
+PaymentMethod
+
+Wallet
+
+Manual
+
+USDT
+
+Bank
+
+Future Methods
+
+----------------------------------------------------
+
+NotificationType
+
+System
+
+Wallet
+
+Order
+
+Promotion
+
+Broadcast
+
+Security
+
+====================================================
+GLOBAL CONSTANTS
+====================================================
+
+Create centralized constants.
+
+Examples:
+
+BOT_NAME
+
+BOT_VERSION
+
+PROJECT_NAME
+
+DEFAULT_LANGUAGE
+
+DEFAULT_CURRENCY
+
+DEFAULT_TIMEZONE
+
+CACHE_TTL
+
+SESSION_TIMEOUT
+
+MAX_RETRY
+
+DEFAULT_PAGE_SIZE
+
+SUPPORTED_LANGUAGES
+
+SUPPORTED_CURRENCIES
+
+SUPPORTED_TIMEZONES
+
+====================================================
+CUSTOM EXCEPTIONS
+====================================================
+
+Create reusable project exceptions.
+
+Examples:
+
+AppException
+
+ValidationException
+
+AuthenticationException
+
+PermissionDeniedException
+
+ConfigurationException
+
+DatabaseException
+
+CacheException
+
+ServerException
+
+VPNException
+
+PaymentException
+
+NotFoundException
+
+RateLimitException
+
+====================================================
+VALIDATORS
+====================================================
+
+Create reusable validators.
+
+Examples:
+
+Telegram ID
+
+Username
+
+Price
+
+GB
+
+Duration
+
+Package Name
+
+Country Code
+
+Currency
+
+Timezone
+
+UUID
+
+Email
+
+URL
+
+JSON
+
+====================================================
+COMMON UTILITIES
+====================================================
+
+Create shared helper modules.
+
+Examples:
+
+Date Helper
+
+Time Helper
+
+Formatter
+
+Currency Formatter
+
+Random Generator
+
+Retry Helper
+
+Hash Helper
+
+UUID Helper
+
+JSON Helper
+
+File Helper
+
+String Helper
+
+Environment Helper
+
+====================================================
+SECURITY UTILITIES
+====================================================
+
+Prepare reusable security helpers.
+
+Examples:
+
+Secret Masking
+
+Input Sanitization
+
+Secure Random
+
+Hash Generator
+
+Token Generator
+
+Permission Checker
+
+Sensitive Data Filter
+
+====================================================
+DTO / SCHEMAS
+====================================================
+
+Prepare reusable DTOs.
+
+Examples:
+
+UserDTO
+
+PackageDTO
+
+WalletDTO
+
+VPNKeyDTO
+
+OrderDTO
+
+ServerDTO
+
+NotificationDTO
+
+SettingsDTO
+
+PaginationDTO
+
+====================================================
+STANDARD RESPONSE MODEL
+====================================================
+
+Create unified response model.
+
+Fields:
+
+success
+
+message
+
+data
+
+errors
+
+timestamp
+
+request_id
+
+====================================================
+PAGINATION FOUNDATION
+====================================================
+
+Prepare reusable pagination.
+
+Support:
+
+Pagination
+
+Filtering
+
+Sorting
+
+Searching
+
+Future API compatibility.
+
+====================================================
+CACHE FOUNDATION
+====================================================
+
+Improve cache system.
+
+Support:
+
+Memory Cache
+
+TTL
+
+Cache Tags
+
+Cache Invalidation
+
+Future Redis compatibility
+
+====================================================
+EVENT FOUNDATION
+====================================================
+
+Improve application events.
+
+Examples:
+
+UserCreated
+
+UserUpdated
+
+OrderCreated
+
+VPNGenerated
+
+WalletUpdated
+
+PackagePurchased
+
+ServerAdded
+
+SettingsChanged
+
+NotificationSent
+
+====================================================
+SHARED INTERFACES
+====================================================
+
+Create interface / contract layer.
+
+Examples:
+
+BaseRepository
+
+BaseService
+
+CacheProvider
+
+NotificationProvider
+
+VPNProvider
+
+PaymentProvider
+
+Future modules must depend on interfaces.
+
+====================================================
+DEPENDENCY INJECTION
+====================================================
+
+Improve Service Registry.
+
+Support dependency injection.
+
+Services should never manually create other services.
+
+====================================================
+REQUEST CONTEXT
+====================================================
+
+Prepare shared request context.
+
+Each request should include:
+
+Current User
+
+Current Role
+
+Current Language
+
+Current Settings
+
+Request ID
+
+Timestamp
+
+Correlation ID
+
+====================================================
+PROJECT STANDARDS
+====================================================
+
+Define project conventions.
+
+Folder Naming
+
+File Naming
+
+Class Naming
+
+Function Naming
+
+Variable Naming
+
+Database Naming
+
+Migration Naming
+
+Logging Naming
+
+====================================================
+SERVICE LAYER RULES
+====================================================
+
+Business Logic
+
+→ Services
+
+Database
+
+→ Repository
+
+Telegram
+
+→ Handlers
+
+UI
+
+→ Keyboards
+
+Utilities
+
+→ Standalone
+
+Never mix responsibilities.
+
+====================================================
+LOGGER STANDARDS
+====================================================
+
+Every module must use centralized logging.
+
+Never use print().
+
+Support structured logs.
+
+====================================================
+ERROR HANDLING STANDARDS
+====================================================
+
+Never raise generic Exception.
+
+Always use project exceptions.
+
+====================================================
+TYPE SAFETY
+====================================================
+
+Use:
+
+Type Hints
+
+Dataclasses
+
+Pydantic models where appropriate.
+
+====================================================
+DOCUMENTATION
+====================================================
+
+Update documentation.
+
+Document:
+
+Enums
+
+DTOs
+
+Exceptions
+
+Validators
+
+Utilities
+
+Standards
+
+Interfaces
+
+====================================================
+DEVELOPER STANDARDS
+====================================================
+
+Create project standards.
+
+Coding Style
+
+Naming Convention
+
+Import Rules
+
+Folder Rules
+
+Module Rules
+
+Service Rules
+
+Repository Rules
+
+Handler Rules
+
+Keyboard Rules
+
+Documentation Rules
+
+====================================================
+ARCHITECTURE RULES
+====================================================
+
+Modules must be loosely coupled.
+
+Services communicate through interfaces.
+
+No circular dependencies.
+
+Business logic must remain isolated.
+
+====================================================
+FUTURE COMPATIBILITY
+====================================================
+
+Prepare architecture for:
+
+Web Dashboard
+
+Telegram Mini App
+
+REST API
+
+GraphQL API
+
+Affiliate Panel
+
+Reseller Panel
+
+Multiple Admins
+
+Plugins
+
+Multiple Databases
+
+Redis
+
+Docker
+
+Microservices
+
+====================================================
+DO NOT IMPLEMENT
+====================================================
+
+No Customer UI
+
+No Admin UI
+
+No VPN
+
+No Wallet
+
+No Orders
+
+No Packages
+
+No Servers
+
+No Payments
+
+No Referral
+
+No Free Trial
+
+No Business Logic
+
+====================================================
+OUTPUT
+====================================================
+
+Keep compatibility with every previous phase.
+
+The project should be fully prepared for Phase 0.7.

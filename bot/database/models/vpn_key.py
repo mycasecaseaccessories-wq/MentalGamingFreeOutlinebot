@@ -1,19 +1,8 @@
 """
 VPNKeyORM — Outline access keys issued to users.
 
-Each row represents one Outline access key linked to a user and a server.
-The access_url contains the ss:// link the user installs in their Outline client.
-
-Columns
--------
-user_id         FK → users.id — the subscriber who owns this key.
-server_id       FK → servers.id — the Outline server that hosts the key.
-outline_key_id  The numeric ID returned by the Outline API (server-scoped).
-access_url      The ss:// connection URL — sensitive, shared with the user.
-name            Display name set on the Outline server (e.g. "Alice — Jul 2026").
-data_limit_bytes Per-key data cap in bytes enforced by the Outline server.
-is_active       False when the key has been revoked or expired.
-expires_at      UTC timestamp when the key should be automatically revoked.
+Phase 1.5 extends the read model used by the customer "My Keys" UI.
+No Outline API calls or key lifecycle mutations are implemented here.
 """
 
 from __future__ import annotations
@@ -27,61 +16,68 @@ from database.base import BaseModel
 
 
 class VPNKeyORM(BaseModel):
-    """
-    Issued Outline VPN access key.
-
-    Phase 0.2: schema placeholder.
-    Phase 4:   provisioned via VPNService using the Outline Management API.
-    """
+    """Issued Outline VPN access key."""
 
     __tablename__ = "vpn_keys"
 
     user_id: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        index=True,
-        comment="FK → users.id (enforced in Phase 4)",
+        Integer, nullable=False, index=True,
+        comment="FK → users.id; owner of this key",
     )
     server_id: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        index=True,
-        comment="FK → servers.id (enforced in Phase 4)",
+        Integer, nullable=False, index=True,
+        comment="FK → servers.id",
     )
     outline_key_id: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        comment="Numeric key ID returned by the Outline Management API",
+        Integer, nullable=False,
+        comment="Server-scoped key ID returned by Outline",
     )
     access_url: Mapped[str] = mapped_column(
-        Text,
-        nullable=False,
-        comment="ss:// connection URL — share only with the key owner",
+        Text, nullable=False,
+        comment="Sensitive ss:// connection URL; owner-only",
     )
-    name: Mapped[str | None] = mapped_column(
-        String(128),
-        nullable=True,
-        comment="Key label on the Outline server",
-    )
+    name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     data_limit_bytes: Mapped[int | None] = mapped_column(
-        BigInteger,
-        nullable=True,
-        comment="Per-key data cap enforced by Outline. NULL = unlimited",
+        BigInteger, nullable=True,
+        comment="GB-based key allowance expressed in bytes",
+    )
+    used_bytes: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, default=0,
+        comment="Last locally-known usage value; synced in Phase 4",
+    )
+    device_limit: Mapped[int | None] = mapped_column(
+        Integer, nullable=True,
+        comment="Configured package device allowance",
+    )
+    package_id: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, index=True,
+        comment="Optional package snapshot reference",
+    )
+    key_type: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="paid",
+        comment="paid | free_trial | promotion | reward | vip",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="active", index=True,
+        comment="VPNKeyStatus value",
     )
     is_active: Mapped[bool] = mapped_column(
-        Boolean,
-        nullable=False,
-        default=True,
-        comment="False after revocation or expiry",
+        Boolean, nullable=False, default=True,
+        comment="Legacy compatibility flag; status is preferred for display",
     )
     expires_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-        comment="UTC expiry timestamp — scheduler auto-revokes after this",
+        DateTime(timezone=True), nullable=True,
     )
-    used_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
-    device_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    package_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
-    key_type: Mapped[str] = mapped_column(String(32), nullable=False, default="paid")
-    status: Mapped[str] = mapped_column(String(32), nullable=False, default="active", index=True)
-    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    remote_limit_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    usage_baseline_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    last_usage_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    limit_source: Mapped[str | None] = mapped_column(String(48), nullable=True)
+    limit_source_reference: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    limit_status: Mapped[str] = mapped_column(String(24), nullable=False, default="not_applied")
+    provider_limit_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    limit_applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    limit_operation_id: Mapped[str | None] = mapped_column(String(96), nullable=True)
+    last_synced_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True,
+        comment="Timestamp of last stored usage sync; Phase 4 populates it",
+    )
