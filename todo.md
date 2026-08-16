@@ -217,3 +217,14 @@
 - [ ] Integrate bilingual customer/admin renewal, rotation, reconciliation, recovery status, audit, and notification controls.
 - [ ] Add focused tests for ownership, payment boundary, renewal idempotency, rotation safety, provider timeout, local/remote drift, orphan handling, concurrency, and no-duplicate-key guarantees.
 - [ ] Run Phase 0–4.5 regression tests, prepare the Phase 4.6 delivery report, package the integrated master archive, and define the Phase 4.7 handoff.
+
+## Phase 5.6 — Paid Trial Upgrade, Paid Plan Conversion & Phase 5 Finalization
+
+- [x] Implement paid Free Trial upgrade modes DATA_ADDON, DURATION_EXTENSION, and DATA_AND_DURATION.
+- [x] Implement paid plan conversion using the existing order, payment, and provisioning engines.
+- [x] Add upgrade idempotency, duplicate-payment fulfillment protection, double-click protection, and abuse limits.
+- [x] Verify final Admin policy management for Free Trial GB, claims, daily cap, duration, device, force-join, extra claims, paid upgrade, and server quota settings.
+- [x] Verify per-server quota monitoring, analytics, recovery, and reconciliation.
+- [x] Add EN/MY user-facing upgrade and conversion outcomes.
+- [x] Add Phase 5.6 end-to-end tests and final Phase 0–5.6 regression validation.
+- [ ] Commit and push the completed Phase 5.6 integration to GitHub main.

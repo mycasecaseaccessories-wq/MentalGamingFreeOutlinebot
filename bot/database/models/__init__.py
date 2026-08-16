@@ -44,6 +44,8 @@ from .payment_submission import PaymentSubmissionORM
 from .server_reservation import ServerCapacityReservationORM
 from .vpn_provisioning_operation import VPNProvisioningOperationORM
 from .free_trial_claim import FreeTrialClaimORM
+from .free_trial_entitlement import FreeTrialEntitlementORM
+from .free_trial_upgrade import FreeTrialUpgradeOfferORM, FreeTrialUpgradeORM, FreeTrialRestrictionORM
 
 __all__ = [
     "UserORM",
@@ -64,4 +66,8 @@ __all__ = [
     "ServerCapacityReservationORM",
     "VPNProvisioningOperationORM",
     "FreeTrialClaimORM",
+    "FreeTrialEntitlementORM",
+    "FreeTrialUpgradeOfferORM",
+    "FreeTrialUpgradeORM",
+    "FreeTrialRestrictionORM",
 ]

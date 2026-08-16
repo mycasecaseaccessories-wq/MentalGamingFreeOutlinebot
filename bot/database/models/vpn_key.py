@@ -65,6 +65,9 @@ class VPNKeyORM(BaseModel):
         Boolean, nullable=False, default=True,
         comment="Legacy compatibility flag; status is preferred for display",
     )
+    activated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True,
+    )
     expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True,
     )

@@ -25,6 +25,22 @@ class VPNLifecycleService(BaseService):
    if err:return Failure(*err)
    now=datetime.now(timezone.utc); VPNKeyStateMachine.validate_transition(k.status,VPNKeyStatus.ACTIVE.value); k.activated_at=now; k.expires_at=self.policy.calculate_expires_at(now,days); k.status=VPNKeyStatus.ACTIVE.value; k.is_active=True; await s.flush(); result=self.summary(k)
   await bus.emit(EventType.VPN_KEY_ACTIVATED,key_id=key_id,expires_at=result.expires_at); return Success(result)
+ async def extend_key_to(self, *, key_id, actor_user_id, target_expires_at):
+  """Converge an active key to an absolute expiry target without double-extension."""
+  async with self.db.session() as s:
+   k=(await s.execute(select(VPNKeyORM).where(VPNKeyORM.id==key_id).with_for_update())).scalar_one_or_none()
+   if k is None:return Failure('not_found','VPN key was not found.')
+   if not await self._auth(s,k,actor_user_id):return Failure('permission_denied','VPN lifecycle permission denied.')
+   if k.activated_at is None:return Failure('invalid_transition','VPN key is not active.')
+   target = target_expires_at if target_expires_at.tzinfo else target_expires_at.replace(tzinfo=timezone.utc)
+   if k.expires_at is not None and k.expires_at >= target:return Success(self.summary(k))
+   k.expires_at=target
+   if k.status != VPNKeyStatus.ACTIVE.value:
+    k.status=VPNKeyStatus.ACTIVE.value; k.is_active=True
+   await s.flush(); result=self.summary(k)
+  await bus.emit(EventType.VPN_KEY_ACTIVATED,key_id=key_id,expires_at=result.expires_at)
+  return Success(result)
+
  async def expire_due_key(self,*,key_id,actor_user_id=0):
   async with self.db.session() as s:
    k=(await s.execute(select(VPNKeyORM).where(VPNKeyORM.id==key_id).with_for_update())).scalar_one_or_none()

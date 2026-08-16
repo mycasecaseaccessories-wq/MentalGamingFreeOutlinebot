@@ -196,6 +196,9 @@ class ServiceRegistry:
         from app.services.free_trial_claim_service import FreeTrialClaimService
         from app.services.trial_server_routing_service import TrialServerRoutingService
         from app.services.free_trial_provisioning_service import FreeTrialProvisioningService
+        from app.services.free_trial_abuse_service import FreeTrialAbuseProtectionService
+        from app.services.free_trial_analytics_service import FreeTrialAnalyticsService
+        from app.services.free_trial_upgrade_service import FreeTrialUpgradeService
 
         services_to_create = [
             SettingsService,
@@ -209,8 +212,12 @@ class ServiceRegistry:
                 instance = self.resolve(service_class)
                 logger.info("  ✓ %s initialised", service_class.__name__)
 
+        if not self.is_registered(FreeTrialAbuseProtectionService):
+            self.register(FreeTrialAbuseProtectionService, FreeTrialAbuseProtectionService(db=self._db))
+            logger.info("  ✓ FreeTrialAbuseProtectionService initialised")
+
         if not self.is_registered(FreeTrialClaimService):
-            self.register(FreeTrialClaimService, FreeTrialClaimService(db=self._db, settings_service=self.get(SettingsService)))
+            self.register(FreeTrialClaimService, FreeTrialClaimService(db=self._db, settings_service=self.get(SettingsService), abuse_service=self.get(FreeTrialAbuseProtectionService)))
             logger.info("  ✓ FreeTrialClaimService initialised")
 
 
@@ -366,6 +373,23 @@ class ServiceRegistry:
                 ),
             )
             logger.info("  ✓ FreeTrialProvisioningService initialised")
+
+        if not self.is_registered(FreeTrialAnalyticsService):
+            self.register(FreeTrialAnalyticsService, FreeTrialAnalyticsService(db=self._db))
+            logger.info("  ✓ FreeTrialAnalyticsService initialised")
+
+        if not self.is_registered(FreeTrialUpgradeService):
+            self.register(
+                FreeTrialUpgradeService,
+                FreeTrialUpgradeService(
+                    db=self._db,
+                    data_limit_service=self.get(VPNDataLimitService),
+                    lifecycle_service=self.get(VPNLifecycleService),
+                    settings_service=self.get(SettingsService),
+                    abuse_service=self.get(FreeTrialAbuseProtectionService),
+                ),
+            )
+            logger.info("  ✓ FreeTrialUpgradeService initialised")
 
         if not self.is_registered(CustomerKeyService):
             self.register(CustomerKeyService, CustomerKeyService(db=self._db))

@@ -14,13 +14,20 @@ from database.models.user import UserORM
 class FreeTrialClaimService:
     """Phase 5.3 transactional acceptance boundary; it never creates a VPN key."""
 
-    def __init__(self, db, settings_service=None):
+    def __init__(self, db, settings_service=None, abuse_service=None):
         self.db = db
         self.settings_service = settings_service
+        self.abuse_service = abuse_service
 
     async def accept_claim(self, *, user_id: int, package_id: int | None, idempotency_key: str, policy: dict[str, object]):
         if user_id <= 0 or not idempotency_key:
             return Failure("invalid_claim", "Free Trial claim identity is invalid.")
+        if self.abuse_service is not None:
+            risk = await self.abuse_service.evaluate_claim(user_id=user_id)
+            if risk.is_failure:
+                return risk
+        if self.settings_service is not None:
+            policy = await self._authoritative_policy(policy)
         now = datetime.now(timezone.utc)
         period_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         async with self.db.session() as session:
@@ -42,6 +49,11 @@ class FreeTrialClaimService:
             normal_used = await session.scalar(select(func.count(FreeTrialClaimORM.id)).where(FreeTrialClaimORM.user_id == user_id, FreeTrialClaimORM.period_start == period_start, FreeTrialClaimORM.source == period_source, FreeTrialClaimORM.status.not_in(("cancelled", "failed"))))
             source = period_source
             data_bytes = int(policy.get("free_trial_data_per_claim_bytes", 0) or 0)
+            daily_cap = int(policy.get("free_trial_daily_data_cap_bytes", 0) or 0)
+            if daily_cap > 0:
+                used_today = await session.scalar(select(func.coalesce(func.sum(FreeTrialClaimORM.data_limit_bytes), 0)).where(FreeTrialClaimORM.user_id == user_id, FreeTrialClaimORM.period_start == period_start, FreeTrialClaimORM.source == period_source, FreeTrialClaimORM.status.not_in(("cancelled", "failed"))))
+                if int(used_today or 0) + data_bytes > daily_cap:
+                    return Failure("daily_data_cap_reached", "Today’s Free VPN data allowance has been used.")
             duration = int(policy.get("free_trial_duration_seconds", 0) or 0)
             device_limit = policy.get("free_trial_device_limit")
             entitlement = None
@@ -69,6 +81,21 @@ class FreeTrialClaimService:
                     return Failure("daily_allowance_exhausted", "Today’s Free VPN allowance has been used.")
                 return Failure("claim_conflict", "The Free VPN claim could not be accepted safely; please retry.")
             return Success(claim)
+
+    async def _authoritative_policy(self, requested: dict[str, object]) -> dict[str, object]:
+        """Reload policy values from persisted settings; callback policy is only a fallback."""
+        keys = (
+            "free_trial_enabled", "free_trial_normal_claims_per_period",
+            "free_trial_data_per_claim_bytes", "free_trial_duration_seconds",
+            "free_trial_device_limit", "free_trial_extra_claims_enabled",
+            "free_trial_daily_data_cap_bytes",
+        )
+        result = dict(requested)
+        for key in keys:
+            value = await self.settings_service.get(key, result.get(key))
+            if value is not None:
+                result[key] = value
+        return result
 
     async def cancel_claim(self, *, claim_id: int, reason: str):
         async with self.db.session() as session:

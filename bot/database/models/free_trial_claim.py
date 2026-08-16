@@ -30,3 +30,4 @@ class FreeTrialClaimORM(BaseModel):
     accepted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     cancellation_reason: Mapped[str | None] = mapped_column(String(96), nullable=True)
+    vpn_key_id: Mapped[int | None] = mapped_column(Integer, nullable=True, unique=True, index=True)

@@ -70,6 +70,17 @@ class SettingKeys:
     # Growth
     REFERRAL_COMMISSION_PCT: str = "growth_referral_commission_pct"
     FREE_TRIAL_DURATION_DAYS: str = "growth_free_trial_duration_days"
+    FREE_TRIAL_ENABLED: str = "free_trial_enabled"
+    FREE_TRIAL_DATA_PER_CLAIM_BYTES: str = "free_trial_data_per_claim_bytes"
+    FREE_TRIAL_DURATION_SECONDS: str = "free_trial_duration_seconds"
+    FREE_TRIAL_DEVICE_LIMIT: str = "free_trial_device_limit"
+    FREE_TRIAL_NORMAL_CLAIMS_PER_PERIOD: str = "free_trial_normal_claims_per_period"
+    FREE_TRIAL_DAILY_DATA_CAP_BYTES: str = "free_trial_daily_data_cap_bytes"
+    FREE_TRIAL_RESET_TIMEZONE: str = "free_trial_reset_timezone"
+    FREE_TRIAL_EXTRA_CLAIMS_ENABLED: str = "free_trial_extra_claims_enabled"
+    FREE_TRIAL_PAID_UPGRADE_ENABLED: str = "free_trial_paid_upgrade_enabled"
+    FREE_TRIAL_SERVER_SELECTION_MODE: str = "free_trial_server_selection_mode"
+    FREE_TRIAL_ABUSE_RATE_LIMIT_SECONDS: str = "free_trial_abuse_rate_limit_seconds"
 
     # Notifications
     EXPIRY_REMINDER_DAYS: str = "notifications_expiry_reminder_days"
@@ -200,6 +211,19 @@ DEFAULT_SETTINGS: list[dict] = [
         "description": "Duration of the free trial in days.",
         "is_public": True,
     },
+
+    # ── Free Trial ────────────────────────────────────────────────────────────
+    {"key": SettingKeys.FREE_TRIAL_ENABLED, "value": True, "type": "bool", "category": SettingCategory.GROWTH, "description": "Allow new Free Trial claims.", "is_public": False},
+    {"key": SettingKeys.FREE_TRIAL_DATA_PER_CLAIM_BYTES, "value": 536870912, "type": "int", "category": SettingCategory.GROWTH, "description": "Canonical Free Trial data allowance per claim in bytes.", "is_public": False},
+    {"key": SettingKeys.FREE_TRIAL_DURATION_SECONDS, "value": 86400, "type": "int", "category": SettingCategory.GROWTH, "description": "Free Trial duration per claim in seconds.", "is_public": False},
+    {"key": SettingKeys.FREE_TRIAL_DEVICE_LIMIT, "value": 1, "type": "int", "category": SettingCategory.GROWTH, "description": "Free Trial device policy limit.", "is_public": False},
+    {"key": SettingKeys.FREE_TRIAL_NORMAL_CLAIMS_PER_PERIOD, "value": 1, "type": "int", "category": SettingCategory.GROWTH, "description": "Normal Free Trial claims allowed per reset period.", "is_public": False},
+    {"key": SettingKeys.FREE_TRIAL_DAILY_DATA_CAP_BYTES, "value": 0, "type": "int", "category": SettingCategory.GROWTH, "description": "Optional total Free Trial data cap per reset period in bytes; zero disables it.", "is_public": False},
+    {"key": SettingKeys.FREE_TRIAL_RESET_TIMEZONE, "value": "Asia/Yangon", "type": "str", "category": SettingCategory.GROWTH, "description": "Timezone used for Free Trial claim periods.", "is_public": False},
+    {"key": SettingKeys.FREE_TRIAL_EXTRA_CLAIMS_ENABLED, "value": True, "type": "bool", "category": SettingCategory.GROWTH, "description": "Allow active extra Free Trial entitlements.", "is_public": False},
+    {"key": SettingKeys.FREE_TRIAL_PAID_UPGRADE_ENABLED, "value": True, "type": "bool", "category": SettingCategory.GROWTH, "description": "Allow paid upgrades and conversion from active Free Trial keys.", "is_public": False},
+    {"key": SettingKeys.FREE_TRIAL_SERVER_SELECTION_MODE, "value": "auto", "type": "str", "category": SettingCategory.GROWTH, "description": "Free Trial server selection mode.", "is_public": False},
+    {"key": SettingKeys.FREE_TRIAL_ABUSE_RATE_LIMIT_SECONDS, "value": 3, "type": "int", "category": SettingCategory.SECURITY, "description": "Minimum interval between repeated Free Trial actions.", "is_public": False},
 
     # ── Notifications ─────────────────────────────────────────────────────────
     {
