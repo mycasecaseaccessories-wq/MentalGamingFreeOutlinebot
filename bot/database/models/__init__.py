@@ -48,6 +48,7 @@ from .free_trial_entitlement import FreeTrialEntitlementORM
 from .free_trial_upgrade import FreeTrialUpgradeOfferORM, FreeTrialUpgradeORM, FreeTrialRestrictionORM
 from .free_trial_rate_limit import FreeTrialRateLimitORM
 from .referral_token import ReferralTokenORM
+from .referral_reward import ReferralRewardORM, ReferralRiskEventORM
 
 __all__ = [
     "UserORM",
@@ -74,4 +75,6 @@ __all__ = [
     "FreeTrialRestrictionORM",
     "FreeTrialRateLimitORM",
     "ReferralTokenORM",
+    "ReferralRewardORM",
+    "ReferralRiskEventORM",
 ]

@@ -202,7 +202,10 @@ class ServiceRegistry:
         from app.services.free_trial_analytics_service import FreeTrialAnalyticsService
         from app.services.free_trial_upgrade_service import FreeTrialUpgradeService
         from app.services.referral_token_service import ReferralTokenService
-        from app.services.referral_service import ReferralService, ReferralQualificationService
+        from app.services.referral_service import ReferralService
+        from app.services.referral_qualification_service import ReferralQualificationService, ReferralAbuseProtectionService as ReferralAbuseService
+        from app.services.referral_reward_service import ReferralRewardService
+        from app.services.membership_verification_service import MembershipVerificationService
 
         services_to_create = [
             SettingsService,
@@ -219,9 +222,44 @@ class ServiceRegistry:
         if not self.is_registered(ReferralTokenService):
             self.register(ReferralTokenService, ReferralTokenService(db=self._db))
             logger.info("  ✓ ReferralTokenService initialised")
+        if not self.is_registered(MembershipVerificationService):
+            self.register(MembershipVerificationService, MembershipVerificationService(db=self._db))
+            logger.info("  ✓ MembershipVerificationService initialised")
+        if not self.is_registered(ReferralAbuseService):
+            self.register(ReferralAbuseService, ReferralAbuseService(db=self._db, settings_service=self.get(SettingsService)))
+            logger.info("  ✓ ReferralAbuseProtectionService initialised")
+        if not self.is_registered(ReferralRewardService):
+            self.register(ReferralRewardService, ReferralRewardService(db=self._db, settings_service=self.get(SettingsService)))
+            logger.info("  ✓ ReferralRewardService initialised")
         if not self.is_registered(ReferralQualificationService):
-            self.register(ReferralQualificationService, ReferralQualificationService())
+            self.register(ReferralQualificationService, ReferralQualificationService(db=self._db, settings_service=self.get(SettingsService), membership_service=self.get(MembershipVerificationService), reward_service=self.get(ReferralRewardService), abuse_service=self.get(ReferralAbuseService)))
             logger.info("  ✓ ReferralQualificationService initialised")
+        if not getattr(self, "_referral_qualification_listener_registered", False):
+            async def _qualify_on_attribution(**payload):
+                public_id = payload.get("referral_public_id")
+                if public_id is None:
+                    return
+                async with self._db.session() as session:
+                    from sqlalchemy import select
+                    from database.models.referral import ReferralORM
+                    row = (await session.execute(select(ReferralORM).where(ReferralORM.public_referral_id == public_id))).scalar_one_or_none()
+                    referral_id = row.id if row is not None else None
+                if referral_id is not None:
+                    await self.get(ReferralQualificationService).evaluate(referral_id)
+            async def _grant_on_qualification(**payload):
+                public_id = payload.get("referral_public_id")
+                if public_id is None:
+                    return
+                async with self._db.session() as session:
+                    from sqlalchemy import select
+                    from database.models.referral import ReferralORM
+                    row = (await session.execute(select(ReferralORM).where(ReferralORM.public_referral_id == public_id))).scalar_one_or_none()
+                if row is not None:
+                    await self.get(ReferralRewardService).build_rewards(row.id)
+            bus.subscribe(EventType.REFERRAL_ATTRIBUTED, _qualify_on_attribution, priority=-50)
+            bus.subscribe(EventType.REFERRAL_QUALIFIED, _grant_on_qualification, priority=-50)
+            self._referral_qualification_listener_registered = True
+            logger.info("  ✓ Referral qualification and reward bridges registered")
         if not self.is_registered(ReferralService):
             self.register(ReferralService, ReferralService(db=self._db, token_service=self.get(ReferralTokenService), settings_service=self.get(SettingsService)))
             logger.info("  ✓ ReferralService initialised")

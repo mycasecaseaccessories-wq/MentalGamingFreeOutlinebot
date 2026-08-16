@@ -220,6 +220,17 @@ class SettingsService(BaseService):
             ValueError: If the value fails type validation.
         """
         raw = _validate_and_coerce(value, type_)
+        if key.startswith("referral_") and key not in {"referral_enabled", "referral_require_new_user", "referral_first_attribution_wins", "referral_start_prefix"}:
+            if key in {"referral_reward_mode"} and raw not in {"every_n", "every_valid"}:
+                raise ValueError("Unsupported referral reward mode")
+            if key.endswith("_type") and raw not in {"extra_trial", "wallet_credit", "bonus_data", "bonus_duration"}:
+                raise ValueError("Unsupported referral reward type")
+            if key == "referral_reward_wallet_currency" and (len(raw) != 3 or not raw.isalpha()):
+                raise ValueError("Referral reward currency must be a three-letter code")
+            if type_.strip().lower() in {"int", "float"}:
+                numeric = float(raw)
+                if numeric < 0 or (key == "referral_required_qualified_count" and numeric < 1) or (key.endswith("_reward_value") and numeric <= 0):
+                    raise ValueError("Referral policy value must be non-negative and reward values must be positive")
 
         async with self.db.session() as session:
             repo = SettingsRepository(session)

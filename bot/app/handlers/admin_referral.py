@@ -7,6 +7,7 @@ from app.handlers.base import admin_required
 from app.middlewares.auth import PLATFORM_USER_KEY
 from app.events import EventType, bus
 from app.services.referral_service import ReferralService
+from app.services.referral_reward_service import ReferralRewardService
 from app.services.settings_service import SettingsService
 from locales.translator import t
 
@@ -28,6 +29,8 @@ def _menu(language: str, enabled: bool = True) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(t("admin.referrals.stats", language=language), callback_data="admin:ref:stats")],
         [InlineKeyboardButton(t("admin.referrals.enabled" if not enabled else "admin.referrals.disabled", language=language), callback_data=f"admin:ref:toggle:{toggle}")],
         [InlineKeyboardButton(t("admin.referrals.recent", language=language), callback_data="admin:ref:recent")],
+        [InlineKeyboardButton(t("admin.referrals.suspicious", language=language), callback_data="admin:ref:review")],
+        [InlineKeyboardButton(t("admin.referrals.reward_history", language=language), callback_data="admin:ref:rewards")],
         [InlineKeyboardButton(t("common.back", language=language), callback_data="admin:home")],
     ])
 
@@ -69,6 +72,43 @@ async def admin_referral_callback(update: Update, context: ContextTypes.DEFAULT_
                 f"{t('admin.referrals.invalid', language=language)}: {stats['invalid']}")
         await query.edit_message_text(text, reply_markup=_menu(language, bool(await settings.get("referral_enabled", True))))
         return
+    if parts == ["admin", "ref", "review"]:
+        result = await service.admin_review_queue()
+        if result.is_failure:
+            await query.answer(t("referral.generic_error", language=language), show_alert=True)
+            return
+        items = result.unwrap()
+        if not items:
+            text = t("admin.referrals.suspicious", language=language) + "\n\n" + t("referral.no_referrals", language=language)
+            markup = _menu(language, bool(await settings.get("referral_enabled", True)))
+        else:
+            text = t("admin.referrals.suspicious", language=language) + "\n\n" + "\n".join(f"{i['public_referral_id']} — {t('admin.referrals.review_required', language=language)}" for i in items)
+            buttons = [[InlineKeyboardButton("✅", callback_data=f"admin:ref:review_action:{i['public_referral_id']}:approve"), InlineKeyboardButton("❌", callback_data=f"admin:ref:review_action:{i['public_referral_id']}:reject")] for i in items]
+            buttons.append([InlineKeyboardButton(t("common.back", language=language), callback_data="admin:ref:menu")])
+            markup = InlineKeyboardMarkup(buttons)
+        await query.edit_message_text(text, reply_markup=markup)
+        return
+    if len(parts) == 5 and parts[:3] == ["admin", "ref", "review_action"] and parts[4] in {"approve", "reject", "pending"}:
+        actor = context.user_data.get(PLATFORM_USER_KEY)
+        public_id, decision = parts[3], parts[4]
+        result = await service.review(actor_user_id=actor.id, public_referral_id=public_id, decision=decision)
+        if result.is_failure:
+            await query.answer(t("referral.generic_error", language=language), show_alert=True)
+            return
+        await query.edit_message_text(t("admin.referrals.reward_granted" if decision == "approve" else "admin.referrals.invalid", language=language), reply_markup=_menu(language, bool(await settings.get("referral_enabled", True))))
+        return
+    if parts == ["admin", "ref", "rewards"]:
+        registry = context.bot_data.get("registry")
+        rewards = registry.get_or_none(ReferralRewardService) if registry else None
+        actor = context.user_data.get(PLATFORM_USER_KEY)
+        if rewards is None or actor is None:
+            await query.answer(t("referral.generic_error", language=language), show_alert=True)
+            return
+        result = await rewards.get_reward_history(actor.id)
+        rows = result.unwrap() if result.is_success else []
+        text = t("admin.referrals.reward_history", language=language) + "\n\n" + ("\n".join(f"{r['public_reward_id']} — {r['status']}" for r in rows) or t("referral.no_referrals", language=language))
+        await query.edit_message_text(text, reply_markup=_menu(language, bool(await settings.get("referral_enabled", True))))
+        return
     if parts == ["admin", "ref", "recent"]:
         result = await service.admin_recent()
         if result.is_failure:
@@ -103,4 +143,4 @@ async def admin_referral_callback(update: Update, context: ContextTypes.DEFAULT_
 
 
 def register(application: Application) -> None:
-    application.add_handler(CallbackQueryHandler(admin_referral_callback, pattern=r"^admin:ref:(?:menu|stats|recent|toggle:(?:on|off)|invalidate:[A-Za-z0-9-]+:[A-Za-z0-9_]+)$"), group=7)
+    application.add_handler(CallbackQueryHandler(admin_referral_callback, pattern=r"^admin:ref:(?:menu|stats|recent|review|rewards|toggle:(?:on|off)|review_action:[A-Za-z0-9-]+:(?:approve|reject|pending)|invalidate:[A-Za-z0-9-]+:[A-Za-z0-9_]+)$"), group=7)

@@ -94,7 +94,7 @@ async def test_migration_alembic_version_at_head(tmp_path):
         revision = result.scalar()
 
     await db.close()
-    assert revision == "0028_phase61_referral_core", f"Expected integrated HEAD 0028_phase61_referral_core, got {revision!r}"
+    assert revision == "0029_phase62_referral_rewards", f"Expected integrated HEAD 0029_phase62_referral_rewards, got {revision!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -207,7 +207,7 @@ async def test_migration_phase02_database_gets_category_column(tmp_path):
         "category column not added to Phase 0.2 database by migration 0002"
     )
     assert legacy_value == "legacy_value", "Existing data was lost during migration"
-    assert revision == "0028_phase61_referral_core", f"Expected integrated HEAD 0028_phase61_referral_core, got {revision!r}"
+    assert revision == "0029_phase62_referral_rewards", f"Expected integrated HEAD 0029_phase62_referral_rewards, got {revision!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -388,4 +388,23 @@ async def test_settings_service_validation_rejects_bad_types(tmp_path):
     with pytest.raises(ValueError):
         await svc.set("bot_name", [1, 2, 3], type_="bool")
 
+    await db.close()
+
+
+@pytest.mark.asyncio
+async def test_phase62_referral_policy_validation_rejects_unsafe_values(tmp_path):
+    from app.services import SettingsService
+    db = await _fresh_db(_tmp_url(tmp_path, "phase62_policy_validate.db"))
+    svc = SettingsService(db)
+    await svc.seed_defaults()
+    with pytest.raises(ValueError):
+        await svc.set("referral_reward_daily_limit", -1, type_="int")
+    with pytest.raises(ValueError):
+        await svc.set("referral_required_qualified_count", 0, type_="int")
+    with pytest.raises(ValueError):
+        await svc.set("referral_referrer_reward_type", "unknown", type_="str")
+    with pytest.raises(ValueError):
+        await svc.set("referral_reward_mode", "unbounded", type_="str")
+    with pytest.raises(ValueError):
+        await svc.set("referral_reward_wallet_currency", "MM", type_="str")
     await db.close()

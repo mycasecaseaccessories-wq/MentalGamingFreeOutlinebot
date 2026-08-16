@@ -85,7 +85,9 @@ async def test_non_admin_cannot_decide_payment(tmp_path):
     _, submission, audits, notifications = await _rows(db)
     assert submission.status == PaymentSubmissionORM.STATUS_PENDING_REVIEW
     assert audits == []
-    assert notifications == []
+    assert len(notifications) == 1
+    assert notifications[0].type == "manual_payment_submitted"
+    assert notifications[0].user_id != customer_id
     await db.close()
 
 

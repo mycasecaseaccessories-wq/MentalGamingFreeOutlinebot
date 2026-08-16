@@ -26,6 +26,13 @@ class ReferralORM(BaseModel):
     STATUS_INVALID = "invalid"
     STATUS_CANCELLED = "cancelled"
 
+    QUALIFICATION_PENDING_AGE = "pending_age_requirement"
+    QUALIFICATION_PENDING_WAIT = "pending_wait_period"
+    QUALIFICATION_PENDING_FORCE_JOIN = "pending_force_join"
+    QUALIFICATION_PENDING_FREE_TRIAL = "pending_free_trial_activation"
+    QUALIFICATION_PENDING_PAID = "pending_paid_purchase"
+    QUALIFICATION_REVIEW_REQUIRED = "review_required"
+
     SOURCE_PERSONAL_LINK = "personal_link"
     SOURCE_CAMPAIGN = "campaign"
     SOURCE_ADMIN = "admin"
@@ -46,6 +53,11 @@ class ReferralORM(BaseModel):
     source: Mapped[str] = mapped_column(String(32), nullable=False, default=SOURCE_PERSONAL_LINK, index=True)
     safe_metadata: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
     qualified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    qualification_state: Mapped[str] = mapped_column(String(40), nullable=False, default=QUALIFICATION_PENDING_WAIT, index=True)
+    qualification_reason: Mapped[str | None] = mapped_column(String(96), nullable=True)
+    risk_result: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    review_required: Mapped[bool] = mapped_column(nullable=False, default=False)
+    review_note: Mapped[str | None] = mapped_column(String(256), nullable=True)
     rewarded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     invalidated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     invalidation_reason: Mapped[str | None] = mapped_column(String(64), nullable=True)

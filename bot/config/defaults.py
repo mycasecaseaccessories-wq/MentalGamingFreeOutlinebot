@@ -86,6 +86,29 @@ class SettingKeys:
     REFERRAL_REQUIRE_NEW_USER: str = "referral_require_new_user"
     REFERRAL_FIRST_ATTRIBUTION_WINS: str = "referral_first_attribution_wins"
     REFERRAL_START_PREFIX: str = "referral_start_prefix"
+    REFERRAL_MIN_FIRST_SEEN_AGE_SECONDS: str = "referral_min_first_seen_age_seconds"
+    REFERRAL_QUALIFICATION_WAIT_SECONDS: str = "referral_qualification_wait_seconds"
+    REFERRAL_REQUIRE_FORCE_JOIN: str = "referral_require_force_join"
+    REFERRAL_REQUIRE_FREE_TRIAL_ACTIVATION: str = "referral_require_free_trial_activation"
+    REFERRAL_REQUIRE_PAID_PURCHASE: str = "referral_require_paid_purchase"
+    REFERRAL_BURST_DETECTION_ENABLED: str = "referral_burst_detection_enabled"
+    REFERRAL_BURST_THRESHOLD: str = "referral_burst_threshold"
+    REFERRAL_BURST_WINDOW_SECONDS: str = "referral_burst_window_seconds"
+    REFERRAL_REVIEW_SUSPICIOUS: str = "referral_review_suspicious"
+    REFERRAL_REWARDS_ENABLED: str = "referral_rewards_enabled"
+    REFERRAL_REWARD_MODE: str = "referral_reward_mode"
+    REFERRAL_REQUIRED_QUALIFIED_COUNT: str = "referral_required_qualified_count"
+    REFERRAL_REFERRER_REWARD_TYPE: str = "referral_referrer_reward_type"
+    REFERRAL_REFERRER_REWARD_VALUE: str = "referral_referrer_reward_value"
+    REFERRAL_REFERRED_REWARD_TYPE: str = "referral_referred_reward_type"
+    REFERRAL_REFERRED_REWARD_VALUE: str = "referral_referred_reward_value"
+    REFERRAL_REWARD_DAILY_LIMIT: str = "referral_reward_daily_limit"
+    REFERRAL_REWARD_WEEKLY_LIMIT: str = "referral_reward_weekly_limit"
+    REFERRAL_REWARD_MONTHLY_LIMIT: str = "referral_reward_monthly_limit"
+    REFERRAL_REWARD_LIFETIME_LIMIT: str = "referral_reward_lifetime_limit"
+    REFERRAL_REWARD_COOLDOWN_SECONDS: str = "referral_reward_cooldown_seconds"
+    REFERRAL_REWARD_EXPIRY_SECONDS: str = "referral_reward_expiry_seconds"
+    REFERRAL_REWARD_WALLET_CURRENCY: str = "referral_reward_wallet_currency"
 
     # Notifications
     EXPIRY_REMINDER_DAYS: str = "notifications_expiry_reminder_days"
@@ -233,6 +256,29 @@ DEFAULT_SETTINGS: list[dict] = [
     {"key": SettingKeys.REFERRAL_REQUIRE_NEW_USER, "value": True, "type": "bool", "category": SettingCategory.GROWTH, "description": "Allow referral attribution only for newly registered users.", "is_public": False},
     {"key": SettingKeys.REFERRAL_FIRST_ATTRIBUTION_WINS, "value": True, "type": "bool", "category": SettingCategory.GROWTH, "description": "Preserve the first valid primary referrer.", "is_public": False},
     {"key": SettingKeys.REFERRAL_START_PREFIX, "value": "ref_", "type": "str", "category": SettingCategory.GROWTH, "description": "Telegram referral /start payload namespace.", "is_public": True},
+    {"key": SettingKeys.REFERRAL_MIN_FIRST_SEEN_AGE_SECONDS, "value": 259200, "type": "int", "category": SettingCategory.SECURITY, "description": "Minimum server-observed age of a referred user; not Telegram account age.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_QUALIFICATION_WAIT_SECONDS, "value": 86400, "type": "int", "category": SettingCategory.GROWTH, "description": "Wait after first valid attribution before qualification.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REQUIRE_FORCE_JOIN, "value": True, "type": "bool", "category": SettingCategory.GROWTH, "description": "Require current Force Join verification for qualification.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REQUIRE_FREE_TRIAL_ACTIVATION, "value": True, "type": "bool", "category": SettingCategory.GROWTH, "description": "Require authoritative Free Trial activation for qualification.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REQUIRE_PAID_PURCHASE, "value": False, "type": "bool", "category": SettingCategory.GROWTH, "description": "Require an authoritative successful paid purchase for qualification.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_BURST_DETECTION_ENABLED, "value": True, "type": "bool", "category": SettingCategory.SECURITY, "description": "Hold suspicious referral velocity for review.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_BURST_THRESHOLD, "value": 10, "type": "int", "category": SettingCategory.SECURITY, "description": "Maximum referral events in the burst window before review.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_BURST_WINDOW_SECONDS, "value": 300, "type": "int", "category": SettingCategory.SECURITY, "description": "Referral burst detection window in seconds.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REVIEW_SUSPICIOUS, "value": True, "type": "bool", "category": SettingCategory.SECURITY, "description": "Require admin review instead of automatic rewards for suspicious referrals.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REWARDS_ENABLED, "value": True, "type": "bool", "category": SettingCategory.GROWTH, "description": "Enable referral reward fulfillment.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REWARD_MODE, "value": "every_n", "type": "str", "category": SettingCategory.GROWTH, "description": "Reward mode: every_n qualified referrals or every valid qualification.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REQUIRED_QUALIFIED_COUNT, "value": 3, "type": "int", "category": SettingCategory.GROWTH, "description": "Qualified referrals required to open each reward cycle.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REFERRER_REWARD_TYPE, "value": "extra_trial", "type": "str", "category": SettingCategory.GROWTH, "description": "Reward type for the referrer.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REFERRER_REWARD_VALUE, "value": 1, "type": "int", "category": SettingCategory.GROWTH, "description": "Reward amount for the referrer.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REFERRED_REWARD_TYPE, "value": "extra_trial", "type": "str", "category": SettingCategory.GROWTH, "description": "Reward type for the referred user.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REFERRED_REWARD_VALUE, "value": 1, "type": "int", "category": SettingCategory.GROWTH, "description": "Reward amount for the referred user.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REWARD_DAILY_LIMIT, "value": 5, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum referral rewards per beneficiary per UTC day; zero means unlimited.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REWARD_WEEKLY_LIMIT, "value": 20, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum referral rewards per beneficiary per UTC week; zero means unlimited.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REWARD_MONTHLY_LIMIT, "value": 50, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum referral rewards per beneficiary per UTC month; zero means unlimited.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REWARD_LIFETIME_LIMIT, "value": 0, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum lifetime referral rewards per beneficiary; zero means unlimited.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REWARD_COOLDOWN_SECONDS, "value": 3600, "type": "int", "category": SettingCategory.GROWTH, "description": "Minimum time between rewards for one beneficiary.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REWARD_EXPIRY_SECONDS, "value": 2592000, "type": "int", "category": SettingCategory.GROWTH, "description": "Expiry for time-limited referral entitlements.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REWARD_WALLET_CURRENCY, "value": "MMK", "type": "str", "category": SettingCategory.WALLET, "description": "Currency used by wallet referral bonuses.", "is_public": False},
 
     # ── Notifications ─────────────────────────────────────────────────────────
     {

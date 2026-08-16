@@ -269,3 +269,28 @@
 - [x] Audit EN/MY terminology, grammar, placeholders, privacy wording, fallback behavior, and Telegram UI length.
 - [x] Fix localization gaps or unnatural wording and add bilingual completeness/behavior tests.
 - [x] Run localization-focused and full regression validation and document the audit result.
+
+## Phase 6.2 — Referral Qualification, Rewards, and Fake-Referral Protection
+
+- [x] Inspect existing Phase 6.1 referral, user, first-seen, Force Join, Free Trial, wallet, payment, entitlement, settings, events, hooks, rate-limit, audit, worker, localization, admin, migration, and test contracts.
+- [x] Add typed qualification states and admin-controlled qualification policy using first_seen_at, wait period, new-user, Force Join, Free Trial activation, paid purchase, account status, and review boundaries.
+- [x] Add configurable reward policy and typed reward modes/types without creating duplicate wallet, Free Trial, payment, provisioning, settings, permission, or task systems.
+- [x] Add reward limits, cooldown, expiry, concurrency protection, and separate qualification validity from reward eligibility/fulfillment.
+- [x] Add durable reward ledger, idempotent fulfillment, recovery/retry, and audit-safe provenance.
+- [x] Add fake-referral protection using first_seen_at, wait period, Force Join, Free Trial activation, rate/limit, burst detection, review, self-referral, duplicate, and account-status checks.
+- [x] Add Extra Free Trial, wallet credit, bonus data/duration entitlement foundations through existing services.
+- [x] Add authorized admin qualification, reward, anti-abuse, review, limits, and ledger management UX.
+- [x] Add EN/MY qualification, reward, review, limit, and customer outcome localization.
+- [x] Add Phase 6.2 unit, integration, concurrency, abuse, privacy, recovery, migration, and boundary tests; run full Phase 0–6.2 validation.
+- [x] Document the Phase 6.3 handoff and push only the validated Phase 6.2 implementation.
+
+## Phase 6.2 — Referral Qualification & Rewards
+
+- [x] Add immutable server-observed first_seen_at and migration 0029 backfill.
+- [x] Implement qualification states for age, wait, Force Join, Free Trial activation, paid purchase, review, qualified, and invalid outcomes.
+- [x] Implement durable referral burst detection without Telegram account-age guessing or invasive fingerprinting.
+- [x] Implement ReferralReward ledger with separate referrer/referred-user rows, policy snapshots, deterministic idempotency, and partial-failure recovery.
+- [x] Implement Extra Trial entitlement and wallet bonus fulfillment with atomic ledger writes and concurrency-safe limits.
+- [x] Add admin-managed qualification/reward settings, review/reward history UX, and EN/MY localization.
+- [x] Add focused Phase 6.2 tests for age/wait/action boundaries, abuse, limits, idempotency, concurrency, privacy, and regression.
+- [x] Write docs/phase-62.md and verify only Phase 6.2 completion before Phase 6.3 handoff.

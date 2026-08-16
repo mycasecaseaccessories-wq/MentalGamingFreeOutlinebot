@@ -11,16 +11,10 @@ from app.events import EventType, bus
 from app.services.base import BaseService
 from app.services.referral_token_service import ReferralTokenService, StartPayloadParser
 from app.services.settings_service import SettingsService
+from app.services.referral_qualification_service import ReferralQualificationService
 from database.models.referral import ReferralORM
 from database.models.referral_token import ReferralTokenORM
 from database.models.user import UserORM
-
-
-class ReferralQualificationService:
-    """Phase 6.2 extension point; Phase 6.1 never grants rewards."""
-
-    async def evaluate(self, referral_id: int):
-        return Success({"referral_id": referral_id, "status": ReferralORM.STATUS_PENDING_QUALIFICATION})
 
 
 class ReferralService(BaseService):
@@ -105,7 +99,7 @@ class ReferralService(BaseService):
     async def history(self, referrer_id: int, limit: int = 20):
         async with self.db.session() as session:
             rows = list((await session.execute(select(ReferralORM).where(ReferralORM.referrer_id == referrer_id).order_by(ReferralORM.created_at.desc()).limit(max(1, min(limit, 50))))).scalars().all())
-        return Success({"items": [{"public_referral_id": row.public_referral_id, "friend_label": f"Friend #{index}", "status": row.status, "created_at": row.created_at} for index, row in enumerate(rows, 1)]})
+        return Success({"items": [{"public_referral_id": row.public_referral_id, "friend_label": f"Friend #{index}", "status": row.status, "qualification_state": row.qualification_state, "review_required": row.review_required, "created_at": row.created_at} for index, row in enumerate(rows, 1)]})
 
     async def admin_stats(self):
         async with self.db.session() as session:
@@ -115,7 +109,41 @@ class ReferralService(BaseService):
     async def admin_recent(self, limit: int = 20):
         async with self.db.session() as session:
             rows = list((await session.execute(select(ReferralORM).order_by(ReferralORM.created_at.desc()).limit(max(1, min(limit, 50))))).scalars().all())
-        return Success([{"public_referral_id": row.public_referral_id, "referrer_id": row.referrer_id, "referred_id": row.referred_id, "status": row.status, "source": row.source, "created_at": row.created_at} for row in rows])
+        return Success([{"public_referral_id": row.public_referral_id, "referrer_id": row.referrer_id, "referred_id": row.referred_id, "status": row.status, "qualification_state": row.qualification_state, "review_required": row.review_required, "risk_result": row.risk_result, "source": row.source, "created_at": row.created_at} for row in rows])
+
+    async def admin_review_queue(self, limit: int = 50):
+        async with self.db.session() as session:
+            rows = list((await session.execute(select(ReferralORM).where(ReferralORM.review_required.is_(True), ReferralORM.status == ReferralORM.STATUS_PENDING_QUALIFICATION).order_by(ReferralORM.created_at.asc()).limit(max(1, min(50, limit))))).scalars().all())
+        return Success([{"public_referral_id": row.public_referral_id, "referrer_id": row.referrer_id, "referred_id": row.referred_id, "qualification_state": row.qualification_state, "risk_result": row.risk_result, "created_at": row.created_at} for row in rows])
+
+    async def review(self, *, actor_user_id: int, public_referral_id: str, decision: str, note: str = ""):
+        if decision not in {"approve", "reject", "pending"}:
+            return Failure("invalid_decision", "Invalid review decision.")
+        async with self.db.session() as session:
+            actor = await session.get(UserORM, actor_user_id)
+            if actor is None or actor.role != "admin" or not actor.is_active:
+                return Failure("permission_denied", "Admin permission required.")
+            row = (await session.execute(select(ReferralORM).where(ReferralORM.public_referral_id == public_referral_id).with_for_update())).scalar_one_or_none()
+            if row is None:
+                return Failure("not_found", "Referral not found.")
+            if decision == "reject":
+                row.status = ReferralORM.STATUS_INVALID
+                row.qualification_state = ReferralORM.STATUS_INVALID
+                row.invalidation_reason = ReferralORM.INVALID_ADMIN
+                row.invalidated_at = datetime.now(timezone.utc)
+            elif decision == "approve":
+                row.review_required = False
+                row.review_note = note[:256] or "admin_approved"
+                row.qualification_state = ReferralORM.STATUS_QUALIFIED
+                row.status = ReferralORM.STATUS_QUALIFIED
+                row.qualified_at = datetime.now(timezone.utc)
+            else:
+                row.review_note = note[:256] or "kept_pending"
+            await session.flush()
+            result = {"public_referral_id": row.public_referral_id, "status": row.status, "qualification_state": row.qualification_state}
+        if decision == "approve":
+            await bus.emit(EventType.REFERRAL_QUALIFIED, referral_public_id=public_referral_id, reviewed=True)
+        return Success(result)
 
     async def invalidate(self, *, actor_user_id: int, public_referral_id: str, reason: str):
         async with self.db.session() as session:

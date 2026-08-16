@@ -97,7 +97,16 @@ async def referral_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         else:
             lines = [t("referral.history_title", language=lang), ""]
             for index, item in enumerate(items, 1):
-                status_key = {
+                state_key = {
+                    "pending_age_requirement": "referral.pending_age",
+                    "pending_wait_period": "referral.pending_wait",
+                    "pending_force_join": "referral.pending_force_join",
+                    "pending_free_trial_activation": "referral.pending_free_trial",
+                    "pending_paid_purchase": "referral.pending_paid",
+                    "review_required": "referral.under_review",
+                    "qualified": "referral.qualified",
+                }.get(item.get("qualification_state"), None)
+                status_key = state_key or {
                     "pending_qualification": "referral.pending",
                     "qualified": "referral.qualified",
                     "rewarded": "referral.rewarded",

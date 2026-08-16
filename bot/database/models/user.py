@@ -13,7 +13,7 @@ Related tables (added in later phases):
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import BigInteger, Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -101,6 +101,14 @@ class UserORM(BaseModel):
         DateTime(timezone=True),
         nullable=True,
         comment="UTC timestamp of the user's last interaction with the bot",
+    )
+
+    # ── Anti-abuse identity signal ────────────────────────────────────────
+    first_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        comment="First server-observed bot interaction; not Telegram account creation time",
     )
 
     # ── Referral ──────────────────────────────────────────────────────────
