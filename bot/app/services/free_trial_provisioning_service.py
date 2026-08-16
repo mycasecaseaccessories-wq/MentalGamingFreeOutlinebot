@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 
 from app.core.result import Failure, Success
+from app.events import EventType, bus
 from app.models.vpn_provisioning import ProvisioningSource, VPNProvisioningRequest
 from database.models.free_trial_claim import FreeTrialClaimORM
 from database.models.server import ServerORM
@@ -154,7 +155,9 @@ class FreeTrialProvisioningService:
             claim.status = "provisioned"
             reservation.status = ServerCapacityReservationORM.STATUS_COMMITTED
             reservation.committed_at = now
-            return Success(vpn_key_id)
+            user_id = int(claim.user_id)
+        await bus.emit(EventType.FREE_TRIAL_ACTIVATED, user_id=user_id, claim_id=claim_id, vpn_key_id=vpn_key_id, source_reference=f"free_trial_claim:{claim_id}")
+        return Success(vpn_key_id)
 
     async def _restore_claim_after_failure(self, claim_id: int) -> None:
         async with self.db.session() as session:

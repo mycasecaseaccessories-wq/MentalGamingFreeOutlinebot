@@ -109,6 +109,13 @@ class SettingKeys:
     REFERRAL_REWARD_COOLDOWN_SECONDS: str = "referral_reward_cooldown_seconds"
     REFERRAL_REWARD_EXPIRY_SECONDS: str = "referral_reward_expiry_seconds"
     REFERRAL_REWARD_WALLET_CURRENCY: str = "referral_reward_wallet_currency"
+    MISSION_REWARD_DAILY_LIMIT: str = "mission_reward_daily_limit"
+    MISSION_REWARD_WEEKLY_LIMIT: str = "mission_reward_weekly_limit"
+    MISSION_REWARD_MONTHLY_LIMIT: str = "mission_reward_monthly_limit"
+    MISSION_REWARD_LIFETIME_LIMIT: str = "mission_reward_lifetime_limit"
+    MISSION_REWARD_COOLDOWN_SECONDS: str = "mission_reward_cooldown_seconds"
+    MISSION_MENU_RATE_LIMIT_SECONDS: str = "mission_menu_rate_limit_seconds"
+    MISSION_CLAIM_RATE_LIMIT_SECONDS: str = "mission_claim_rate_limit_seconds"
 
     # Notifications
     EXPIRY_REMINDER_DAYS: str = "notifications_expiry_reminder_days"
@@ -275,6 +282,13 @@ DEFAULT_SETTINGS: list[dict] = [
     {"key": SettingKeys.REFERRAL_REWARD_DAILY_LIMIT, "value": 5, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum referral rewards per beneficiary per UTC day; zero means unlimited.", "is_public": False},
     {"key": SettingKeys.REFERRAL_REWARD_WEEKLY_LIMIT, "value": 20, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum referral rewards per beneficiary per UTC week; zero means unlimited.", "is_public": False},
     {"key": SettingKeys.REFERRAL_REWARD_MONTHLY_LIMIT, "value": 50, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum referral rewards per beneficiary per UTC month; zero means unlimited.", "is_public": False},
+    {"key": SettingKeys.MISSION_REWARD_DAILY_LIMIT, "value": 0, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum mission rewards per beneficiary per rolling day; zero means unlimited.", "is_public": False},
+    {"key": SettingKeys.MISSION_REWARD_WEEKLY_LIMIT, "value": 0, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum mission rewards per beneficiary per rolling week; zero means unlimited.", "is_public": False},
+    {"key": SettingKeys.MISSION_REWARD_MONTHLY_LIMIT, "value": 0, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum mission rewards per beneficiary per rolling month; zero means unlimited.", "is_public": False},
+    {"key": SettingKeys.MISSION_REWARD_LIFETIME_LIMIT, "value": 0, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum lifetime mission rewards per beneficiary; zero means unlimited.", "is_public": False},
+    {"key": SettingKeys.MISSION_REWARD_COOLDOWN_SECONDS, "value": 0, "type": "int", "category": SettingCategory.GROWTH, "description": "Cooldown between mission rewards per beneficiary; zero disables cooldown.", "is_public": False},
+    {"key": SettingKeys.MISSION_MENU_RATE_LIMIT_SECONDS, "value": 3, "type": "int", "category": SettingCategory.SECURITY, "description": "Minimum seconds between customer mission menu refreshes.", "is_public": False},
+    {"key": SettingKeys.MISSION_CLAIM_RATE_LIMIT_SECONDS, "value": 2, "type": "int", "category": SettingCategory.SECURITY, "description": "Minimum seconds between manual mission reward claim attempts.", "is_public": False},
     {"key": SettingKeys.REFERRAL_REWARD_LIFETIME_LIMIT, "value": 0, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum lifetime referral rewards per beneficiary; zero means unlimited.", "is_public": False},
     {"key": SettingKeys.REFERRAL_REWARD_COOLDOWN_SECONDS, "value": 3600, "type": "int", "category": SettingCategory.GROWTH, "description": "Minimum time between rewards for one beneficiary.", "is_public": False},
     {"key": SettingKeys.REFERRAL_REWARD_EXPIRY_SECONDS, "value": 2592000, "type": "int", "category": SettingCategory.GROWTH, "description": "Expiry for time-limited referral entitlements.", "is_public": False},

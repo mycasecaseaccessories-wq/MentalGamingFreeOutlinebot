@@ -294,3 +294,15 @@
 - [x] Add admin-managed qualification/reward settings, review/reward history UX, and EN/MY localization.
 - [x] Add focused Phase 6.2 tests for age/wait/action boundaries, abuse, limits, idempotency, concurrency, privacy, and regression.
 - [x] Write docs/phase-62.md and verify only Phase 6.2 completion before Phase 6.3 handoff.
+
+## Phase 6.3 — Missions & Reward Foundation
+
+- [x] Inspect the Phase 6.3 specification and existing mission-like, event, worker, reward, entitlement, settings, admin, localization, audit, permission, and test contracts.
+- [x] Add typed mission definitions, condition configuration validation, repeat modes, availability windows, cooldown/reset periods, and immutable policy snapshots.
+- [x] Add user mission progress, event-driven updates, completion boundaries, claim/automatic reward states, idempotency, and concurrency protection.
+- [x] Reuse the Phase 6.2 reward engine for Extra Trial, wallet, bonus data, and bonus duration mission rewards without direct wallet/key/normal-claim mutations.
+- [x] Add customer missions, progress, claim, and history UX plus authorized admin mission management UX.
+- [x] Add full EN/MY mission, progress, completion, claim, review, limit, and error localization.
+- [x] Add Phase 6.3 migrations, focused tests, full regression validation, and Phase 6.4 handoff documentation.
+
+- [x] Fix Phase 6.3 regression expectations for the added Missions navigation item and migration head 0030 while preserving prior phase assertions.

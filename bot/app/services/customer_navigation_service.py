@@ -62,6 +62,12 @@ _DESTINATIONS: dict[CustomerMenuItem, NavigationDestination] = {
         "referral.invite_body",
         implemented=True,
     ),
+    CustomerMenuItem.MISSIONS: NavigationDestination(
+        CustomerMenuItem.MISSIONS,
+        "missions.title",
+        "missions.body",
+        implemented=True,
+    ),
 }
 
 
@@ -137,5 +143,6 @@ class CustomerNavigationService(BaseService):
                 CustomerMenuItem.PROFILE,
                 CustomerMenuItem.SUPPORT,
                 CustomerMenuItem.REFER_FRIENDS,
+                CustomerMenuItem.MISSIONS,
             }
         )

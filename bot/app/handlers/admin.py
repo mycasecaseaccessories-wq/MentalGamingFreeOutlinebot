@@ -250,6 +250,8 @@ def register(application: Application) -> None:
     application.add_handler(CommandHandler("admin", admin_panel), group=7)
     from app.handlers.admin_referral import register as register_admin_referral
     register_admin_referral(application)
+    from app.handlers.admin_missions import register as register_admin_missions
+    register_admin_missions(application)
     application.add_handler(CommandHandler("cancel", admin_review_cancel), group=7)
     application.add_handler(MessageHandler(filters.REPLY & filters.TEXT & ~filters.COMMAND, admin_review_text), group=7)
     application.add_handler(

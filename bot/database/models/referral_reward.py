@@ -39,7 +39,9 @@ class ReferralRewardORM(BaseModel):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     public_reward_id: Mapped[str] = mapped_column(String(48), nullable=False, unique=True, index=True)
-    referral_id: Mapped[int] = mapped_column(ForeignKey("referrals.id", ondelete="RESTRICT"), nullable=False, index=True)
+    referral_id: Mapped[int | None] = mapped_column(ForeignKey("referrals.id", ondelete="RESTRICT"), nullable=True, index=True)
+    source_type: Mapped[str] = mapped_column(String(32), nullable=False, default="referral", index=True)
+    source_reference: Mapped[str] = mapped_column(String(160), nullable=False, default="referral")
     beneficiary_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
     beneficiary_type: Mapped[str] = mapped_column(String(24), nullable=False)
     reward_type: Mapped[str] = mapped_column(String(32), nullable=False)

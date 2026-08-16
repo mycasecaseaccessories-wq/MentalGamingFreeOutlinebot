@@ -31,6 +31,7 @@ def _menu(language: str, enabled: bool = True) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(t("admin.referrals.recent", language=language), callback_data="admin:ref:recent")],
         [InlineKeyboardButton(t("admin.referrals.suspicious", language=language), callback_data="admin:ref:review")],
         [InlineKeyboardButton(t("admin.referrals.reward_history", language=language), callback_data="admin:ref:rewards")],
+        [InlineKeyboardButton(t("admin.missions.menu", language=language), callback_data="admin:missions:menu")],
         [InlineKeyboardButton(t("common.back", language=language), callback_data="admin:home")],
     ])
 

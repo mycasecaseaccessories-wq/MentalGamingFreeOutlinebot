@@ -232,6 +232,12 @@ class SettingsService(BaseService):
                 if numeric < 0 or (key == "referral_required_qualified_count" and numeric < 1) or (key.endswith("_reward_value") and numeric <= 0):
                     raise ValueError("Referral policy value must be non-negative and reward values must be positive")
 
+        if key.startswith("mission_"):
+            if key.endswith("_type") and raw not in {"extra_trial", "wallet_credit", "bonus_data", "bonus_duration", "none"}:
+                raise ValueError("Unsupported mission reward type")
+            if type_.strip().lower() in {"int", "float"} and float(raw) < 0:
+                raise ValueError("Mission policy value must be non-negative")
+
         async with self.db.session() as session:
             repo = SettingsRepository(session)
             row = await repo.get(key)

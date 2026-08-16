@@ -94,7 +94,7 @@ async def test_migration_alembic_version_at_head(tmp_path):
         revision = result.scalar()
 
     await db.close()
-    assert revision == "0029_phase62_referral_rewards", f"Expected integrated HEAD 0029_phase62_referral_rewards, got {revision!r}"
+    assert revision == "0030_phase63_missions", f"Expected integrated HEAD 0030_phase63_missions, got {revision!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -207,7 +207,7 @@ async def test_migration_phase02_database_gets_category_column(tmp_path):
         "category column not added to Phase 0.2 database by migration 0002"
     )
     assert legacy_value == "legacy_value", "Existing data was lost during migration"
-    assert revision == "0029_phase62_referral_rewards", f"Expected integrated HEAD 0029_phase62_referral_rewards, got {revision!r}"
+    assert revision == "0030_phase63_missions", f"Expected integrated HEAD 0030_phase63_missions, got {revision!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -407,4 +407,20 @@ async def test_phase62_referral_policy_validation_rejects_unsafe_values(tmp_path
         await svc.set("referral_reward_mode", "unbounded", type_="str")
     with pytest.raises(ValueError):
         await svc.set("referral_reward_wallet_currency", "MM", type_="str")
+    await db.close()
+
+
+@pytest.mark.asyncio
+async def test_settings_service_validates_phase63_mission_policy(tmp_path):
+    from app.services import SettingsService
+    db = await _fresh_db(_tmp_url(tmp_path, "mission_policy.db"))
+    svc = SettingsService(db)
+    with pytest.raises(ValueError, match="non-negative"):
+        await svc.set("mission_reward_daily_limit", -1, type_="int")
+    with pytest.raises(ValueError, match="non-negative"):
+        await svc.set("mission_menu_rate_limit_seconds", -1, type_="int")
+    with pytest.raises(ValueError, match="Unsupported mission reward type"):
+        await svc.set("mission_reward_type", "wallet", type_="str")
+    await svc.set("mission_reward_type", "wallet_credit", type_="str")
+    assert await svc.get("mission_reward_type") == "wallet_credit"
     await db.close()

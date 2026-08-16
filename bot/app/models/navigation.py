@@ -19,6 +19,7 @@ class CustomerMenuItem(StrEnum):
     PROFILE = "profile"
     SUPPORT = "support"
     REFER_FRIENDS = "refer_friends"
+    MISSIONS = "missions"
 
 
 @dataclass(frozen=True, slots=True)

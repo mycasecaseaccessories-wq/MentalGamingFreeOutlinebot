@@ -55,8 +55,34 @@ class ReferralRewardService:
             )
         results = []
         for beneficiary, user_id, reward_type, value in specs:
-            results.append(await self._create_and_grant(referral_id, beneficiary, user_id, reward_type, value, cycle, policy))
+            results.append(await self._create_and_grant(referral_id, beneficiary, user_id, reward_type, value, cycle, policy, source_type="referral", source_reference=str(referral_id)))
         return Success({"created": len(results), "rewards": results, "qualified_count": qualified_count, "cycle": cycle})
+
+    async def grant_reward(self, *, user_id: int, reward_type: str, reward_value: Decimal, source_reference: str, period_key: str, policy_revision: int = 1, reward_expiry_seconds: int = 0, delivery_mode: str = "auto_grant", apply_limits: bool = False):
+        """Grant a non-referral reward through the same Phase 6.2 ledger/fulfillment path."""
+        if delivery_mode not in {"auto_grant", "manual_claim"}:
+            raise ValueError("unsupported_delivery_mode")
+        if reward_type == ReferralRewardORM.TYPE_EXTRA_TRIAL:
+            beneficiary = "mission"
+        elif reward_type in {ReferralRewardORM.TYPE_WALLET_CREDIT, ReferralRewardORM.TYPE_BONUS_DATA, ReferralRewardORM.TYPE_BONUS_DURATION}:
+            beneficiary = "mission"
+        elif reward_type == "none":
+            return {"status": ReferralRewardORM.STATUS_GRANTED, "reward_type": reward_type, "reward_value": "0", "source_type": "mission"}
+        else:
+            raise ValueError("unsupported_reward_type")
+        policy = {
+            "revision": int(policy_revision),
+            "required_count": 0,
+            "mode": "mission",
+            "daily_limit": max(0, int(await self.settings.get("mission_reward_daily_limit", 0))),
+            "weekly_limit": max(0, int(await self.settings.get("mission_reward_weekly_limit", 0))),
+            "monthly_limit": max(0, int(await self.settings.get("mission_reward_monthly_limit", 0))),
+            "lifetime_limit": max(0, int(await self.settings.get("mission_reward_lifetime_limit", 0))),
+            "cooldown_seconds": max(0, int(await self.settings.get("mission_reward_cooldown_seconds", 0))),
+            "expiry_seconds": max(0, int(reward_expiry_seconds)),
+            "wallet_currency": str(await self.settings.get("currency", "MMK")).upper()[:3],
+        }
+        return await self._create_and_grant(None, beneficiary, user_id, reward_type, Decimal(str(reward_value)), 1, policy, source_type="mission", source_reference=source_reference, apply_limits=apply_limits, explicit_key=f"mission:{source_reference}:{user_id}:{period_key}")
 
     async def _policy_snapshot(self):
         return {
@@ -76,22 +102,24 @@ class ReferralRewardService:
             "wallet_currency": str(await self.settings.get("referral_reward_wallet_currency", "MMK")).upper()[:3],
         }
 
-    async def _create_and_grant(self, referral_id, beneficiary, user_id, reward_type, value, cycle, policy):
-        key = f"referral_reward:{policy['revision']}:{referral_id}:{beneficiary}:{cycle}"
+    async def _create_and_grant(self, referral_id, beneficiary, user_id, reward_type, value, cycle, policy, *, source_type="referral", source_reference=None, apply_limits=True, explicit_key=None):
+        key = explicit_key or (f"referral_reward:{policy['revision']}:{referral_id}:{beneficiary}:{cycle}" if source_type == "referral" else f"{source_type}_reward:{source_reference}:{beneficiary}:{cycle}")
         lock = self._idempotency_locks.setdefault(key, asyncio.Lock())
         async with lock:
-            return await self._create_and_grant_locked(referral_id, beneficiary, user_id, reward_type, value, cycle, policy, key)
+            return await self._create_and_grant_locked(referral_id, beneficiary, user_id, reward_type, value, cycle, policy, key, source_type, source_reference or str(referral_id), apply_limits)
 
-    async def _create_and_grant_locked(self, referral_id, beneficiary, user_id, reward_type, value, cycle, policy, key):
+    async def _create_and_grant_locked(self, referral_id, beneficiary, user_id, reward_type, value, cycle, policy, key, source_type, source_reference, apply_limits):
         now = datetime.now(timezone.utc)
         async with self.db.session() as session:
             existing = (await session.execute(select(ReferralRewardORM).where(ReferralRewardORM.idempotency_key == key).with_for_update())).scalar_one_or_none()
             if existing is not None and existing.status != ReferralRewardORM.STATUS_FAILED:
                 return self._result(existing)
-            allowed, reason = await self._within_limits(session, user_id, policy, now)
+            allowed, reason = await self._within_limits(session, user_id, policy, now) if apply_limits else (True, "not_shared")
             row = existing or ReferralRewardORM(
                 public_reward_id="RWD-" + secrets.token_urlsafe(7).replace("_", "-").replace("/", "-")[:10].upper(),
                 referral_id=referral_id,
+                source_type=source_type,
+                source_reference=str(source_reference),
                 beneficiary_user_id=user_id,
                 beneficiary_type=beneficiary,
                 reward_type=reward_type,
@@ -146,7 +174,7 @@ class ReferralRewardService:
                     if wallet.currency != policy["wallet_currency"] or wallet.is_frozen:
                         raise ValueError("wallet_unavailable")
                     wallet.balance = Decimal(str(wallet.balance)) + value
-                    tx = TransactionORM(wallet_id=wallet.id, amount=value, currency=wallet.currency, type=TransactionORM.TYPE_BONUS, reference=row.public_reward_id, idempotency_key=key, note="Referral reward")
+                    tx = TransactionORM(wallet_id=wallet.id, amount=value, currency=wallet.currency, type=TransactionORM.TYPE_BONUS, reference=row.public_reward_id, idempotency_key=key, note=f"{source_type.title()} reward")
                     session.add(tx)
                     await session.flush()
                     row.wallet_transaction_id = tx.id
@@ -161,7 +189,7 @@ class ReferralRewardService:
                 await session.flush()
                 result = self._result(row)
         if result["status"] == ReferralRewardORM.STATUS_GRANTED:
-            await bus.emit(EventType.REFERRAL_REWARD_GRANTED, reward_public_id=result["public_reward_id"], referral_id=referral_id, beneficiary_user_id=user_id, reward_type=reward_type)
+            await bus.emit(EventType.REFERRAL_REWARD_GRANTED, reward_public_id=result["public_reward_id"], referral_id=referral_id, source_type=source_type, source_reference=source_reference, beneficiary_user_id=user_id, reward_type=reward_type)
         return result
 
     async def _within_limits(self, session, user_id: int, policy: dict, now: datetime):
@@ -193,4 +221,4 @@ class ReferralRewardService:
     def _result(row):
         if row is None:
             return {"status": "retry"}
-        return {"reward_id": row.id, "public_reward_id": row.public_reward_id, "referral_id": row.referral_id, "beneficiary_user_id": row.beneficiary_user_id, "beneficiary_type": row.beneficiary_type, "reward_type": row.reward_type, "reward_value": str(row.reward_value), "reward_cycle": row.reward_cycle, "status": row.status, "limit_result": row.limit_result, "failure_reason": row.failure_reason, "granted_at": row.granted_at}
+        return {"reward_id": row.id, "public_reward_id": row.public_reward_id, "referral_id": row.referral_id, "source_type": row.source_type, "source_reference": row.source_reference, "beneficiary_user_id": row.beneficiary_user_id, "beneficiary_type": row.beneficiary_type, "reward_type": row.reward_type, "reward_value": str(row.reward_value), "reward_cycle": row.reward_cycle, "status": row.status, "limit_result": row.limit_result, "failure_reason": row.failure_reason, "granted_at": row.granted_at}
