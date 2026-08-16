@@ -32,6 +32,7 @@ def build_customer_main_menu(language: str = "en") -> ReplyKeyboardMarkup:
             KeyboardButton(t("menu.profile", language=language)),
             KeyboardButton(t("menu.support", language=language)),
         ],
+        [KeyboardButton(t("menu.refer_friends", language=language))],
     ]
     return ReplyKeyboardMarkup(
         keyboard,

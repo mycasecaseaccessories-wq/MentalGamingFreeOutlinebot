@@ -201,6 +201,8 @@ class ServiceRegistry:
         from app.services.free_trial_abuse_service import FreeTrialAbuseProtectionService
         from app.services.free_trial_analytics_service import FreeTrialAnalyticsService
         from app.services.free_trial_upgrade_service import FreeTrialUpgradeService
+        from app.services.referral_token_service import ReferralTokenService
+        from app.services.referral_service import ReferralService, ReferralQualificationService
 
         services_to_create = [
             SettingsService,
@@ -213,6 +215,16 @@ class ServiceRegistry:
             if not self.is_registered(service_class):
                 instance = self.resolve(service_class)
                 logger.info("  ✓ %s initialised", service_class.__name__)
+
+        if not self.is_registered(ReferralTokenService):
+            self.register(ReferralTokenService, ReferralTokenService(db=self._db))
+            logger.info("  ✓ ReferralTokenService initialised")
+        if not self.is_registered(ReferralQualificationService):
+            self.register(ReferralQualificationService, ReferralQualificationService())
+            logger.info("  ✓ ReferralQualificationService initialised")
+        if not self.is_registered(ReferralService):
+            self.register(ReferralService, ReferralService(db=self._db, token_service=self.get(ReferralTokenService), settings_service=self.get(SettingsService)))
+            logger.info("  ✓ ReferralService initialised")
 
         if not self.is_registered(FreeTrialAbuseProtectionService):
             self.register(FreeTrialAbuseProtectionService, FreeTrialAbuseProtectionService(db=self._db, settings_service=self.get(SettingsService)))

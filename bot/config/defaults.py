@@ -80,7 +80,12 @@ class SettingKeys:
     FREE_TRIAL_EXTRA_CLAIMS_ENABLED: str = "free_trial_extra_claims_enabled"
     FREE_TRIAL_PAID_UPGRADE_ENABLED: str = "free_trial_paid_upgrade_enabled"
     FREE_TRIAL_SERVER_SELECTION_MODE: str = "free_trial_server_selection_mode"
+    REFERRAL_ABUSE_RATE_LIMIT_SECONDS: str = "free_trial_abuse_rate_limit_seconds"
     FREE_TRIAL_ABUSE_RATE_LIMIT_SECONDS: str = "free_trial_abuse_rate_limit_seconds"
+    REFERRAL_ENABLED: str = "referral_enabled"
+    REFERRAL_REQUIRE_NEW_USER: str = "referral_require_new_user"
+    REFERRAL_FIRST_ATTRIBUTION_WINS: str = "referral_first_attribution_wins"
+    REFERRAL_START_PREFIX: str = "referral_start_prefix"
 
     # Notifications
     EXPIRY_REMINDER_DAYS: str = "notifications_expiry_reminder_days"
@@ -224,6 +229,10 @@ DEFAULT_SETTINGS: list[dict] = [
     {"key": SettingKeys.FREE_TRIAL_PAID_UPGRADE_ENABLED, "value": True, "type": "bool", "category": SettingCategory.GROWTH, "description": "Allow paid upgrades and conversion from active Free Trial keys.", "is_public": False},
     {"key": SettingKeys.FREE_TRIAL_SERVER_SELECTION_MODE, "value": "auto", "type": "str", "category": SettingCategory.GROWTH, "description": "Free Trial server selection mode.", "is_public": False},
     {"key": SettingKeys.FREE_TRIAL_ABUSE_RATE_LIMIT_SECONDS, "value": 3, "type": "int", "category": SettingCategory.SECURITY, "description": "Minimum interval between repeated Free Trial actions.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_ENABLED, "value": True, "type": "bool", "category": SettingCategory.GROWTH, "description": "Enable new referral attribution.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_REQUIRE_NEW_USER, "value": True, "type": "bool", "category": SettingCategory.GROWTH, "description": "Allow referral attribution only for newly registered users.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_FIRST_ATTRIBUTION_WINS, "value": True, "type": "bool", "category": SettingCategory.GROWTH, "description": "Preserve the first valid primary referrer.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_START_PREFIX, "value": "ref_", "type": "str", "category": SettingCategory.GROWTH, "description": "Telegram referral /start payload namespace.", "is_public": True},
 
     # ── Notifications ─────────────────────────────────────────────────────────
     {

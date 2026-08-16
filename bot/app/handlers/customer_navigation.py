@@ -176,6 +176,10 @@ async def customer_menu_message(
     if item in {CustomerMenuItem.BUY_VPN, CustomerMenuItem.MY_KEYS, CustomerMenuItem.WALLET, CustomerMenuItem.PROFILE, CustomerMenuItem.SUPPORT}:
         # Dedicated feature handlers own these destinations before the generic navigation group.
         return
+    if item == CustomerMenuItem.REFER_FRIENDS:
+        from app.handlers.customer_referral import show_referral_menu
+        await show_referral_menu(update, context)
+        return
 
     lang = _language(user)
     if service is None:
@@ -222,6 +226,8 @@ def register(application: Application) -> None:
         CallbackQueryHandler(navigation_callback, pattern=r"^nav:(home|back)$"),
         group=10,
     )
+    from app.handlers.customer_referral import register as register_referral
+    register_referral(application)
     application.add_handler(
         MessageHandler(
             filters.TEXT & ~filters.COMMAND & filters.Regex(_LABEL_PATTERN),

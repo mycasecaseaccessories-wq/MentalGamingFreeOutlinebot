@@ -242,3 +242,23 @@
 - [x] Replace process-local abuse velocity tracking with a durable database-backed atomic rate-limit boundary that works across workers.
 - [x] Add migration-safe foreign-key constraints for Phase 5.6 relationship columns and align ORM metadata.
 - [x] Add focused tests, run the complete regression suite, and push the hardened fixes to GitHub main.
+
+## Coverage Report — 416-Test Phase 0–5.6 Regression Suite
+
+- [x] Inspect available coverage tooling and configure reproducible line/branch measurement.
+- [x] Run all 416 regression tests with coverage instrumentation.
+- [x] Analyze Phase 5.6 file-level coverage and uncovered high-risk paths.
+- [x] Deliver HTML/JSON/Markdown coverage report artifacts.
+
+## Phase 6.1 — Referral Core and Invite Tracking
+
+- [x] Inspect and reuse existing onboarding, user, settings, event, callback, localization, admin, and test architecture.
+- [x] Add stable unique personal referral tokens and dynamic Telegram deep links.
+- [x] Add generic safe start-payload parsing with referral namespace support.
+- [x] Add authoritative referral relationship, status, source, and history persistence with one-primary-referrer uniqueness.
+- [x] Integrate first-valid attribution with new-user registration, self-referral protection, duplicate protection, and concurrency safety.
+- [x] Add ReferralService, ReferralTokenService, qualification extension point, settings, events, hooks, and audit boundaries without rewards.
+- [x] Add customer Refer Friends, share link, stats, and privacy-safe referral history UX.
+- [x] Add authorized admin referral settings, statistics, listing, details, and invalidation foundation.
+- [x] Add EN/MY localization and Phase 6.1 boundary/privacy/security tests.
+- [x] Run full Phase 0–6.1 validation, document Phase 6.2 handoff, and push only validated Phase 6.1 code.

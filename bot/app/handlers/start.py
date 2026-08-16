@@ -13,6 +13,7 @@ from app.middlewares.auth import PLATFORM_USER_KEY
 from app.models.customer_entry import EntryDecision, EntryRoute
 from app.models.enums import UserRole
 from app.services.customer_entry_service import CustomerEntryService
+from app.events import EventType, bus
 from locales.translator import t
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,22 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
 
     raw_start_parameter = _extract_start_parameter(context)
+    referral_service = None
+    registry = context.bot_data.get("registry")
+    if registry is not None:
+        from app.services.referral_service import ReferralService
+        referral_service = registry.get_or_none(ReferralService)
+    if referral_service is not None and raw_start_parameter:
+        try:
+            referral_result = await referral_service.attribute_from_start(
+                referred_id=user.id,
+                is_new_user=bool(context.user_data.get("is_new_user", False)),
+                raw_payload=raw_start_parameter,
+            )
+            if referral_result.is_success and referral_result.unwrap().get("attributed"):
+                await bus.emit(EventType.REFERRAL_REGISTRATION_COMPLETED, referred_user_id=user.id)
+        except Exception:
+            logger.warning("Referral attribution failed without blocking /start", exc_info=True)
     decision = await service.resolve(
         user=user,
         is_new_user=bool(context.user_data.pop("is_new_user", False)),
