@@ -14,8 +14,9 @@ from database.models.user import UserORM
 class FreeTrialAbuseProtectionService:
     """Low-data trial risk gate using account state, restrictions, and velocity."""
 
-    def __init__(self, db, *, window_seconds: int = 3, max_events: int = 4):
+    def __init__(self, db, *, window_seconds: int = 3, max_events: int = 4, settings_service=None):
         self.db = db
+        self.settings = settings_service
         self.window_seconds = max(1, int(window_seconds))
         self.max_events = max(1, int(max_events))
         self._events: dict[tuple[int, str], deque[float]] = defaultdict(deque)
@@ -35,9 +36,13 @@ class FreeTrialAbuseProtectionService:
             restriction = (await session.execute(select(FreeTrialRestrictionORM).where(FreeTrialRestrictionORM.user_id == user_id))).scalar_one_or_none()
             if restriction is not None and restriction.blocked:
                 return Failure("free_trial_restricted", "Free Trial access is temporarily restricted.")
+        configured_window = self.window_seconds
+        if self.settings is not None:
+            configured_window = await self.settings.get("free_trial_abuse_rate_limit_seconds", configured_window)
+        window_seconds = max(1, int(configured_window))
         now = datetime.now(timezone.utc).timestamp()
         bucket = self._events[(user_id, action)]
-        while bucket and now - bucket[0] > self.window_seconds:
+        while bucket and now - bucket[0] > window_seconds:
             bucket.popleft()
         if len(bucket) >= self.max_events:
             return Failure("too_many_requests", "Please try again later.")

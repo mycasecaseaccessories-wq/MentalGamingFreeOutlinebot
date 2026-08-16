@@ -38,6 +38,8 @@ import logging
 import inspect
 from typing import Any, Callable, Type, TypeVar
 
+from app.events import EventType, bus
+
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
@@ -213,7 +215,7 @@ class ServiceRegistry:
                 logger.info("  ✓ %s initialised", service_class.__name__)
 
         if not self.is_registered(FreeTrialAbuseProtectionService):
-            self.register(FreeTrialAbuseProtectionService, FreeTrialAbuseProtectionService(db=self._db))
+            self.register(FreeTrialAbuseProtectionService, FreeTrialAbuseProtectionService(db=self._db, settings_service=self.get(SettingsService)))
             logger.info("  ✓ FreeTrialAbuseProtectionService initialised")
 
         if not self.is_registered(FreeTrialClaimService):
@@ -390,6 +392,17 @@ class ServiceRegistry:
                 ),
             )
             logger.info("  ✓ FreeTrialUpgradeService initialised")
+
+        if not getattr(self, "_free_trial_paid_listener_registered", False):
+            async def _fulfill_free_trial_upgrade_on_paid(**payload):
+                order_id = payload.get("order_id")
+                if order_id is None:
+                    return
+                await self.get(FreeTrialUpgradeService).fulfill_paid_upgrade(order_id=int(order_id))
+
+            bus.subscribe(EventType.ORDER_PAID, _fulfill_free_trial_upgrade_on_paid, priority=-100)
+            self._free_trial_paid_listener_registered = True
+            logger.info("  ✓ FreeTrialUpgradeService ORDER_PAID bridge registered")
 
         if not self.is_registered(CustomerKeyService):
             self.register(CustomerKeyService, CustomerKeyService(db=self._db))
