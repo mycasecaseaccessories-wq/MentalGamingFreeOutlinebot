@@ -542,6 +542,7 @@ class ServiceRegistry:
         if not self.is_registered(HealthService):
             from app.cache import cache as default_cache
             health = HealthService(db=self._db, cache=default_cache)
+            health.set_registry(self)
             self.register(HealthService, health)
             logger.info("  ✓ HealthService initialised")
 

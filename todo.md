@@ -360,3 +360,15 @@
 ## GitHub Delivery
 
 - [x] Commit and push the validated Phase 6.5–6.6 source, migrations, tests, localization, documentation, and updated regression contracts to origin/main.
+
+## Phase 7.1 — System Health & Operational Dashboard
+
+- [x] Inspect existing bot lifecycle, database, worker/task, queue/retry, server/Outline, payment, notification, storage, metrics, audit, settings, permissions, and Admin contracts.
+- [x] Define typed health statuses, component results, freshness rules, criticality policy, safe details, and overall-health derivation.
+- [x] Implement read-only HealthCheckService adapters for Bot, Database, Workers, Queue, VPN Servers, Outline APIs, Payments, Notifications, Capacity, Failed Jobs, and Stale Operations using existing infrastructure.
+- [x] Safely expose the latest in-memory health snapshot without adding duplicate persistence or claiming unsupported provider health.
+- [x] Integrate Admin System Health dashboard with component drill-downs, capacity/failure views, safe manual refresh, stale-state visibility, and Admin-only authorization.
+- [x] Add EN/MY localization, redaction, timeout boundaries, and no-customer-impact guarantees; retain expanded alert/audit/rate-limit work for later operations phases.
+- [x] Add focused Phase 7.1 tests, run full Phase 0–7.1 regression, and document the explicit 7.2 alerting boundary.
+- [ ] Push the validated Phase 7.1 implementation to GitHub after user confirmation.
+- [ ] Commit and push the validated Phase 7.1 System Health & Operational Dashboard implementation to origin/main and verify the remote commit.
