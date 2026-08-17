@@ -37,6 +37,8 @@ from .ssh_discovery_service import SSHDiscoveryService
 from .outline_provisioning_service import OutlineProvisioningService
 from .vpn_service import VPNService
 from .growth_service import GrowthService
+from .growth_reward_service import GrowthRewardService
+from .growth_reconciliation_service import GrowthReconciliationService
 from .notification_service import NotificationService
 from .customer_entry_service import CustomerEntryService
 from .order_service import OrderService
@@ -60,6 +62,8 @@ __all__ = [
     "OutlineProvisioningService",
     "VPNService",
     "GrowthService",
+    "GrowthRewardService",
+    "GrowthReconciliationService",
     "NotificationService",
     "CustomerEntryService",
     "OrderService",

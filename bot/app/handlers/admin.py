@@ -254,6 +254,8 @@ def register(application: Application) -> None:
     register_admin_missions(application)
     from app.handlers.admin_promo import register as register_admin_promo
     register_admin_promo(application)
+    from app.handlers.admin_growth import register as register_admin_growth
+    register_admin_growth(application)
     application.add_handler(CommandHandler("cancel", admin_review_cancel), group=7)
     application.add_handler(MessageHandler(filters.REPLY & filters.TEXT & ~filters.COMMAND, admin_review_text), group=7)
     application.add_handler(

@@ -74,6 +74,18 @@ _DESTINATIONS: dict[CustomerMenuItem, NavigationDestination] = {
         "promo.body",
         implemented=True,
     ),
+    CustomerMenuItem.REWARDS_CENTER: NavigationDestination(
+        CustomerMenuItem.REWARDS_CENTER,
+        "rewards.title",
+        "rewards.summary",
+        implemented=True,
+    ),
+    CustomerMenuItem.ENTITLEMENTS: NavigationDestination(
+        CustomerMenuItem.ENTITLEMENTS,
+        "rewards.entitlements",
+        "rewards.summary",
+        implemented=True,
+    ),
 }
 
 
@@ -151,5 +163,7 @@ class CustomerNavigationService(BaseService):
                 CustomerMenuItem.REFER_FRIENDS,
                 CustomerMenuItem.MISSIONS,
                 CustomerMenuItem.PROMO_CODE,
+                CustomerMenuItem.REWARDS_CENTER,
+                CustomerMenuItem.ENTITLEMENTS,
             }
         )

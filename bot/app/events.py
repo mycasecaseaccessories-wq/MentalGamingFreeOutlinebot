@@ -26,6 +26,7 @@ class EventType(str,Enum):
     FREE_TRIAL_ACTIVATED='free_trial.activated'
     MISSION_ACTIVATED='mission.activated'; MISSION_PROGRESS_UPDATED='mission.progress_updated'; MISSION_COMPLETED='mission.completed'; MISSION_REWARD_PENDING='mission.reward_pending'; MISSION_REWARD_GRANTED='mission.reward_granted'; MISSION_REWARD_FAILED='mission.reward_failed'; MISSION_EXPIRED='mission.expired'; MISSION_DAILY_CHECK_IN='mission.daily_check_in'
     PROMO_CREATED='promo.created'; PROMO_ACTIVATED='promo.activated'; PROMO_REDEMPTION_RESERVED='promo.redemption_reserved'; PROMO_REDEEMED='promo.redeemed'; PROMO_REDEMPTION_FAILED='promo.redemption_failed'; PROMO_EXPIRED='promo.expired'; PROMO_LIMIT_REACHED='promo.limit_reached'
+    REFERRAL_RISK_SIGNAL_DETECTED='referral.risk_signal_detected'; REFERRAL_REVIEW_RESOLVED='referral.review_resolved'; REFERRAL_REWARD_HELD='referral.reward_held'; REFERRAL_REWARD_RELEASED='referral.reward_released'; REFERRAL_REWARD_BLOCKED='referral.reward_blocked'; REFERRAL_REWARD_UNBLOCKED='referral.reward_unblocked'; RISK_POLICY_CHANGED='risk.policy_changed'; GROWTH_RECONCILIATION_SCANNED='growth.reconciliation_scanned'; GROWTH_ENTITLEMENT_EXPIRED='growth.entitlement_expired'
 class EventBus:
     def __init__(self): self._subscribers={}
     def on(self,event_type,*,priority=0):

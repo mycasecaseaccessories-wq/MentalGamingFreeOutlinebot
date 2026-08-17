@@ -45,10 +45,12 @@ from .server_reservation import ServerCapacityReservationORM
 from .vpn_provisioning_operation import VPNProvisioningOperationORM
 from .free_trial_claim import FreeTrialClaimORM
 from .free_trial_entitlement import FreeTrialEntitlementORM
+from .free_trial_entitlement_redemption import FreeTrialEntitlementRedemptionORM
 from .free_trial_upgrade import FreeTrialUpgradeOfferORM, FreeTrialUpgradeORM, FreeTrialRestrictionORM
 from .free_trial_rate_limit import FreeTrialRateLimitORM
 from .referral_token import ReferralTokenORM
 from .referral_reward import ReferralRewardORM, ReferralRiskEventORM
+from .referral_risk_observation import ReferralRiskObservationORM
 from .mission import MissionORM, UserMissionProgressORM, MissionProgressEventORM
 from .promo import PromoCodeORM, PromoRedemptionORM
 
@@ -72,6 +74,7 @@ __all__ = [
     "VPNProvisioningOperationORM",
     "FreeTrialClaimORM",
     "FreeTrialEntitlementORM",
+    "FreeTrialEntitlementRedemptionORM",
     "FreeTrialUpgradeOfferORM",
     "FreeTrialUpgradeORM",
     "FreeTrialRestrictionORM",
@@ -79,6 +82,7 @@ __all__ = [
     "ReferralTokenORM",
     "ReferralRewardORM",
     "ReferralRiskEventORM",
+    "ReferralRiskObservationORM",
     "MissionORM",
     "UserMissionProgressORM",
     "MissionProgressEventORM",

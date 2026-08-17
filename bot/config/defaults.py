@@ -120,6 +120,19 @@ class SettingKeys:
     PROMO_INVALID_ATTEMPT_LIMIT: str = "promo_invalid_attempt_limit"
     PROMO_INVALID_COOLDOWN_SECONDS: str = "promo_invalid_cooldown_seconds"
     PROMO_MAX_DISCOUNT_PERCENT: str = "promo_max_discount_percent"
+    REFERRAL_ANALYTICS_ENABLED: str = "referral_analytics_enabled"
+    REFERRAL_RISK_REFERRAL_WINDOW_SECONDS: str = "referral_risk_referral_window_seconds"
+    REFERRAL_RISK_REFERRAL_THRESHOLD: str = "referral_risk_referral_threshold"
+    REFERRAL_RISK_QUALIFICATION_WINDOW_SECONDS: str = "referral_risk_qualification_window_seconds"
+    REFERRAL_RISK_QUALIFICATION_THRESHOLD: str = "referral_risk_qualification_threshold"
+    REFERRAL_RISK_REWARD_WINDOW_SECONDS: str = "referral_risk_reward_window_seconds"
+    REFERRAL_RISK_REWARD_THRESHOLD: str = "referral_risk_reward_threshold"
+    REFERRAL_RISK_INVALID_WINDOW_SECONDS: str = "referral_risk_invalid_window_seconds"
+    REFERRAL_RISK_INVALID_THRESHOLD: str = "referral_risk_invalid_threshold"
+    REFERRAL_RISK_AUTO_REVIEW: str = "referral_risk_auto_review"
+    REFERRAL_RISK_AUTO_HOLD: str = "referral_risk_auto_hold"
+    REFERRAL_RISK_AUTO_BLOCK: str = "referral_risk_auto_block"
+    REFERRAL_RISK_POLICY_REVISION: str = "referral_risk_policy_revision"
 
     # Notifications
     EXPIRY_REMINDER_DAYS: str = "notifications_expiry_reminder_days"
@@ -297,6 +310,19 @@ DEFAULT_SETTINGS: list[dict] = [
     {"key": SettingKeys.PROMO_INVALID_ATTEMPT_LIMIT, "value": 5, "type": "int", "category": SettingCategory.SECURITY, "description": "Invalid promo attempts before temporary promo-entry cooldown.", "is_public": False},
     {"key": SettingKeys.PROMO_INVALID_COOLDOWN_SECONDS, "value": 300, "type": "int", "category": SettingCategory.SECURITY, "description": "Temporary cooldown after repeated invalid promo attempts.", "is_public": False},
     {"key": SettingKeys.PROMO_MAX_DISCOUNT_PERCENT, "value": 100, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum percentage discount allowed for a promo campaign.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_ANALYTICS_ENABLED, "value": True, "type": "bool", "category": SettingCategory.ANALYTICS, "description": "Enable admin referral and growth analytics.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_RISK_REFERRAL_WINDOW_SECONDS, "value": 300, "type": "int", "category": SettingCategory.SECURITY, "description": "Velocity window for referral-attribution monitoring.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_RISK_REFERRAL_THRESHOLD, "value": 10, "type": "int", "category": SettingCategory.SECURITY, "description": "Referral attributions in the monitoring window before a signal is recorded.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_RISK_QUALIFICATION_WINDOW_SECONDS, "value": 600, "type": "int", "category": SettingCategory.SECURITY, "description": "Velocity window for qualification monitoring.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_RISK_QUALIFICATION_THRESHOLD, "value": 10, "type": "int", "category": SettingCategory.SECURITY, "description": "Qualifications in the monitoring window before a signal is recorded.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_RISK_REWARD_WINDOW_SECONDS, "value": 3600, "type": "int", "category": SettingCategory.SECURITY, "description": "Velocity window for reward monitoring.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_RISK_REWARD_THRESHOLD, "value": 5, "type": "int", "category": SettingCategory.SECURITY, "description": "Granted rewards in the monitoring window before a signal is recorded.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_RISK_INVALID_WINDOW_SECONDS, "value": 600, "type": "int", "category": SettingCategory.SECURITY, "description": "Velocity window for invalid-referral monitoring.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_RISK_INVALID_THRESHOLD, "value": 20, "type": "int", "category": SettingCategory.SECURITY, "description": "Invalid referral attempts in the monitoring window before a signal is recorded.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_RISK_AUTO_REVIEW, "value": True, "type": "bool", "category": SettingCategory.SECURITY, "description": "Move combined suspicious cases into the admin review queue.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_RISK_AUTO_HOLD, "value": True, "type": "bool", "category": SettingCategory.SECURITY, "description": "Hold suspicious referral rewards pending review.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_RISK_AUTO_BLOCK, "value": False, "type": "bool", "category": SettingCategory.SECURITY, "description": "Automatically block future referral rewards only; never global-ban from this setting.", "is_public": False},
+    {"key": SettingKeys.REFERRAL_RISK_POLICY_REVISION, "value": 1, "type": "int", "category": SettingCategory.SECURITY, "description": "Revision stored with new risk observations.", "is_public": False},
     {"key": SettingKeys.REFERRAL_REWARD_LIFETIME_LIMIT, "value": 0, "type": "int", "category": SettingCategory.GROWTH, "description": "Maximum lifetime referral rewards per beneficiary; zero means unlimited.", "is_public": False},
     {"key": SettingKeys.REFERRAL_REWARD_COOLDOWN_SECONDS, "value": 3600, "type": "int", "category": SettingCategory.GROWTH, "description": "Minimum time between rewards for one beneficiary.", "is_public": False},
     {"key": SettingKeys.REFERRAL_REWARD_EXPIRY_SECONDS, "value": 2592000, "type": "int", "category": SettingCategory.GROWTH, "description": "Expiry for time-limited referral entitlements.", "is_public": False},

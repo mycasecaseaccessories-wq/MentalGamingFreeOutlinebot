@@ -15,6 +15,7 @@ from database.models.referral import ReferralORM
 from database.models.referral_reward import ReferralRewardORM
 from database.models.transaction import TransactionORM
 from database.models.wallet import WalletORM
+from database.models.user import UserORM
 
 
 class ReferralRewardService:
@@ -60,6 +61,7 @@ class ReferralRewardService:
 
     async def grant_reward(self, *, user_id: int, reward_type: str, reward_value: Decimal, source_reference: str, period_key: str, policy_revision: int = 1, reward_expiry_seconds: int = 0, delivery_mode: str = "auto_grant", apply_limits: bool = False, source_type: str = "mission"):
         """Grant a non-referral reward through the same Phase 6.2 ledger/fulfillment path."""
+        reward_type = _normalize_reward_type(reward_type)
         if delivery_mode not in {"auto_grant", "manual_claim"}:
             raise ValueError("unsupported_delivery_mode")
         if reward_type == ReferralRewardORM.TYPE_EXTRA_TRIAL:
@@ -78,6 +80,9 @@ class ReferralRewardService:
             "weekly_limit": max(0, int(await self.settings.get("mission_reward_weekly_limit", 0))),
             "monthly_limit": max(0, int(await self.settings.get("mission_reward_monthly_limit", 0))),
             "lifetime_limit": max(0, int(await self.settings.get("mission_reward_lifetime_limit", 0))),
+            "global_daily_limit": max(0, int(await self.settings.get("growth_reward_global_daily_limit", 0))),
+            "global_weekly_limit": max(0, int(await self.settings.get("growth_reward_global_weekly_limit", 0))),
+            "global_lifetime_limit": max(0, int(await self.settings.get("growth_reward_global_lifetime_limit", 0))),
             "cooldown_seconds": max(0, int(await self.settings.get("mission_reward_cooldown_seconds", 0))),
             "expiry_seconds": max(0, int(reward_expiry_seconds)),
             "wallet_currency": str(await self.settings.get("currency", "MMK")).upper()[:3],
@@ -97,6 +102,9 @@ class ReferralRewardService:
             "weekly_limit": max(0, int(await self.settings.get("referral_reward_weekly_limit", 20))),
             "monthly_limit": max(0, int(await self.settings.get("referral_reward_monthly_limit", 50))),
             "lifetime_limit": max(0, int(await self.settings.get("referral_reward_lifetime_limit", 0))),
+            "global_daily_limit": max(0, int(await self.settings.get("growth_reward_global_daily_limit", 0))),
+            "global_weekly_limit": max(0, int(await self.settings.get("growth_reward_global_weekly_limit", 0))),
+            "global_lifetime_limit": max(0, int(await self.settings.get("growth_reward_global_lifetime_limit", 0))),
             "cooldown_seconds": max(0, int(await self.settings.get("referral_reward_cooldown_seconds", 3600))),
             "expiry_seconds": max(0, int(await self.settings.get("referral_reward_expiry_seconds", 2592000))),
             "wallet_currency": str(await self.settings.get("referral_reward_wallet_currency", "MMK")).upper()[:3],
@@ -114,7 +122,13 @@ class ReferralRewardService:
             existing = (await session.execute(select(ReferralRewardORM).where(ReferralRewardORM.idempotency_key == key).with_for_update())).scalar_one_or_none()
             if existing is not None and existing.status != ReferralRewardORM.STATUS_FAILED:
                 return self._result(existing)
+            blocked = False
+            if source_type == "referral":
+                beneficiary_user = await session.get(UserORM, user_id)
+                blocked = bool(beneficiary_user and beneficiary_user.referral_reward_blocked)
             allowed, reason = await self._within_limits(session, user_id, policy, now) if apply_limits else (True, "not_shared")
+            if blocked:
+                allowed, reason = False, "referral_reward_blocked"
             row = existing or ReferralRewardORM(
                 public_reward_id="RWD-" + secrets.token_urlsafe(7).replace("_", "-").replace("/", "-")[:10].upper(),
                 referral_id=referral_id,
@@ -127,14 +141,15 @@ class ReferralRewardService:
                 reward_cycle=cycle,
                 policy_revision=policy["revision"],
                 policy_snapshot_json={k: (str(v) if isinstance(v, Decimal) else v) for k, v in policy.items()},
-                status=ReferralRewardORM.STATUS_PENDING if allowed else ReferralRewardORM.STATUS_LIMIT_REACHED,
+                status=ReferralRewardORM.STATUS_PENDING if allowed else ReferralRewardORM.STATUS_REVIEW_REQUIRED if reason == "referral_reward_blocked" else ReferralRewardORM.STATUS_LIMIT_REACHED,
                 idempotency_key=key,
                 limit_result="eligible" if allowed else reason,
-                risk_result="safe",
+                risk_result="blocked" if reason == "referral_reward_blocked" else "safe",
             ) if existing is None else row
             if existing is not None:
-                row.status = ReferralRewardORM.STATUS_PENDING if allowed else ReferralRewardORM.STATUS_LIMIT_REACHED
+                row.status = ReferralRewardORM.STATUS_PENDING if allowed else ReferralRewardORM.STATUS_REVIEW_REQUIRED if reason == "referral_reward_blocked" else ReferralRewardORM.STATUS_LIMIT_REACHED
                 row.limit_result = "eligible" if allowed else reason
+                row.risk_result = "blocked" if reason == "referral_reward_blocked" else row.risk_result
                 row.failure_reason = None
                 row.failed_at = None
             else:
@@ -146,13 +161,15 @@ class ReferralRewardService:
                 existing = (await session.execute(select(ReferralRewardORM).where(ReferralRewardORM.idempotency_key == key))).scalar_one_or_none()
                 return self._result(existing) if existing is not None else {"status": "retry"}
             if not allowed:
+                if reason == "referral_reward_blocked":
+                    await bus.emit(EventType.REFERRAL_REWARD_HELD, reward_public_id=row.public_reward_id, beneficiary_user_id=user_id, source_type=source_type, source_reference=source_reference)
                 return self._result(row)
             row.status = ReferralRewardORM.STATUS_GRANTING
             try:
                 if reward_type in {ReferralRewardORM.TYPE_EXTRA_TRIAL, ReferralRewardORM.TYPE_BONUS_DATA, ReferralRewardORM.TYPE_BONUS_DURATION}:
                     entitlement_kwargs = {
                         "user_id": user_id,
-                        "source": "referral_reward",
+                        "source": f"{source_type}_reward",
                         "remaining_uses": int(value) if reward_type == ReferralRewardORM.TYPE_EXTRA_TRIAL else 1,
                         "expires_at": (now + timedelta(seconds=policy["expiry_seconds"])) if policy["expiry_seconds"] else None,
                         "status": "active",
@@ -195,6 +212,8 @@ class ReferralRewardService:
     async def _within_limits(self, session, user_id: int, policy: dict, now: datetime):
         base = select(func.count(ReferralRewardORM.id)).where(ReferralRewardORM.beneficiary_user_id == user_id, ReferralRewardORM.status == ReferralRewardORM.STATUS_GRANTED)
         lifetime = int(await session.scalar(base) or 0)
+        if policy.get("global_lifetime_limit") and lifetime >= policy["global_lifetime_limit"]:
+            return False, "global_lifetime_limit"
         if policy["lifetime_limit"] and lifetime >= policy["lifetime_limit"]:
             return False, "lifetime_limit"
         if policy["cooldown_seconds"]:
@@ -202,15 +221,46 @@ class ReferralRewardService:
             if latest and now - latest < timedelta(seconds=policy["cooldown_seconds"]):
                 return False, "cooldown"
         day = now - timedelta(days=1)
-        if policy["daily_limit"] and int(await session.scalar(base.where(ReferralRewardORM.granted_at >= day)) or 0) >= policy["daily_limit"]:
+        daily_count = int(await session.scalar(base.where(ReferralRewardORM.granted_at >= day)) or 0)
+        if policy.get("global_daily_limit") and daily_count >= policy["global_daily_limit"]:
+            return False, "global_daily_limit"
+        if policy["daily_limit"] and daily_count >= policy["daily_limit"]:
             return False, "daily_limit"
         week = now - timedelta(days=7)
-        if policy["weekly_limit"] and int(await session.scalar(base.where(ReferralRewardORM.granted_at >= week)) or 0) >= policy["weekly_limit"]:
+        weekly_count = int(await session.scalar(base.where(ReferralRewardORM.granted_at >= week)) or 0)
+        if policy.get("global_weekly_limit") and weekly_count >= policy["global_weekly_limit"]:
+            return False, "global_weekly_limit"
+        if policy["weekly_limit"] and weekly_count >= policy["weekly_limit"]:
             return False, "weekly_limit"
         month = now - timedelta(days=31)
-        if policy["monthly_limit"] and int(await session.scalar(base.where(ReferralRewardORM.granted_at >= month)) or 0) >= policy["monthly_limit"]:
+        monthly_count = int(await session.scalar(base.where(ReferralRewardORM.granted_at >= month)) or 0)
+        if policy.get("global_monthly_limit") and monthly_count >= policy["global_monthly_limit"]:
+            return False, "global_monthly_limit"
+        if policy["monthly_limit"] and monthly_count >= policy["monthly_limit"]:
             return False, "monthly_limit"
         return True, "eligible"
+
+    async def release_held_reward(self, *, actor_user_id: int, reward_id: int):
+        async with self.db.session() as session:
+            actor = await session.get(UserORM, actor_user_id)
+            if actor is None or actor.role != "admin" or not actor.is_active:
+                return Failure("permission_denied", "Admin permission required.")
+            row = (await session.execute(select(ReferralRewardORM).where(ReferralRewardORM.id == reward_id).with_for_update())).scalar_one_or_none()
+            if row is None:
+                return Failure("not_found", "Reward not found.")
+            if row.status == ReferralRewardORM.STATUS_GRANTED:
+                return Success(self._result(row))
+            if row.status != ReferralRewardORM.STATUS_REVIEW_REQUIRED:
+                return Failure("not_held", "Reward is not held for review.")
+            policy = dict(row.policy_snapshot_json or {})
+            policy.setdefault("revision", row.policy_revision)
+            policy.setdefault("daily_limit", 0); policy.setdefault("weekly_limit", 0); policy.setdefault("monthly_limit", 0); policy.setdefault("lifetime_limit", 0); policy.setdefault("global_daily_limit", 0); policy.setdefault("global_weekly_limit", 0); policy.setdefault("global_lifetime_limit", 0); policy.setdefault("cooldown_seconds", 0); policy.setdefault("expiry_seconds", 0); policy.setdefault("wallet_currency", "MMK")
+            row.status = ReferralRewardORM.STATUS_FAILED
+            row.failure_reason = None
+        result = await self._create_and_grant(row.referral_id, row.beneficiary_type, row.beneficiary_user_id, row.reward_type, Decimal(str(row.reward_value)), row.reward_cycle, policy, source_type=row.source_type, source_reference=row.source_reference, apply_limits=False, explicit_key=row.idempotency_key)
+        if result.get("status") == ReferralRewardORM.STATUS_GRANTED:
+            await bus.emit(EventType.REFERRAL_REWARD_RELEASED, reward_public_id=row.public_reward_id, actor_user_id=actor_user_id)
+        return Success(result)
 
     async def get_reward_history(self, user_id: int, limit: int = 20):
         async with self.db.session() as session:
@@ -222,3 +272,17 @@ class ReferralRewardService:
         if row is None:
             return {"status": "retry"}
         return {"reward_id": row.id, "public_reward_id": row.public_reward_id, "referral_id": row.referral_id, "source_type": row.source_type, "source_reference": row.source_reference, "beneficiary_user_id": row.beneficiary_user_id, "beneficiary_type": row.beneficiary_type, "reward_type": row.reward_type, "reward_value": str(row.reward_value), "reward_cycle": row.reward_cycle, "status": row.status, "limit_result": row.limit_result, "failure_reason": row.failure_reason, "granted_at": row.granted_at}
+
+
+def _normalize_reward_type(value: str | None) -> str:
+    aliases = {
+        "extra_free_trial": ReferralRewardORM.TYPE_EXTRA_TRIAL,
+        "extra_trial": ReferralRewardORM.TYPE_EXTRA_TRIAL,
+        "mission_trial_bonus": ReferralRewardORM.TYPE_EXTRA_TRIAL,
+        "promo_free_claim": ReferralRewardORM.TYPE_EXTRA_TRIAL,
+        "wallet_credit": ReferralRewardORM.TYPE_WALLET_CREDIT,
+        "bonus_data": ReferralRewardORM.TYPE_BONUS_DATA,
+        "bonus_duration": ReferralRewardORM.TYPE_BONUS_DURATION,
+        "none": "none",
+    }
+    return aliases.get(str(value or "none").lower(), str(value or "none").lower())

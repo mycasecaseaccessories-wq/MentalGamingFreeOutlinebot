@@ -211,6 +211,10 @@ class ServiceRegistry:
         from app.services.mission_progress_service import MissionProgressService
         from app.services.promo_service import PromoService
         from app.services.promo_redemption_service import PromoRedemptionService
+        from app.services.referral_analytics_service import ReferralAnalyticsService
+        from app.services.referral_risk_service import ReferralRiskService
+        from app.services.growth_reward_service import GrowthRewardService
+        from app.services.growth_reconciliation_service import GrowthReconciliationService
 
         services_to_create = [
             SettingsService,
@@ -251,6 +255,12 @@ class ServiceRegistry:
         if not self.is_registered(MissionProgressService):
             self.register(MissionProgressService, MissionProgressService(db=self._db, mission_service=self.get(MissionService), condition_service=self.get(MissionConditionService), reward_service=self.get(ReferralRewardService)))
             logger.info("  ✓ Phase 6.3 mission services initialised")
+        if not self.is_registered(GrowthRewardService):
+            self.register(GrowthRewardService, GrowthRewardService(db=self._db, reward_service=self.get(ReferralRewardService), mission_progress_service=self.get(MissionProgressService)))
+            logger.info("  ✓ Phase 6.6 GrowthRewardService initialised")
+        if not self.is_registered(GrowthReconciliationService):
+            self.register(GrowthReconciliationService, GrowthReconciliationService(db=self._db, reward_service=self.get(ReferralRewardService)))
+            logger.info("  ✓ Phase 6.6 GrowthReconciliationService initialised")
         if not getattr(self, "_referral_qualification_listener_registered", False):
             async def _qualify_on_attribution(**payload):
                 public_id = payload.get("referral_public_id")
@@ -299,6 +309,32 @@ class ServiceRegistry:
         if not self.is_registered(ReferralService):
             self.register(ReferralService, ReferralService(db=self._db, token_service=self.get(ReferralTokenService), settings_service=self.get(SettingsService)))
             logger.info("  ✓ ReferralService initialised")
+        if not self.is_registered(ReferralAnalyticsService):
+            self.register(ReferralAnalyticsService, ReferralAnalyticsService(db=self._db, settings_service=self.get(SettingsService)))
+        if not self.is_registered(ReferralRiskService):
+            self.register(ReferralRiskService, ReferralRiskService(db=self._db, settings_service=self.get(SettingsService), reward_service=self.get(ReferralRewardService), referral_service=self.get(ReferralService)))
+            logger.info("  ✓ Phase 6.5 analytics and risk services initialised")
+        if not getattr(self, "_referral_risk_listeners_registered", False):
+            async def _monitor_referral_event(**payload):
+                user_id = payload.get("user_id") or payload.get("beneficiary_user_id") or payload.get("referrer_id")
+                referral_id = payload.get("referral_id")
+                public_referral_id = payload.get("referral_public_id")
+                if user_id is None and public_referral_id:
+                    async with self._db.session() as session:
+                        from sqlalchemy import select
+                        from database.models.referral import ReferralORM
+                        referral = (await session.execute(select(ReferralORM).where(ReferralORM.public_referral_id == public_referral_id))).scalar_one_or_none()
+                        if referral is not None:
+                            user_id, referral_id = referral.referrer_id, referral.id
+                if user_id is not None:
+                    await self.get(ReferralRiskService).evaluate_behavior(user_id=int(user_id), referral_id=referral_id, source_event=str(payload.get("event_type", "event")))
+            for _event_type in (EventType.REFERRAL_ATTRIBUTED, EventType.REFERRAL_QUALIFIED, EventType.REFERRAL_INVALIDATED, EventType.REFERRAL_REWARD_GRANTED, EventType.REFERRAL_REWARD_LIMIT_REACHED, EventType.MISSION_COMPLETED, EventType.PROMO_REDEEMED, EventType.ORDER_PAID):
+                async def _risk_listener(_event_type=_event_type, **payload):
+                    payload.setdefault("event_type", _event_type.value)
+                    await _monitor_referral_event(**payload)
+                bus.subscribe(_event_type, _risk_listener, priority=-90)
+            self._referral_risk_listeners_registered = True
+            logger.info("  ✓ Phase 6.5 risk event bridges registered")
 
         if not self.is_registered(FreeTrialAbuseProtectionService):
             self.register(FreeTrialAbuseProtectionService, FreeTrialAbuseProtectionService(db=self._db, settings_service=self.get(SettingsService)))

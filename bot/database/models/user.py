@@ -117,3 +117,21 @@ class UserORM(BaseModel):
         nullable=True,
         comment="telegram_id of the user who referred this account (Phase 5)",
     )
+
+    # Phase 6.5 feature-scoped anti-abuse control. This must not affect paid
+    # VPN access, wallet spending, orders, or ordinary account access.
+    referral_reward_blocked: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="Blocks only future referral rewards for this user",
+    )
+    referral_reward_block_reason: Mapped[str | None] = mapped_column(
+        String(255), nullable=True,
+    )
+    referral_reward_blocked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True,
+    )
+    referral_reward_blocked_by: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True,
+    )

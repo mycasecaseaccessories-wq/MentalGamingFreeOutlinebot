@@ -21,6 +21,8 @@ class CustomerMenuItem(StrEnum):
     REFER_FRIENDS = "refer_friends"
     MISSIONS = "missions"
     PROMO_CODE = "promo_code"
+    REWARDS_CENTER = "rewards_center"
+    ENTITLEMENTS = "entitlements"
 
 
 @dataclass(frozen=True, slots=True)

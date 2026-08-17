@@ -318,3 +318,45 @@
 - [x] Add Phase 6.4 migration, focused tests, full regression validation, and Phase 6.5 handoff documentation.
 
 - [x] Update legacy navigation and migration-head regression assertions to the Phase 6.4 Promo Code destination and migration 0031 while preserving prior behavior.
+
+## Phase 6.5 — Referral Analytics & Anti-Abuse Monitoring
+
+- [x] Inspect the complete Phase 6.5 specification and existing referral, qualification, reward, mission, promo, wallet, order, user, risk, audit, event, settings, permission, admin, localization, migration, and test contracts.
+- [x] Add read-only business-time analytics for referral overview, funnel, conversion, top referrers, qualification, rewards, limits, campaigns, and time series without creating a second source of truth.
+- [x] Add privacy-safe risk signal evaluation, durable risk observations, review queue, configurable thresholds, referral reward block controls, and explicit admin mutation boundaries.
+- [x] Add authorized admin analytics dashboard, referral detail, reward/risk/review views, EN/MY localization, audit, rate limits, and safe summary/export behavior.
+- [x] Add Phase 6.5 focused tests for aggregation, time ranges, conversion math, risk thresholds, review permissions, privacy, idempotency, and regression.
+- [x] Add Phase 6.5 documentation, full Phase 0–6.5 validation, and Phase 6.6 final-integration handoff.
+
+## Phase 6.5 — Anti-Fraud Analytics & Referral Intelligence
+
+- [x] Implement privacy-safe referral funnel, conversion, reward provenance, campaign, risk, limit, time-series, and top-referrer analytics.
+- [x] Implement configurable server-observed velocity signals, deduplicated durable observations, combined-signal risk evaluation, and bounded review candidates.
+- [x] Implement feature-scoped referral reward holds and referral-only block/unblock controls without affecting paid VPN access or global account state.
+- [x] Wire risk monitoring into trusted referral, reward, mission, promo, and payment event bridges through ServiceRegistry.
+- [x] Integrate Admin referral analytics dashboard, risk queue, review resolution, held-reward release, and block/unblock callbacks.
+- [x] Add EN/MY localization for admin analytics, risk outcomes, review actions, and customer-safe reward hold/block messages.
+- [x] Add Phase 6.5 focused integration tests for analytics authorization/funnel, risk deduplication, and feature-scoped reward holds.
+- [x] Update integrated migration-head regression assertions to 0032_phase65_referral_analytics.
+- [x] Run full regression suite: 448 passed, 32 warnings.
+- [ ] Phase 6.6 final integration and release hardening.
+
+## Phase 6.6 — Growth System Final Integration
+
+- [x] Inspect and document actual Phase 6.1–6.5 reward, mission, promo, entitlement, wallet, analytics, admin, customer-menu, recovery, event, task, localization, migration, and test contracts against the Phase 6.6 prompt.
+- [x] Normalize shared reward source/provenance/type contracts without creating a second referral, mission, promo, wallet, entitlement, or anti-abuse engine.
+- [x] Add/reuse provider-based idempotent reward fulfillment for referral, mission, promo, and supported Admin rewards.
+- [x] Ensure extra trials, bonus data, bonus duration, wallet credit, promo entitlement, and order-bound discounts use canonical semantics and safe source provenance.
+- [x] Implement unified customer Rewards Center with balance/availability, sources, history, claiming/applying behavior, pending/held/expired states, and privacy-safe outcomes.
+- [x] Implement Admin Growth Control Center with overview, funnels, missions, promos, reward ledger, risk queue, limits, campaign controls, audit, and operational health views.
+- [ ] Add cross-feature/global/feature-specific limit policy, entitlement expiry/consumption/reversal consistency, and conflicting-promotion handling.
+- [x] Add bounded reconciliation/recovery for stale granting/failed rewards and expired entitlements, reusing idempotent reward release.
+- [ ] Extend reconciliation to orphaned entitlements, wallet ledger mismatches, partial rewards, and explicit reversal workflows.
+- [ ] Add observability, security hardening, rate limits, audit coverage, privacy checks, and bounded task/worker integration where required.
+- [x] Add focused Phase 6.6 tests plus full Phase 0–6.6 regression validation.
+- [x] Finalize Phase 6.6 documentation and current release evidence; retain remaining hardening items explicitly below.
+- [x] Update the customer navigation regression contract for the Phase 6.6 Rewards Center and Entitlements menu entries.
+
+## GitHub Delivery
+
+- [ ] Commit and push the validated Phase 6.5–6.6 source, migrations, tests, localization, documentation, and updated regression contracts to origin/main.
