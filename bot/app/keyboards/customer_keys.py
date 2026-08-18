@@ -31,10 +31,10 @@ def key_list_keyboard(page: CustomerKeyPage, language: str) -> InlineKeyboardMar
     return InlineKeyboardMarkup(rows)
 
 
-def empty_keys_keyboard(language: str) -> InlineKeyboardMarkup:
+def empty_keys_keyboard(language: str, trial_callback_data: str | None = None) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [InlineKeyboardButton(t("menu.buy_vpn", language=language), callback_data="pkg:list:1")],
-        [InlineKeyboardButton(t("menu.free_trial", language=language), callback_data="key:trial-placeholder")],
+        [InlineKeyboardButton(t("menu.free_trial", language=language), callback_data=trial_callback_data or "key:trial-placeholder")],
         [InlineKeyboardButton(t("nav.home", language=language), callback_data="nav:home")],
     ])
 

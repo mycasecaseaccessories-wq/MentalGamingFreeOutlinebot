@@ -7,10 +7,10 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from locales.translator import t
 
 
-def build_checkout_keyboard(token: str, language: str) -> InlineKeyboardMarkup:
+def build_checkout_keyboard(token: str, language: str, confirm_callback_data: str | None = None, cancel_callback_data: str | None = None) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(t("order.confirm", language=language), callback_data=f"checkout:confirm:{token}")],
-        [InlineKeyboardButton(t("order.cancel", language=language), callback_data=f"checkout:cancel:{token}")],
+        [InlineKeyboardButton(t("order.confirm", language=language), callback_data=confirm_callback_data or f"checkout:confirm:{token}")],
+        [InlineKeyboardButton(t("order.cancel", language=language), callback_data=cancel_callback_data or f"checkout:cancel:{token}")],
         [InlineKeyboardButton(t("common.back", language=language), callback_data="pkg:list:1")],
         [InlineKeyboardButton(t("nav.home", language=language), callback_data="nav:home")],
     ])
@@ -24,9 +24,9 @@ def build_order_created_keyboard(public_order_id: str, language: str) -> InlineK
     ])
 
 
-def build_wallet_payment_preview_keyboard(public_order_id: str, language: str) -> InlineKeyboardMarkup:
+def build_wallet_payment_preview_keyboard(public_order_id: str, language: str, confirm_callback_data: str | None = None) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(t("order.wallet_confirm", language=language), callback_data=f"wallet:confirm:{public_order_id}")],
+        [InlineKeyboardButton(t("order.wallet_confirm", language=language), callback_data=confirm_callback_data or f"wallet:confirm:{public_order_id}")],
         [InlineKeyboardButton(t("order.wallet_cancel", language=language), callback_data=f"wallet:cancel:{public_order_id}")],
         [InlineKeyboardButton(t("common.back", language=language), callback_data=f"order:pay:{public_order_id}")],
     ])
@@ -87,9 +87,9 @@ def build_order_details_keyboard(public_order_id: str, language: str) -> InlineK
     ])
 
 
-def build_cancel_confirmation_keyboard(public_order_id: str, language: str) -> InlineKeyboardMarkup:
+def build_cancel_confirmation_keyboard(public_order_id: str, language: str, confirm_callback_data: str | None = None) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(t("order.confirm_cancel", language=language), callback_data=f"order:cancel_confirm:{public_order_id}")],
+        [InlineKeyboardButton(t("order.confirm_cancel", language=language), callback_data=confirm_callback_data or f"order:cancel_confirm:{public_order_id}")],
         [InlineKeyboardButton(t("order.keep", language=language), callback_data=f"order:cancel_keep:{public_order_id}")],
     ])
 

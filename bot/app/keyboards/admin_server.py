@@ -40,15 +40,18 @@ def server_list_keyboard(language: str, *, page: int, has_previous: bool, has_ne
     return InlineKeyboardMarkup(rows)
 
 
-def server_detail_keyboard(language: str, *, public_id: str, enabled: bool, maintenance: bool, archived: bool) -> InlineKeyboardMarkup:
+def server_detail_keyboard(language: str, *, public_id: str, enabled: bool, maintenance: bool, archived: bool, action_callbacks: dict[str, str] | None = None) -> InlineKeyboardMarkup:
+    callbacks = action_callbacks or {}
     rows = []
     if not archived:
-        rows.append([InlineKeyboardButton(t("admin.servers.edit", language=language), callback_data=f"admin:servers:edit:{public_id}")])
-        rows.append([InlineKeyboardButton(t("admin.servers.sync_now", language=language), callback_data=f"admin:servers:sync:{public_id}")])
-        rows.append([InlineKeyboardButton(t("admin.servers.health_check", language=language), callback_data=f"admin:servers:health:{public_id}")])
-        rows.append([InlineKeyboardButton(t("admin.servers.usage", language=language), callback_data=f"admin:servers:usage:{public_id}")])
-        rows.append([InlineKeyboardButton(t("admin.servers.disable" if enabled else "admin.servers.enable", language=language), callback_data=f"admin:servers:{'disable' if enabled else 'enable'}:{public_id}")])
-        rows.append([InlineKeyboardButton(t("admin.servers.maintenance_off" if maintenance else "admin.servers.maintenance_on", language=language), callback_data=f"admin:servers:maintenance_{'off' if maintenance else 'on'}:{public_id}")])
-        rows.append([InlineKeyboardButton(t("admin.servers.archive", language=language), callback_data=f"admin:servers:archive:{public_id}")])
+        rows.append([InlineKeyboardButton(t("admin.servers.edit", language=language), callback_data=callbacks.get("edit", f"admin:servers:edit:{public_id}"))])
+        rows.append([InlineKeyboardButton(t("admin.servers.sync_now", language=language), callback_data=callbacks.get("sync", f"admin:servers:sync:{public_id}"))])
+        rows.append([InlineKeyboardButton(t("admin.servers.health_check", language=language), callback_data=callbacks.get("health", f"admin:servers:health:{public_id}"))])
+        rows.append([InlineKeyboardButton(t("admin.servers.usage", language=language), callback_data=callbacks.get("usage", f"admin:servers:usage:{public_id}"))])
+        action = "disable" if enabled else "enable"
+        rows.append([InlineKeyboardButton(t(f"admin.servers.{action}", language=language), callback_data=callbacks.get(action, f"admin:servers:{action}:{public_id}"))])
+        maintenance_action = "maintenance_off" if maintenance else "maintenance_on"
+        rows.append([InlineKeyboardButton(t(f"admin.servers.{maintenance_action}", language=language), callback_data=callbacks.get(maintenance_action, f"admin:servers:{maintenance_action}:{public_id}"))])
+        rows.append([InlineKeyboardButton(t("admin.servers.archive", language=language), callback_data=callbacks.get("archive", f"admin:servers:archive:{public_id}"))])
     rows.append([InlineKeyboardButton(t("nav.back", language=language), callback_data="admin:servers:list:1")])
     return InlineKeyboardMarkup(rows)

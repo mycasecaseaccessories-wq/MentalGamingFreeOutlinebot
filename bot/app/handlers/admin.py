@@ -20,6 +20,7 @@ from app.keyboards.admin_payment_review import (
     admin_review_keyboard,
 )
 from app.models.payment_review import PaymentReviewItem
+from app.services.callback_security_service import CallbackSecurityService
 from app.services.payment_review_service import PaymentReviewService
 from database.models.payment_submission import PaymentSubmissionORM
 from config import settings
@@ -38,6 +39,11 @@ def _language(context: ContextTypes.DEFAULT_TYPE) -> str:
 def _service(context: ContextTypes.DEFAULT_TYPE) -> PaymentReviewService | None:
     registry = context.bot_data.get("registry")
     return None if registry is None else registry.get_or_none(PaymentReviewService)
+
+
+def _callback_service(context: ContextTypes.DEFAULT_TYPE) -> CallbackSecurityService | None:
+    registry = context.bot_data.get("registry")
+    return None if registry is None else registry.get_or_none(CallbackSecurityService)
 
 
 def _actor_id(update: Update) -> int | None:
@@ -94,6 +100,7 @@ async def admin_payments_callback(update: Update, context: ContextTypes.DEFAULT_
     language = _language(context)
     parts = (query.data or "").split(":")
     service = _service(context)
+    callback_security = _callback_service(context)
     if service is None:
         await message.reply_text(t("common.error", language=language))
         return
@@ -154,14 +161,66 @@ async def admin_payments_callback(update: Update, context: ContextTypes.DEFAULT_
             else:
                 await context.bot.send_document(chat_id=actor_id, document=item.proof_file_id)
             return
+        if query.data and query.data.startswith("cb2:"):
+            if callback_security is None or actor_id is None:
+                await message.reply_text(t("common.error", language=language))
+                return
+            platform_user = context.user_data.get(PLATFORM_USER_KEY)
+            actor_user_id = getattr(platform_user, "id", None)
+            action_type = await callback_security.action_type_for(query.data)
+            if action_type not in {"admin.payment.approve", "admin.payment.reject"}:
+                return
+            if actor_user_id is None:
+                await message.reply_text(t("admin.payments.invalid_state", language=language))
+                return
+            consumed = await callback_security.consume(
+                callback_data=query.data,
+                action_type=action_type,
+                actor_user_id=actor_user_id,
+                actor_telegram_id=actor_id,
+                chat_id=update.effective_chat.id if update.effective_chat else None,
+                chat_type=update.effective_chat.type if update.effective_chat else None,
+                expected_resource_type="payment_submission",
+                request_id=(context.user_data.get("request_context").request_id if context.user_data.get("request_context") else None),
+            )
+            if not consumed.is_success:
+                await message.reply_text(t("admin.payments.invalid_state", language=language))
+                return
+            payload = consumed.unwrap()
+            payment_id = payload.resource_public_id
+            if not payment_id:
+                await message.reply_text(t("admin.payments.invalid_state", language=language))
+                return
+            if action_type == "admin.payment.approve":
+                result = await service.approve(actor_telegram_id=actor_id, public_payment_id=payment_id, request_id=f"tg:{actor_id}:{payment_id}")
+            else:
+                reason = str(payload.safe_metadata.get("reason") or "admin_rejected")[:500]
+                result = await service.reject(actor_telegram_id=actor_id, public_payment_id=payment_id, reason=reason, request_id=f"tg:{actor_id}:{payment_id}")
+            await _render_decision(message, result, language)
+            return
+
         if len(parts) == 4 and parts[2] == "approve":
             item = await service.get_detail(public_payment_id=parts[3])
             if item is None:
                 await message.reply_text(t("error.not_found", language=language))
                 return
+            confirm_data = None
+            if callback_security is not None and context.user_data.get(PLATFORM_USER_KEY) is not None:
+                issued = await callback_security.issue(
+                    action_type="admin.payment.approve",
+                    actor_user_id=context.user_data[PLATFORM_USER_KEY].id,
+                    actor_telegram_id=actor_id,
+                    chat_id=update.effective_chat.id if update.effective_chat else None,
+                    chat_type=update.effective_chat.type if update.effective_chat else None,
+                    resource_type="payment_submission",
+                    resource_public_id=item.public_payment_id,
+                    safe_metadata={"surface": "admin_payment_review"},
+                )
+                if issued.is_success:
+                    confirm_data = issued.unwrap().data
             await message.reply_text(
                 t("admin.payments.approve_prompt", language=language, payment=item.public_payment_id, order=item.public_order_id, amount=_money(item.amount, item.currency), method=item.payment_method),
-                reply_markup=admin_approval_confirmation_keyboard(item.public_payment_id, language),
+                reply_markup=admin_approval_confirmation_keyboard(item.public_payment_id, language, confirm_data),
             )
             return
         if len(parts) == 4 and parts[2] == "approve_confirm":
@@ -179,7 +238,21 @@ async def admin_payments_callback(update: Update, context: ContextTypes.DEFAULT_
                 return
             reason = t(f"admin.payments.reason_{reason_code}", language=language)
             context.user_data[_ADMIN_REVIEW_KEY] = {"admin_id": actor_id, "payment_id": payment_id, "stage": "confirm_rejection", "reason": reason}
-            await message.reply_text(t("admin.payments.reject_prompt", language=language, payment=payment_id, reason=reason), reply_markup=admin_rejection_confirmation_keyboard(payment_id, language))
+            confirm_data = None
+            if callback_security is not None and context.user_data.get(PLATFORM_USER_KEY) is not None:
+                issued = await callback_security.issue(
+                    action_type="admin.payment.reject",
+                    actor_user_id=context.user_data[PLATFORM_USER_KEY].id,
+                    actor_telegram_id=actor_id,
+                    chat_id=update.effective_chat.id if update.effective_chat else None,
+                    chat_type=update.effective_chat.type if update.effective_chat else None,
+                    resource_type="payment_submission",
+                    resource_public_id=payment_id,
+                    safe_metadata={"reason": reason, "surface": "admin_payment_review"},
+                )
+                if issued.is_success:
+                    confirm_data = issued.unwrap().data
+            await message.reply_text(t("admin.payments.reject_prompt", language=language, payment=payment_id, reason=reason), reply_markup=admin_rejection_confirmation_keyboard(payment_id, language, confirm_data))
             return
         if len(parts) == 4 and parts[2] == "reject_confirm":
             state = context.user_data.get(_ADMIN_REVIEW_KEY) or {}
@@ -270,4 +343,5 @@ def register(application: Application) -> None:
         CallbackQueryHandler(admin_payments_callback, pattern=r"^admin:(?:home|payments(?::(?:pending|approved|rejected):\d+)?|payments:(?:view|proof|approve|approve_confirm|reject|reject_confirm):[^:]+|payments:reject_reason:[^:]+:[^:]+)$"),
         group=7,
     )
+    application.add_handler(CallbackQueryHandler(admin_payments_callback, pattern=r"^cb2:"), group=7)
     logger.debug("Phase 2.4 admin payment review handlers registered")

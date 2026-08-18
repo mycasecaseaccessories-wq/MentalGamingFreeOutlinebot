@@ -50,9 +50,9 @@ def admin_review_keyboard(public_payment_id: str, language: str) -> InlineKeyboa
     ])
 
 
-def admin_approval_confirmation_keyboard(public_payment_id: str, language: str) -> InlineKeyboardMarkup:
+def admin_approval_confirmation_keyboard(public_payment_id: str, language: str, confirm_callback_data: str | None = None) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(t("admin.payments.confirm_approve", language=language), callback_data=f"admin:payments:approve_confirm:{public_payment_id}")],
+        [InlineKeyboardButton(t("admin.payments.confirm_approve", language=language), callback_data=confirm_callback_data or f"admin:payments:approve_confirm:{public_payment_id}")],
         [InlineKeyboardButton(t("admin.payments.keep_reviewing", language=language), callback_data=f"admin:payments:view:{public_payment_id}")],
     ])
 
@@ -73,8 +73,8 @@ def admin_rejection_reasons_keyboard(public_payment_id: str, language: str) -> I
     return InlineKeyboardMarkup(rows)
 
 
-def admin_rejection_confirmation_keyboard(public_payment_id: str, language: str) -> InlineKeyboardMarkup:
+def admin_rejection_confirmation_keyboard(public_payment_id: str, language: str, confirm_callback_data: str | None = None) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(t("admin.payments.confirm_reject", language=language), callback_data=f"admin:payments:reject_confirm:{public_payment_id}")],
+        [InlineKeyboardButton(t("admin.payments.confirm_reject", language=language), callback_data=confirm_callback_data or f"admin:payments:reject_confirm:{public_payment_id}")],
         [InlineKeyboardButton(t("admin.payments.keep_reviewing", language=language), callback_data=f"admin:payments:view:{public_payment_id}")],
     ])

@@ -9,6 +9,7 @@ from app.handlers.base import permission_required
 from app.keyboards.admin_outline_setup import outline_not_found_keyboard, outline_review_keyboard, outline_setup_methods_keyboard, provisioning_confirm_keyboard, ssh_auth_keyboard, ssh_test_keyboard
 from app.models.outline_setup import OutlineCredentialInput, OutlineSetupReview
 from app.models.ssh_discovery import OutlineSSHDiscoveryResult
+from app.services.callback_security_service import CallbackSecurityService
 from app.services.outline_setup_service import OutlineSetupService
 from app.services.outline_provisioning_service import OutlineProvisioningService
 from app.services.ssh_discovery_service import SSHDiscoveryService
@@ -43,6 +44,29 @@ def _ssh_service(context) -> SSHDiscoveryService | None:
     return None if registry is None else registry.get_or_none(SSHDiscoveryService)
 
 
+def _callback_service(context) -> CallbackSecurityService | None:
+    registry = context.bot_data.get("registry")
+    return None if registry is None else registry.get_or_none(CallbackSecurityService)
+
+
+async def _secure_flow_callbacks(update, context, actor: int, flow_id: str, actions: tuple[str, ...]) -> dict[str, str]:
+    service = _callback_service(context)
+    callbacks: dict[str, str] = {}
+    if service is None:
+        return callbacks
+    for action in actions:
+        issued = await service.issue(
+            action_type=f"admin.outline.{action}", actor_user_id=actor, actor_telegram_id=actor,
+            chat_id=update.effective_chat.id if update.effective_chat else None,
+            chat_type=update.effective_chat.type if update.effective_chat else None,
+            resource_type="outline_flow", resource_public_id=str(flow_id),
+            safe_metadata={"action": action},
+        )
+        if issued.is_success:
+            callbacks[action] = issued.unwrap().data
+    return callbacks
+
+
 def _plan_text(plan, language: str) -> str:
     p = plan.preflight
     return t("admin.outline.provision_plan", language=language, host=plan.host, os=p.os_name or "—", arch=p.architecture or "—", privilege=p.privilege_mode, disk=p.disk_free_mb or "—", memory=p.memory_available_mb or "—", docker="✅" if p.docker_available else "❌", changes="; ".join(plan.expected_changes), warnings="; ".join(plan.warnings) or "—")
@@ -65,7 +89,27 @@ async def outline_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if query is None or message is None or actor is None: return
     await query.answer()
     if service is None: await message.reply_text(t("common.error", language=language)); return
-    parts = (query.data or "").split(":")
+    raw_data = query.data or ""
+    parts = raw_data.split(":")
+    callback_security = _callback_service(context)
+    if raw_data.startswith("cb2:"):
+        action_type = None if callback_security is None else await callback_security.action_type_for(raw_data)
+        if not action_type or not action_type.startswith("admin.outline."):
+            return
+        consumed = await callback_security.consume(
+            callback_data=raw_data, action_type=action_type, actor_user_id=actor, actor_telegram_id=actor,
+            chat_id=update.effective_chat.id if update.effective_chat else None,
+            chat_type=update.effective_chat.type if update.effective_chat else None,
+            expected_resource_type="outline_flow",
+        )
+        if not consumed.is_success:
+            await message.reply_text(t("admin.outline.expired", language=language)); return
+        payload = consumed.unwrap()
+        flow_id = payload.resource_public_id
+        action = str(payload.safe_metadata.get("action") or action_type.removeprefix("admin.outline."))
+        if not flow_id or action not in {"auto_confirm", "cancel", "save_disabled", "save_enable", "test_again", "ssh_test"}:
+            await message.reply_text(t("admin.outline.expired", language=language)); return
+        parts = ["admin", "outline", action, flow_id]
     if parts == ["admin", "outline", "api_url"]:
         result = await service.start_setup(admin_id=actor, setup_method="api_url")
         if not result.is_success: await message.reply_text(t("admin.outline.error", language=language)); return
@@ -130,7 +174,9 @@ async def outline_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             context.user_data.pop(_STATE, None); await message.reply_text(t("admin.outline.cancelled", language=language), reply_markup=outline_setup_methods_keyboard(language)); return
         if parts[2] == "test_again":
             result = await service.reverify(admin_id=actor, flow_id=flow_id)
-            if result.is_success: await message.reply_text(_review_text(result.unwrap(), language, ssh=state.get("ssh_discovery")), reply_markup=outline_review_keyboard(language, flow_id))
+            if result.is_success:
+                callbacks = await _secure_flow_callbacks(update, context, actor, flow_id, ("save_disabled", "save_enable", "test_again", "cancel"))
+                await message.reply_text(_review_text(result.unwrap(), language, ssh=state.get("ssh_discovery")), reply_markup=outline_review_keyboard(language, flow_id, callbacks))
             else: await message.reply_text(t("admin.outline.error", language=language)); return
         meta = state.get("metadata") or {}; result = await service.save_verified(admin_id=actor, flow_id=flow_id, name=meta.get("name", "Outline Server"), country_code=meta.get("country_code"), region=meta.get("region"), enable=parts[2] == "save_enable")
         context.user_data.pop(_STATE, None)
@@ -182,10 +228,11 @@ async def outline_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             value = preflight.unwrap()
             if hasattr(value, "preflight"):
                 token = provisioning.confirmation_token(admin_id=actor, flow_id=provisioning_flow) or ""
-                await message.reply_text(_plan_text(value, language), reply_markup=provisioning_confirm_keyboard(language, provisioning_flow, token)); return
+                callbacks = await _secure_flow_callbacks(update, context, actor, provisioning_flow, ("auto_confirm", "cancel"))
+                await message.reply_text(_plan_text(value, language), reply_markup=provisioning_confirm_keyboard(language, provisioning_flow, token, callbacks)); return
             state["stage"] = "name"; state["review"] = value
             await message.reply_text(t("admin.outline.metadata_name", language=language), reply_markup=ForceReply(selective=True)); return
-        state["stage"] = "ssh_test"; await message.reply_text(t("admin.outline.ssh_ready", language=language), reply_markup=ssh_test_keyboard(language, flow_id)); return
+        state["stage"] = "ssh_test"; callbacks = await _secure_flow_callbacks(update, context, actor, flow_id, ("ssh_test", "cancel")); await message.reply_text(t("admin.outline.ssh_ready", language=language), reply_markup=ssh_test_keyboard(language, flow_id, callbacks)); return
     if stage == "name":
         state.setdefault("metadata", {})["name"] = text; state["stage"] = "country"; await message.reply_text(t("admin.outline.metadata_country", language=language), reply_markup=ForceReply(selective=True)); return
     if stage == "country":
@@ -193,7 +240,8 @@ async def outline_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if stage == "region":
         state.setdefault("metadata", {})["region"] = None if text in {"—", "-"} else text; state["stage"] = "review"; review: OutlineSetupReview = state["review"]; meta = state["metadata"]
         review = OutlineSetupReview(flow_id=review.flow_id, server_public_id=review.server_public_id, source=review.source, discovery=review.discovery, name=meta.get("name"), country_code=meta.get("country_code"), region=meta.get("region"), paid_enabled=review.paid_enabled, free_trial_enabled=review.free_trial_enabled, vip_enabled=review.vip_enabled, max_users=review.max_users, traffic_limit_bytes=review.traffic_limit_bytes, priority=review.priority, weight=review.weight, credential_reference=review.credential_reference); state["review"] = review
-        await message.reply_text(_review_text(review, language, ssh=state.get("ssh_discovery")), reply_markup=outline_review_keyboard(language, flow_id)); return
+        callbacks = await _secure_flow_callbacks(update, context, actor, flow_id, ("save_disabled", "save_enable", "test_again", "cancel"))
+        await message.reply_text(_review_text(review, language, ssh=state.get("ssh_discovery")), reply_markup=outline_review_keyboard(language, flow_id, callbacks)); return
 
 
 @permission_required("manage_servers")

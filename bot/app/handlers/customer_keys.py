@@ -11,6 +11,7 @@ from telegram.ext import Application, CallbackQueryHandler, ContextTypes, Messag
 
 from app.handlers.base import log_handler
 from app.handlers.customer_navigation import _get_user, _is_customer_surface, _language
+from app.services.callback_security_service import CallbackSecurityService
 from app.keyboards.customer_keys import (
     empty_keys_keyboard,
     key_details_keyboard,
@@ -29,6 +30,11 @@ _GB = 1024 ** 3
 def _service(context: ContextTypes.DEFAULT_TYPE) -> CustomerKeyService | None:
     registry = context.bot_data.get("registry")
     return None if registry is None else registry.get_or_none(CustomerKeyService)
+
+
+def _callback_service(context: ContextTypes.DEFAULT_TYPE) -> CallbackSecurityService | None:
+    registry = context.bot_data.get("registry")
+    return None if registry is None else registry.get_or_none(CallbackSecurityService)
 
 
 def _fmt_gb(value: int | None, language: str) -> str:
@@ -96,9 +102,24 @@ async def _show_list(update: Update, context: ContextTypes.DEFAULT_TYPE, page: i
 
     result = await svc.list_customer_keys(user.telegram_id, page=page, page_size=5)
     if not result.items:
+        trial_data = None
+        callback_security = _callback_service(context)
+        if callback_security is not None:
+            issued = await callback_security.issue(
+                action_type="free_trial.claim",
+                actor_user_id=user.id,
+                actor_telegram_id=user.telegram_id,
+                chat_id=update.effective_chat.id if update.effective_chat else None,
+                chat_type=update.effective_chat.type if update.effective_chat else None,
+                resource_type="free_trial",
+                resource_public_id=str(user.id),
+                safe_metadata={"surface": "customer_keys"},
+            )
+            if issued.is_success:
+                trial_data = issued.unwrap().data
         await message.reply_text(
             t("keys.empty", language=language),
-            reply_markup=empty_keys_keyboard(language),
+            reply_markup=empty_keys_keyboard(language, trial_data),
         )
         return
 
@@ -162,6 +183,7 @@ async def key_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     language = _language(user)
     data = query.data or ""
+    callback_security = _callback_service(context)
     svc = _service(context)
     if svc is None:
         if query.message:
@@ -248,19 +270,42 @@ async def key_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 )
             return
 
-        if data == "key:trial-placeholder":
+        if data.startswith("cb2:"):
+            if callback_security is None or await callback_security.action_type_for(data) != "free_trial.claim":
+                return
             claim_svc = _claim_service(context)
             if claim_svc is None or query.message is None:
                 if query.message: await query.message.reply_text(t("common.error", language=language))
                 return
-            claim_key = f"telegram:{user.telegram_id}:free:{datetime.now().strftime("%Y%m%d%H%M%S")}:{query.id}"
-            result = await claim_svc.accept_claim(user_id=user.id, package_id=0, idempotency_key=claim_key)
+            rate = await callback_security.check_rate_limit(actor_user_id=user.id, action_type="free_trial.claim", chat_id=update.effective_chat.id if update.effective_chat else None, limit=2, window_seconds=86400)
+            if not rate.is_success or not rate.unwrap():
+                await query.message.reply_text(t("free_trial.daily_allowance_exhausted", language=language))
+                return
+            consumed = await callback_security.consume(
+                callback_data=data,
+                action_type="free_trial.claim",
+                actor_user_id=user.id,
+                actor_telegram_id=user.telegram_id,
+                chat_id=update.effective_chat.id if update.effective_chat else None,
+                chat_type=update.effective_chat.type if update.effective_chat else None,
+                expected_resource_type="free_trial",
+                expected_resource_public_id=str(user.id),
+            )
+            if not consumed.is_success:
+                await query.message.reply_text(t("free_trial.disabled", language=language))
+                return
+            claim_key = f"telegram:{user.telegram_id}:free:{datetime.now().strftime('%Y%m%d%H%M%S')}:{query.id}"
+            result = await claim_svc.accept_claim(user_id=user.id, package_id=0, idempotency_key=claim_key, policy={})
             if result.is_success:
                 await query.message.reply_text(t("free_trial.accepted", language=language))
             else:
                 code = result.error.code if result.error else "disabled"
                 key = {"daily_allowance_exhausted":"free_trial.daily_allowance_exhausted", "no_extra_entitlement":"free_trial.no_extra_entitlement", "membership_required":"free_trial.membership_required", "free_trial_disabled":"free_trial.disabled"}.get(code, "common.error")
                 await query.message.reply_text(t(key, language=language))
+            return
+
+        if data == "key:trial-placeholder":
+            if query.message: await query.message.reply_text(t("free_trial.disabled", language=language))
             return
 
     except (TypeError, ValueError):

@@ -17,18 +17,20 @@ def outline_setup_methods_keyboard(language: str) -> InlineKeyboardMarkup:
     ])
 
 
-def ssh_auth_keyboard(language: str, flow_id: str) -> InlineKeyboardMarkup:
+def ssh_auth_keyboard(language: str, flow_id: str, secure_callbacks: dict[str, str] | None = None) -> InlineKeyboardMarkup:
+    callbacks = secure_callbacks or {}
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(t("admin.outline.ssh_password", language=language), callback_data=f"admin:outline:ssh_auth:password:{flow_id}")],
-        [InlineKeyboardButton(t("admin.outline.ssh_key", language=language), callback_data=f"admin:outline:ssh_auth:private_key:{flow_id}")],
-        [InlineKeyboardButton(t("admin.outline.cancel", language=language), callback_data=f"admin:outline:cancel:{flow_id}")],
+        [InlineKeyboardButton(t("admin.outline.ssh_password", language=language), callback_data=callbacks.get("ssh_auth_password", f"admin:outline:ssh_auth:password:{flow_id}"))],
+        [InlineKeyboardButton(t("admin.outline.ssh_key", language=language), callback_data=callbacks.get("ssh_auth_private_key", f"admin:outline:ssh_auth:private_key:{flow_id}"))],
+        [InlineKeyboardButton(t("admin.outline.cancel", language=language), callback_data=callbacks.get("cancel", f"admin:outline:cancel:{flow_id}"))],
     ])
 
 
-def ssh_test_keyboard(language: str, flow_id: str) -> InlineKeyboardMarkup:
+def ssh_test_keyboard(language: str, flow_id: str, secure_callbacks: dict[str, str] | None = None) -> InlineKeyboardMarkup:
+    callbacks = secure_callbacks or {}
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(t("admin.outline.ssh_test", language=language), callback_data=f"admin:outline:ssh_test:{flow_id}")],
-        [InlineKeyboardButton(t("admin.outline.cancel", language=language), callback_data=f"admin:outline:cancel:{flow_id}")],
+        [InlineKeyboardButton(t("admin.outline.ssh_test", language=language), callback_data=callbacks.get("ssh_test", f"admin:outline:ssh_test:{flow_id}"))],
+        [InlineKeyboardButton(t("admin.outline.cancel", language=language), callback_data=callbacks.get("cancel", f"admin:outline:cancel:{flow_id}"))],
     ])
 
 
@@ -39,17 +41,19 @@ def outline_not_found_keyboard(language: str) -> InlineKeyboardMarkup:
     ])
 
 
-def provisioning_confirm_keyboard(language: str, flow_id: str, token: str) -> InlineKeyboardMarkup:
+def provisioning_confirm_keyboard(language: str, flow_id: str, token: str, secure_callbacks: dict[str, str] | None = None) -> InlineKeyboardMarkup:
+    callbacks = secure_callbacks or {}
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(t("admin.outline.provision_confirm", language=language), callback_data=f"admin:outline:auto_confirm:{flow_id}:{token}")],
-        [InlineKeyboardButton(t("admin.outline.cancel", language=language), callback_data=f"admin:outline:cancel:{flow_id}")],
+        [InlineKeyboardButton(t("admin.outline.provision_confirm", language=language), callback_data=callbacks.get("auto_confirm", f"admin:outline:auto_confirm:{flow_id}:{token}"))],
+        [InlineKeyboardButton(t("admin.outline.cancel", language=language), callback_data=callbacks.get("cancel", f"admin:outline:cancel:{flow_id}"))],
     ])
 
 
-def outline_review_keyboard(language: str, flow_id: str) -> InlineKeyboardMarkup:
+def outline_review_keyboard(language: str, flow_id: str, secure_callbacks: dict[str, str] | None = None) -> InlineKeyboardMarkup:
+    callbacks = secure_callbacks or {}
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(t("admin.outline.save_disabled", language=language), callback_data=f"admin:outline:save_disabled:{flow_id}")],
-        [InlineKeyboardButton(t("admin.outline.save_enable", language=language), callback_data=f"admin:outline:save_enable:{flow_id}")],
-        [InlineKeyboardButton(t("admin.outline.test_again", language=language), callback_data=f"admin:outline:test_again:{flow_id}")],
-        [InlineKeyboardButton(t("admin.outline.cancel", language=language), callback_data=f"admin:outline:cancel:{flow_id}")],
+        [InlineKeyboardButton(t("admin.outline.save_disabled", language=language), callback_data=callbacks.get("save_disabled", f"admin:outline:save_disabled:{flow_id}"))],
+        [InlineKeyboardButton(t("admin.outline.save_enable", language=language), callback_data=callbacks.get("save_enable", f"admin:outline:save_enable:{flow_id}"))],
+        [InlineKeyboardButton(t("admin.outline.test_again", language=language), callback_data=callbacks.get("test_again", f"admin:outline:test_again:{flow_id}"))],
+        [InlineKeyboardButton(t("admin.outline.cancel", language=language), callback_data=callbacks.get("cancel", f"admin:outline:cancel:{flow_id}"))],
     ])

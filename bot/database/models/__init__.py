@@ -75,6 +75,7 @@ from .maintenance import (
 )
 from .mission import MissionORM, UserMissionProgressORM, MissionProgressEventORM
 from .promo import PromoCodeORM, PromoRedemptionORM
+from .callback_security import CallbackActionORM, CallbackRateLimitORM
 from .admin_security import (
     AdminPermissionGrantORM,
     AdminPrincipalORM,
@@ -137,6 +138,8 @@ __all__ = [
     "MissionProgressEventORM",
     "PromoCodeORM",
     "PromoRedemptionORM",
+    "CallbackActionORM",
+    "CallbackRateLimitORM",
     "AdminPrincipalORM",
     "AdminSessionORM",
     "AdminPermissionGrantORM",

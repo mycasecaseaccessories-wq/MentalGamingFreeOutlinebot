@@ -493,3 +493,17 @@
 - [x] Add blocker regression tests for legacy-role denial, suspended-admin denial, and mutation non-execution.
 - [x] Prove production-source `UNSAFE match = 0` for direct role-only and caller-controlled boolean privileged grants, then rerun all final gates: executable audit passed, 493 full tests passed.
 - [x] Deliver exactly one security verdict and do not start Phase 8.2 before confirmation.
+
+## Phase 8.2 Telegram Callback & Request Security
+- [x] Inventory callback-driven mutations, actor sources, resource ownership, expiry, replay, idempotency, and rate-limit boundaries.
+- [x] Implement reusable safe callback/action-state security without creating a parallel framework.
+- [x] Enforce callback ownership, stale/expiry checks, IDOR prevention, state transitions, and exactly-once mutation behavior.
+- [x] Add focused forged/copy/replay/expiry/double-submit/rate-abuse regression tests and preserve Phase 8.1 behavior.
+- [x] Run full Phase 0–8.2 verification and do not start Phase 8.3.
+
+## Phase 8.2 Final Closeout — Commit and Push
+- [ ] Review working tree, diff, secrets, temporary artifacts, and unrelated changes before commit.
+- [ ] Re-run final Phase 8.2 focused, regression, compile, quality, migration, secret, and callback-security verification.
+- [ ] Commit the verified Phase 8.2 changes with the approved security commit message.
+- [ ] Push the verified commit to origin/main and confirm HEAD equals origin/main with a clean working tree.
+- [ ] Deliver the final Phase 8.2 closeout report and do not start Phase 8.3.

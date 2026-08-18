@@ -12,6 +12,7 @@ from app.handlers.base import permission_required
 from app.keyboards.admin_server import server_detail_keyboard, server_list_keyboard, server_menu_keyboard
 from app.keyboards.admin_outline_setup import outline_setup_methods_keyboard
 from app.middlewares.auth import PLATFORM_USER_KEY
+from app.services.callback_security_service import CallbackSecurityService
 from app.services.server_service import ServerService
 from app.services.server_selection_service import ServerSelectionService
 from app.models.server_selection import SelectionRequest
@@ -46,6 +47,29 @@ def _service(context) -> ServerService | None:
     return None if registry is None else registry.get_or_none(ServerService)
 
 
+def _callback_service(context) -> CallbackSecurityService | None:
+    registry = context.bot_data.get("registry")
+    return None if registry is None else registry.get_or_none(CallbackSecurityService)
+
+
+async def _detail_markup(update, context, item, actor: int, language: str):
+    callback_security = _callback_service(context)
+    callbacks: dict[str, str] = {}
+    if callback_security is not None:
+        actions = ("edit", "sync", "health", "usage", "enable" if not item.enabled else "disable", "maintenance_on" if not item.maintenance_mode else "maintenance_off", "archive")
+        for action in actions:
+            issued = await callback_security.issue(
+                action_type=f"admin.server.{action}", actor_user_id=actor, actor_telegram_id=actor,
+                chat_id=update.effective_chat.id if update.effective_chat else None,
+                chat_type=update.effective_chat.type if update.effective_chat else None,
+                resource_type="server", resource_public_id=item.public_server_id,
+                safe_metadata={"action": action},
+            )
+            if issued.is_success:
+                callbacks[action] = issued.unwrap().data
+    return server_detail_keyboard(language, public_id=item.public_server_id, enabled=item.enabled, maintenance=item.maintenance_mode, archived=item.archived_at is not None, action_callbacks=callbacks)
+
+
 def _date(value) -> str:
     return value.strftime("%Y-%m-%d %H:%M UTC") if value else "—"
 
@@ -64,7 +88,26 @@ async def server_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     query = update.callback_query; message = update.effective_message; actor = _actor(update); language = _lang(context)
     if query is None or message is None or actor is None: return
     await query.answer()
-    parts = (query.data or "").split(":")
+    raw_data = query.data or ""
+    parts = raw_data.split(":")
+    callback_security = _callback_service(context)
+    if raw_data.startswith("cb2:"):
+        action_type = None if callback_security is None else await callback_security.action_type_for(raw_data)
+        if not action_type or not action_type.startswith("admin.server."):
+            return
+        consumed = await callback_security.consume(
+            callback_data=raw_data, action_type=action_type, actor_user_id=actor, actor_telegram_id=actor,
+            chat_id=update.effective_chat.id if update.effective_chat else None,
+            chat_type=update.effective_chat.type if update.effective_chat else None,
+            expected_resource_type="server",
+        )
+        if not consumed.is_success:
+            await message.reply_text(t("order.invalid_callback", language=language)); return
+        payload = consumed.unwrap()
+        action = str(payload.safe_metadata.get("action") or action_type.removeprefix("admin.server."))
+        if not payload.resource_public_id or action not in {"edit", "sync", "health", "usage", "enable", "disable", "maintenance_on", "maintenance_off", "archive"}:
+            await message.reply_text(t("order.invalid_callback", language=language)); return
+        parts = ["admin", "servers", action, payload.resource_public_id]
     service = _service(context)
     if service is None:
         await message.reply_text(t("common.error", language=language)); return
@@ -89,7 +132,7 @@ async def server_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if len(parts) == 4 and parts[2] == "view":
             item = await service.get_server(parts[3])
             if item is None: await message.reply_text(t("error.not_found", language=language)); return
-            await message.reply_text(_server_text(item, language), reply_markup=server_detail_keyboard(language, public_id=item.public_server_id, enabled=item.enabled, maintenance=item.maintenance_mode, archived=item.archived_at is not None)); return
+            await message.reply_text(_server_text(item, language), reply_markup=await _detail_markup(update, context, item, actor, language)); return
         if len(parts) == 4 and parts[2] in {"enable", "disable", "archive", "maintenance_on", "maintenance_off"}:
             public_id = parts[3]
             if parts[2] == "enable": result = await service.set_enabled(actor_telegram_id=actor, public_server_id=public_id, enabled=True)
@@ -98,7 +141,7 @@ async def server_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             else: result = await service.set_maintenance(actor_telegram_id=actor, public_server_id=public_id, maintenance=parts[2] == "maintenance_on")
             if result.is_success:
                 item = result.unwrap().server
-                await message.reply_text(t("admin.servers.updated", language=language, status=item.status, health=item.health_status, enabled="✅" if item.enabled else "❌"), reply_markup=server_detail_keyboard(language, public_id=item.public_server_id, enabled=item.enabled, maintenance=item.maintenance_mode, archived=item.archived_at is not None))
+                await message.reply_text(t("admin.servers.updated", language=language, status=item.status, health=item.health_status, enabled="✅" if item.enabled else "❌"), reply_markup=await _detail_markup(update, context, item, actor, language))
             else:
                 await message.reply_text(t("admin.servers.error", language=language, error=result.error.message if result.error else "Unknown error"))
             return
@@ -131,7 +174,12 @@ async def server_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             sid = parts[3]
             result = await (sync.health_check(sid) if parts[2] == "health" else sync.sync_server(sid, trigger="admin") if parts[2] == "sync" else sync.get_server_usage_summary(sid))
             if result.is_failure: await message.reply_text(t("admin.servers.error", language=language, error=result.error.message if result.error else "Unknown error")); return
-            await message.reply_text(t("admin.servers.sync_one_result", language=language, server_id=sid, result=str(result.unwrap())), reply_markup=server_detail_keyboard(language, public_id=sid, enabled=False, maintenance=False, archived=False)); return
+            fresh = await service.get_server(sid)
+            if fresh is not None:
+                await message.reply_text(t("admin.servers.sync_one_result", language=language, server_id=sid, result=str(result.unwrap())), reply_markup=await _detail_markup(update, context, fresh, actor, language))
+            else:
+                await message.reply_text(t("admin.servers.sync_one_result", language=language, server_id=sid, result=str(result.unwrap())), reply_markup=server_menu_keyboard(language))
+            return
     except (TypeError, ValueError):
         await message.reply_text(t("order.invalid_callback", language=language))
 
@@ -157,7 +205,7 @@ async def server_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         context.user_data.pop(_STATE, None)
         if result.is_success:
             item = result.unwrap().server
-            await message.reply_text(t("admin.servers.created", language=language, public_id=item.public_server_id, status=item.status, health=item.health_status), reply_markup=server_detail_keyboard(language, public_id=item.public_server_id, enabled=item.enabled, maintenance=item.maintenance_mode, archived=False))
+            await message.reply_text(t("admin.servers.created", language=language, public_id=item.public_server_id, status=item.status, health=item.health_status), reply_markup=await _detail_markup(update, context, item, actor, language))
         else: await message.reply_text(t("admin.servers.error", language=language, error=result.error.message if result.error else "Unknown error"))
         return
     if stage == "edit_name":

@@ -11,6 +11,7 @@ from telegram.ext import Application, CallbackQueryHandler, ContextTypes, Messag
 
 from app.handlers.base import log_handler
 from app.handlers.customer_navigation import _get_user, _is_customer_surface, _language
+from app.middlewares.auth import PLATFORM_USER_KEY
 from app.keyboards.package_catalog import (
     build_empty_catalog_keyboard,
     build_package_details_keyboard,
@@ -34,6 +35,7 @@ from app.models.order import Order
 from app.services.manual_payment_service import ManualPaymentService
 from app.services.payment_submission_service import PaymentSubmissionService
 from app.models.package_catalog import PackageSelection, PackageSummary
+from app.services.callback_security_service import CallbackSecurityService
 from app.services.checkout_service import CheckoutService
 from app.services.order_service import (
     CheckoutExpiredError,
@@ -60,6 +62,11 @@ def _service(context: ContextTypes.DEFAULT_TYPE) -> PackageCatalogService | None
 def _checkout_service(context: ContextTypes.DEFAULT_TYPE) -> CheckoutService | None:
     registry = context.bot_data.get("registry")
     return None if registry is None else registry.get_or_none(CheckoutService)
+
+
+def _callback_service(context: ContextTypes.DEFAULT_TYPE) -> CallbackSecurityService | None:
+    registry = context.bot_data.get("registry")
+    return None if registry is None else registry.get_or_none(CallbackSecurityService)
 
 
 def _order_service(context: ContextTypes.DEFAULT_TYPE) -> OrderService | None:
@@ -292,6 +299,7 @@ async def package_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     lang = _language(user)
     data = q.data or ""
     svc = _service(context)
+    callback_security = _callback_service(context)
     if svc is None:
         if q.message: await q.message.reply_text(t("common.error", language=lang))
         return
@@ -344,10 +352,38 @@ async def package_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             except PackageChangedError:
                 if q.message: await q.message.reply_text(t("order.checkout_changed", language=lang))
                 return
+            confirm_data = cancel_data = None
+            if callback_security is not None:
+                confirm_ref = await callback_security.issue(
+                    action_type="checkout.confirm",
+                    actor_user_id=user.id,
+                    actor_telegram_id=user.telegram_id,
+                    chat_id=update.effective_chat.id if update.effective_chat else None,
+                    chat_type=update.effective_chat.type if update.effective_chat else None,
+                    resource_type="checkout",
+                    resource_public_id=selection.checkout_token,
+                    state_version=selection.expires_at.isoformat(),
+                    safe_metadata={"surface": "package_checkout"},
+                )
+                cancel_ref = await callback_security.issue(
+                    action_type="checkout.cancel",
+                    actor_user_id=user.id,
+                    actor_telegram_id=user.telegram_id,
+                    chat_id=update.effective_chat.id if update.effective_chat else None,
+                    chat_type=update.effective_chat.type if update.effective_chat else None,
+                    resource_type="checkout",
+                    resource_public_id=selection.checkout_token,
+                    state_version=selection.expires_at.isoformat(),
+                    safe_metadata={"surface": "package_checkout"},
+                )
+                if confirm_ref.is_success:
+                    confirm_data = confirm_ref.unwrap().data
+                if cancel_ref.is_success:
+                    cancel_data = cancel_ref.unwrap().data
             if q.message:
                 await q.message.reply_text(
                     _checkout_text(selection, lang),
-                    reply_markup=build_checkout_keyboard(selection.checkout_token, lang),
+                    reply_markup=build_checkout_keyboard(selection.checkout_token, lang, confirm_data, cancel_data),
                 )
             return
     except (TypeError, ValueError):
@@ -486,11 +522,70 @@ async def order_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     data = q.data or ""
     order_service = _order_service(context)
     checkout = _checkout_service(context)
+    callback_security = _callback_service(context)
     if order_service is None or checkout is None:
         if q.message: await q.message.reply_text(t("order.generic_error", language=lang))
         return
 
     try:
+        if data.startswith("cb2:"):
+            if callback_security is None:
+                if q.message: await q.message.reply_text(t("order.invalid_callback", language=lang))
+                return
+            action_type = await callback_security.action_type_for(data)
+            allowed = {"checkout.confirm", "checkout.cancel", "wallet.pay", "order.cancel"}
+            if action_type not in allowed:
+                return
+            platform_user = context.user_data.get(PLATFORM_USER_KEY)
+            actor_user_id = getattr(platform_user, "id", None)
+            if actor_user_id is None:
+                if q.message: await q.message.reply_text(t("order.invalid_callback", language=lang))
+                return
+            consumed = await callback_security.consume(
+                callback_data=data,
+                action_type=action_type,
+                actor_user_id=actor_user_id,
+                actor_telegram_id=user.telegram_id,
+                chat_id=update.effective_chat.id if update.effective_chat else None,
+                chat_type=update.effective_chat.type if update.effective_chat else None,
+                request_id=(context.user_data.get("request_context").request_id if context.user_data.get("request_context") else None),
+            )
+            if not consumed.is_success:
+                if q.message: await q.message.reply_text(t("order.invalid_callback", language=lang))
+                return
+            action = consumed.unwrap()
+            if action_type in {"checkout.confirm", "checkout.cancel"}:
+                selection = context.user_data.get(_SELECTION_KEY)
+                if not isinstance(selection, PackageSelection) or action.resource_public_id != selection.checkout_token:
+                    if q.message: await q.message.reply_text(t("order.checkout_expired", language=lang))
+                    return
+                if action_type == "checkout.cancel":
+                    context.user_data.pop(_SELECTION_KEY, None)
+                    if q.message: await q.message.reply_text(t("package.selection_expired", language=lang))
+                    return
+                order = await checkout.create_order(selection)
+                context.user_data.pop(_SELECTION_KEY, None)
+                if q.message:
+                    await q.message.reply_text(_order_text(order, lang), reply_markup=build_order_created_keyboard(order.public_order_id, lang))
+                return
+            public_id = action.resource_public_id
+            if not public_id:
+                if q.message: await q.message.reply_text(t("order.invalid_callback", language=lang))
+                return
+            if action_type == "wallet.pay":
+                wallet_service = _wallet_payment_service(context)
+                if wallet_service is None:
+                    if q.message: await q.message.reply_text(t("order.payment_failed", language=lang))
+                    return
+                payment = await wallet_service.pay(user_id=user.telegram_id, public_order_id=public_id)
+                if q.message:
+                    await q.message.reply_text(_wallet_failure_text(payment, lang) if not payment.is_success else t("order.payment_successful", language=lang), reply_markup=build_wallet_payment_result_keyboard(lang) if payment.is_success else build_order_details_keyboard(public_id, lang))
+                return
+            order = await order_service.cancel_order(user.telegram_id, public_id)
+            if q.message:
+                await q.message.reply_text(_order_text(order, lang, "order.cancelled") + "\\n\\n" + t("order.no_charge", language=lang), reply_markup=build_cancelled_keyboard(lang))
+            return
+
         if data.startswith("checkout:"):
             action, token = data.split(":", 2)[1:]
             selection = context.user_data.get(_SELECTION_KEY)
@@ -569,9 +664,23 @@ async def order_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 )
                 if q.message:
                     if preview.is_success:
+                        confirm_data = None
+                        if callback_security is not None:
+                            issued = await callback_security.issue(
+                                action_type="wallet.pay",
+                                actor_user_id=user.id,
+                                actor_telegram_id=user.telegram_id,
+                                chat_id=update.effective_chat.id if update.effective_chat else None,
+                                chat_type=update.effective_chat.type if update.effective_chat else None,
+                                resource_type="order",
+                                resource_public_id=public_id,
+                                safe_metadata={"surface": "wallet_payment"},
+                            )
+                            if issued.is_success:
+                                confirm_data = issued.unwrap().data
                         await q.message.reply_text(
                             _wallet_preview_text(preview.unwrap(), lang),
-                            reply_markup=build_wallet_payment_preview_keyboard(public_id, lang),
+                            reply_markup=build_wallet_payment_preview_keyboard(public_id, lang, confirm_data),
                         )
                     else:
                         await q.message.reply_text(
@@ -638,9 +747,23 @@ async def order_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 if q.message: await q.message.reply_text(t("order.invalid_state", language=lang))
                 return
             if q.message:
+                confirm_data = None
+                if callback_security is not None:
+                    issued = await callback_security.issue(
+                        action_type="order.cancel",
+                        actor_user_id=user.id,
+                        actor_telegram_id=user.telegram_id,
+                        chat_id=update.effective_chat.id if update.effective_chat else None,
+                        chat_type=update.effective_chat.type if update.effective_chat else None,
+                        resource_type="order",
+                        resource_public_id=public_id,
+                        safe_metadata={"surface": "order_cancel"},
+                    )
+                    if issued.is_success:
+                        confirm_data = issued.unwrap().data
                 await q.message.reply_text(
                     _order_text(order, lang) + "\n\n" + t("order.cancel_confirm_prompt", language=lang),
-                    reply_markup=build_cancel_confirmation_keyboard(public_id, lang),
+                    reply_markup=build_cancel_confirmation_keyboard(public_id, lang, confirm_data),
                 )
             return
 
@@ -707,4 +830,5 @@ def register(application: Application) -> None:
         ),
         group=8,
     )
+    application.add_handler(CallbackQueryHandler(order_callback, pattern=r"^cb2:"), group=8)
     logger.debug("Phase 1.4 package catalogue handlers registered")

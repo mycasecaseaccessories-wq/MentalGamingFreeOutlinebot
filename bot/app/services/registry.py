@@ -222,6 +222,7 @@ class ServiceRegistry:
         from app.services.background_job_service import BackgroundJobService
         from app.services.backup_service import BackupService
         from app.services.maintenance_service import MaintenanceService
+        from app.services.callback_security_service import CallbackSecurityService
         from app.services.operational_alert_service import OperationalAlertService
         from app.services.production_operations_service import ProductionOperationsService
 
@@ -233,6 +234,9 @@ class ServiceRegistry:
             PreferenceService,
         ]
 
+        if not self.is_registered(CallbackSecurityService):
+            self.register(CallbackSecurityService, CallbackSecurityService(db=self._db))
+            logger.info("  ✓ CallbackSecurityService initialised")
         if not self.is_registered(AdminAuthorizationService):
             self.register(
                 AdminAuthorizationService,
