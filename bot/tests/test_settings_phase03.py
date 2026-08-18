@@ -40,6 +40,7 @@ os.environ.setdefault("SESSION_SECRET", "test_session_secret_for_testing")
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _tmp_url(tmp_path: Path, name: str) -> str:
     return f"sqlite+aiosqlite:///{tmp_path / name}"
 
@@ -47,6 +48,7 @@ def _tmp_url(tmp_path: Path, name: str) -> str:
 async def _fresh_db(url: str):
     """Return an initialised DatabaseManager for *url* (runs full migrations)."""
     from database.connection import DatabaseManager
+
     DatabaseManager._instance = None  # reset singleton between tests
     db = DatabaseManager.initialise(url)
     await db.init()
@@ -57,6 +59,7 @@ async def _fresh_db(url: str):
 # Migration path A — brand-new database
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_migration_fresh_database_creates_category_column(tmp_path):
     """
@@ -64,6 +67,7 @@ async def test_migration_fresh_database_creates_category_column(tmp_path):
     after DatabaseManager.init() runs all Alembic migrations from scratch.
     """
     from sqlalchemy import text
+
     db = await _fresh_db(_tmp_url(tmp_path, "fresh.db"))
 
     async with db.session() as session:
@@ -85,21 +89,23 @@ async def test_migration_fresh_database_creates_category_column(tmp_path):
 async def test_migration_alembic_version_at_head(tmp_path):
     """After init(), alembic_version must record current migration HEAD."""
     from sqlalchemy import text
+
     db = await _fresh_db(_tmp_url(tmp_path, "alembic_ver.db"))
 
     async with db.session() as session:
-        result = await session.execute(
-            text("SELECT version_num FROM alembic_version")
-        )
+        result = await session.execute(text("SELECT version_num FROM alembic_version"))
         revision = result.scalar()
 
     await db.close()
-    assert revision == "0039_phase72_alert_notification_cycles", f"Expected integrated HEAD 0039_phase72_alert_notification_cycles, got {revision!r}"
+    assert revision == "0039_phase72_alert_notification_cycles", (
+        f"Expected integrated HEAD 0039_phase72_alert_notification_cycles, got {revision!r}"
+    )
 
 
 # ---------------------------------------------------------------------------
 # Migration path B — unversioned Phase 0.2 database
 # ---------------------------------------------------------------------------
+
 
 async def _build_phase02_db(url: str) -> None:
     """
@@ -114,6 +120,7 @@ async def _build_phase02_db(url: str) -> None:
     other tables are created with minimal schemas sufficient for migration to run.
     """
     import aiosqlite
+
     db_path = url.replace("sqlite+aiosqlite:///", "")
     async with aiosqlite.connect(db_path) as conn:
         # settings — Phase 0.2 schema (no category column)
@@ -176,6 +183,7 @@ async def test_migration_phase02_database_gets_category_column(tmp_path):
     category column is added without losing existing data.
     """
     from sqlalchemy import text
+
     url = _tmp_url(tmp_path, "phase02.db")
 
     # Build the Phase 0.2 database.
@@ -190,15 +198,11 @@ async def test_migration_phase02_database_gets_category_column(tmp_path):
         columns = {row[1] for row in result.fetchall()}
 
         # Verify pre-existing data was preserved.
-        result = await session.execute(
-            text("SELECT value FROM settings WHERE key = 'legacy_key'")
-        )
+        result = await session.execute(text("SELECT value FROM settings WHERE key = 'legacy_key'"))
         legacy_value = result.scalar()
 
         # Verify alembic_version is at HEAD.
-        result = await session.execute(
-            text("SELECT version_num FROM alembic_version")
-        )
+        result = await session.execute(text("SELECT version_num FROM alembic_version"))
         revision = result.scalar()
 
     await db.close()
@@ -207,12 +211,15 @@ async def test_migration_phase02_database_gets_category_column(tmp_path):
         "category column not added to Phase 0.2 database by migration 0002"
     )
     assert legacy_value == "legacy_value", "Existing data was lost during migration"
-    assert revision == "0039_phase72_alert_notification_cycles", f"Expected integrated HEAD 0039_phase72_alert_notification_cycles, got {revision!r}"
+    assert revision == "0039_phase72_alert_notification_cycles", (
+        f"Expected integrated HEAD 0039_phase72_alert_notification_cycles, got {revision!r}"
+    )
 
 
 # ---------------------------------------------------------------------------
 # SettingsService — full flow
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_settings_service_seed_defaults(tmp_path):
@@ -253,9 +260,7 @@ async def test_settings_service_seed_idempotent(tmp_path):
     # Second seed must not overwrite the manually changed value.
     await svc.seed_defaults()
     val = await svc.get("bot_name")
-    assert val == "Custom Name", (
-        "seed_defaults() overwrote a manually set value on second call"
-    )
+    assert val == "Custom Name", "seed_defaults() overwrote a manually set value on second call"
 
     await db.close()
 
@@ -335,6 +340,7 @@ async def test_settings_service_get_category(tmp_path):
 
     features = await svc.get_category("features")
     from config.feature_flags import FeatureFlags
+
     assert FeatureFlags.ENABLE_MAINTENANCE in features
     assert FeatureFlags.ENABLE_WALLET in features
 
@@ -355,6 +361,7 @@ async def test_settings_service_reload_cache(tmp_path):
 
     # Write directly to DB bypassing the service cache.
     from sqlalchemy import text
+
     async with db.session() as session:
         await session.execute(
             text("UPDATE settings SET value = 'Direct DB Write' WHERE key = 'bot_name'")
@@ -394,6 +401,7 @@ async def test_settings_service_validation_rejects_bad_types(tmp_path):
 @pytest.mark.asyncio
 async def test_phase62_referral_policy_validation_rejects_unsafe_values(tmp_path):
     from app.services import SettingsService
+
     db = await _fresh_db(_tmp_url(tmp_path, "phase62_policy_validate.db"))
     svc = SettingsService(db)
     await svc.seed_defaults()
@@ -413,6 +421,7 @@ async def test_phase62_referral_policy_validation_rejects_unsafe_values(tmp_path
 @pytest.mark.asyncio
 async def test_settings_service_validates_phase63_mission_policy(tmp_path):
     from app.services import SettingsService
+
     db = await _fresh_db(_tmp_url(tmp_path, "mission_policy.db"))
     svc = SettingsService(db)
     with pytest.raises(ValueError, match="non-negative"):
@@ -429,6 +438,7 @@ async def test_settings_service_validates_phase63_mission_policy(tmp_path):
 @pytest.mark.asyncio
 async def test_settings_service_validates_phase64_promo_policy(tmp_path):
     from app.services import SettingsService
+
     db = await _fresh_db(_tmp_url(tmp_path, "promo_policy.db"))
     svc = SettingsService(db)
     with pytest.raises(ValueError, match="non-negative"):

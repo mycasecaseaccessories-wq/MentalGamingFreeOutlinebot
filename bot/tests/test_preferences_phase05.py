@@ -22,12 +22,14 @@ from pathlib import Path
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _tmp_url(tmp_path: Path, name: str) -> str:
     return f"sqlite+aiosqlite:///{tmp_path / name}"
 
 
 async def _fresh_db(url: str):
     from database.connection import DatabaseManager
+
     dm = DatabaseManager.initialise(url)
     await dm.init()
     return dm
@@ -37,8 +39,10 @@ async def _fresh_db(url: str):
 # UserPreference domain model
 # ---------------------------------------------------------------------------
 
+
 def test_preference_key_is_valid():
     from app.models.user_preference import PreferenceKey
+
     assert PreferenceKey.is_valid("language") is True
     assert PreferenceKey.is_valid("timezone") is True
     assert PreferenceKey.is_valid("nonexistent_key") is False
@@ -46,6 +50,7 @@ def test_preference_key_is_valid():
 
 def test_user_preference_defaults():
     from app.models.user_preference import UserPreference
+
     pref = UserPreference(user_id=1)
     assert pref.language == "en"
     assert pref.timezone == "Asia/Rangoon"
@@ -60,6 +65,7 @@ def test_user_preference_defaults():
 
 def test_user_preference_get():
     from app.models.user_preference import UserPreference, PreferenceKey
+
     pref = UserPreference(user_id=2, language="my", theme="dark")
     assert pref.get(PreferenceKey.LANGUAGE) == "my"
     assert pref.get(PreferenceKey.THEME) == "dark"
@@ -67,6 +73,7 @@ def test_user_preference_get():
 
 def test_user_preference_get_invalid_key():
     from app.models.user_preference import UserPreference
+
     pref = UserPreference(user_id=3)
     with pytest.raises(AttributeError):
         pref.get("totally_unknown_key")
@@ -74,6 +81,7 @@ def test_user_preference_get_invalid_key():
 
 def test_user_preference_to_dict():
     from app.models.user_preference import UserPreference, PreferenceKey
+
     pref = UserPreference(user_id=4, language="my")
     d = pref.to_dict()
     assert isinstance(d, dict)
@@ -88,11 +96,13 @@ def test_user_preference_to_dict():
 # PreferenceRepository
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_repo_upsert_creates_new(tmp_path):
     db = await _fresh_db(_tmp_url(tmp_path, "repo_new.db"))
     async with db.session() as session:
         from database.repositories.preference_repository import PreferenceRepository
+
         repo = PreferenceRepository(session)
         row, created = await repo.upsert(500001)
     await db.close()
@@ -107,11 +117,13 @@ async def test_repo_upsert_existing(tmp_path):
     db = await _fresh_db(_tmp_url(tmp_path, "repo_existing.db"))
     async with db.session() as session:
         from database.repositories.preference_repository import PreferenceRepository
+
         repo = PreferenceRepository(session)
         await repo.upsert(500002)
 
     async with db.session() as session:
         from database.repositories.preference_repository import PreferenceRepository
+
         repo = PreferenceRepository(session)
         row, created = await repo.upsert(500002)
 
@@ -125,6 +137,7 @@ async def test_repo_set_field(tmp_path):
     db = await _fresh_db(_tmp_url(tmp_path, "repo_set.db"))
     async with db.session() as session:
         from database.repositories.preference_repository import PreferenceRepository
+
         repo = PreferenceRepository(session)
         await repo.upsert(500003)
         row = await repo.set_field(500003, "language", "my")
@@ -137,12 +150,16 @@ async def test_repo_set_fields(tmp_path):
     db = await _fresh_db(_tmp_url(tmp_path, "repo_set_fields.db"))
     async with db.session() as session:
         from database.repositories.preference_repository import PreferenceRepository
+
         repo = PreferenceRepository(session)
-        row = await repo.set_fields(500004, {
-            "language": "my",
-            "theme": "dark",
-            "notification_enabled": False,
-        })
+        row = await repo.set_fields(
+            500004,
+            {
+                "language": "my",
+                "theme": "dark",
+                "notification_enabled": False,
+            },
+        )
     await db.close()
     assert row.language == "my"
     assert row.theme == "dark"
@@ -154,6 +171,7 @@ async def test_repo_set_field_invalid_column(tmp_path):
     db = await _fresh_db(_tmp_url(tmp_path, "repo_bad_col.db"))
     async with db.session() as session:
         from database.repositories.preference_repository import PreferenceRepository
+
         repo = PreferenceRepository(session)
         with pytest.raises(AttributeError):
             await repo.set_field(500005, "nonexistent_column", "value")
@@ -165,6 +183,7 @@ async def test_repo_reset(tmp_path):
     db = await _fresh_db(_tmp_url(tmp_path, "repo_reset.db"))
     async with db.session() as session:
         from database.repositories.preference_repository import PreferenceRepository
+
         repo = PreferenceRepository(session)
         await repo.set_field(500006, "language", "my")
         row = await repo.reset(500006)
@@ -179,6 +198,7 @@ async def test_repo_notification_query(tmp_path):
     db = await _fresh_db(_tmp_url(tmp_path, "repo_notif.db"))
     async with db.session() as session:
         from database.repositories.preference_repository import PreferenceRepository
+
         repo = PreferenceRepository(session)
         await repo.upsert(500010)  # notifications ON by default
         await repo.set_field(500011, "notification_enabled", False)  # creates + disables
@@ -198,6 +218,7 @@ async def test_repo_notification_query(tmp_path):
 # PreferenceService
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_service_get_preference_default(tmp_path):
     """get_preference() returns default for a fresh user (no prior row)."""
@@ -207,7 +228,7 @@ async def test_service_get_preference_default(tmp_path):
 
     svc = PreferenceService(db)
     lang = await svc.get_preference(600001, PreferenceKey.LANGUAGE)
-    tz   = await svc.get_preference(600001, PreferenceKey.TIMEZONE)
+    tz = await svc.get_preference(600001, PreferenceKey.TIMEZONE)
     await db.close()
     assert lang == "en"
     assert tz == "Asia/Rangoon"
@@ -235,12 +256,15 @@ async def test_service_set_preferences_bulk(tmp_path):
     from app.models.user_preference import PreferenceKey
 
     svc = PreferenceService(db)
-    pref = await svc.set_preferences(600003, {
-        PreferenceKey.LANGUAGE:            "my",
-        PreferenceKey.THEME:               "dark",
-        PreferenceKey.NOTIFICATION_ENABLED: False,
-        PreferenceKey.PREFERRED_CURRENCY:  "USD",
-    })
+    pref = await svc.set_preferences(
+        600003,
+        {
+            PreferenceKey.LANGUAGE: "my",
+            PreferenceKey.THEME: "dark",
+            PreferenceKey.NOTIFICATION_ENABLED: False,
+            PreferenceKey.PREFERRED_CURRENCY: "USD",
+        },
+    )
     await db.close()
     assert pref.language == "my"
     assert pref.theme == "dark"
@@ -268,11 +292,14 @@ async def test_service_reset_all_preferences(tmp_path):
     from app.models.user_preference import PreferenceKey
 
     svc = PreferenceService(db)
-    await svc.set_preferences(600005, {
-        PreferenceKey.LANGUAGE: "my",
-        PreferenceKey.THEME:    "dark",
-        PreferenceKey.PRIVACY_MODE: True,
-    })
+    await svc.set_preferences(
+        600005,
+        {
+            PreferenceKey.LANGUAGE: "my",
+            PreferenceKey.THEME: "dark",
+            PreferenceKey.PRIVACY_MODE: True,
+        },
+    )
     pref = await svc.reset_all_preferences(600005)
     await db.close()
     assert pref.language == "en"
@@ -329,10 +356,12 @@ async def test_service_get_or_create(tmp_path):
 # Validation
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_service_invalid_key_raises(tmp_path):
     db = await _fresh_db(_tmp_url(tmp_path, "svc_badkey.db"))
     from app.services import PreferenceService
+
     svc = PreferenceService(db)
     with pytest.raises(ValueError, match="Unknown preference key"):
         await svc.get_preference(700001, "bad_key")
@@ -346,6 +375,7 @@ async def test_service_invalid_language_raises(tmp_path):
     db = await _fresh_db(_tmp_url(tmp_path, "svc_badlang.db"))
     from app.services import PreferenceService
     from app.models.user_preference import PreferenceKey
+
     svc = PreferenceService(db)
     with pytest.raises(ValueError, match="Unsupported language"):
         await svc.set_preference(700002, PreferenceKey.LANGUAGE, "zz")
@@ -357,6 +387,7 @@ async def test_service_invalid_theme_raises(tmp_path):
     db = await _fresh_db(_tmp_url(tmp_path, "svc_badtheme.db"))
     from app.services import PreferenceService
     from app.models.user_preference import PreferenceKey
+
     svc = PreferenceService(db)
     with pytest.raises(ValueError, match="Unsupported theme"):
         await svc.set_preference(700003, PreferenceKey.THEME, "neon_rainbow")
@@ -383,10 +414,12 @@ async def test_service_bool_coercion(tmp_path):
 # Migration 0004 schema check
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_migration_0004_table_exists(tmp_path):
     """After migration 0004, user_preferences table must exist."""
     from sqlalchemy import text
+
     db = await _fresh_db(_tmp_url(tmp_path, "schema_pref.db"))
     async with db.session() as session:
         result = await session.execute(
@@ -401,6 +434,7 @@ async def test_migration_0004_table_exists(tmp_path):
 async def test_migration_0004_columns(tmp_path):
     """user_preferences must have all Phase 0.5 columns."""
     from sqlalchemy import text
+
     db = await _fresh_db(_tmp_url(tmp_path, "schema_pref_cols.db"))
     async with db.session() as session:
         result = await session.execute(text("PRAGMA table_info(user_preferences)"))
@@ -408,10 +442,19 @@ async def test_migration_0004_columns(tmp_path):
     await db.close()
 
     expected = {
-        "id", "user_id", "language", "timezone", "preferred_currency",
-        "notification_enabled", "broadcast_enabled", "privacy_mode",
-        "theme", "last_menu", "preferred_server_country",
-        "created_at", "updated_at",
+        "id",
+        "user_id",
+        "language",
+        "timezone",
+        "preferred_currency",
+        "notification_enabled",
+        "broadcast_enabled",
+        "privacy_mode",
+        "theme",
+        "last_menu",
+        "preferred_server_country",
+        "created_at",
+        "updated_at",
     }
     for col in expected:
         assert col in columns, f"Column {col!r} missing from user_preferences"
@@ -421,11 +464,12 @@ async def test_migration_0004_columns(tmp_path):
 async def test_migration_head_is_current(tmp_path):
     """After init(), alembic_version must record the current migration HEAD."""
     from sqlalchemy import text
+
     db = await _fresh_db(_tmp_url(tmp_path, "head_check.db"))
     async with db.session() as session:
-        result = await session.execute(
-            text("SELECT version_num FROM alembic_version")
-        )
+        result = await session.execute(text("SELECT version_num FROM alembic_version"))
         revision = result.scalar()
     await db.close()
-    assert revision == "0039_phase72_alert_notification_cycles", f"Expected integrated HEAD 0039_phase72_alert_notification_cycles, got {revision!r}"
+    assert revision == "0039_phase72_alert_notification_cycles", (
+        f"Expected integrated HEAD 0039_phase72_alert_notification_cycles, got {revision!r}"
+    )

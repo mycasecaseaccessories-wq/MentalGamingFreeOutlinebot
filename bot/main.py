@@ -51,9 +51,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 # when secrets are injected via the environment (Replit Secrets, Docker, etc.).
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
-    pass   # dotenv not installed — rely on OS environment.
+    pass  # dotenv not installed — rely on OS environment.
 
 # ── Step 3 (early): Logger must be ready before any other module uses it. ─────
 # Imported at top level so setup_logging() is callable immediately.
@@ -81,12 +82,14 @@ async def main() -> None:
 
     # ── Lifecycle: STARTING ───────────────────────────────────────────────
     from app.lifecycle import lifecycle, AppState
+
     # lifecycle is already in STARTING state at import time.
     logger.info("Lifecycle state: %s", lifecycle.state.value.upper())
 
     # ── Step 4: Database ──────────────────────────────────────────────────
     logger.info("[4/15] Initialising database…")
     from database import DatabaseManager
+
     db = DatabaseManager.initialise(settings.database_url)
     await db.init()
     logger.info("       Database ready — scheme=%s", settings.database_url.split("://")[0])
@@ -94,6 +97,7 @@ async def main() -> None:
     # ── Step 5: Cache ─────────────────────────────────────────────────────
     logger.info("[5/15] Initialising cache…")
     from app.cache import cache
+
     cache.start()
     logger.info("       Cache ready — backend=%s", type(cache._backend).__name__)
 
@@ -101,6 +105,7 @@ async def main() -> None:
     logger.info("[6/15] Initialising service registry…")
     from app.services.registry import ServiceRegistry
     from app.services import SettingsService
+
     registry = ServiceRegistry(db)
     registry.initialise_all()
     # Seed default settings and feature flags (safe on every startup).
@@ -111,7 +116,8 @@ async def main() -> None:
     # ── Step 7: Localisation ──────────────────────────────────────────────
     logger.info("[7/15] Loading localisation…")
     from locales.translator import Translator
-    _translator = Translator(settings.default_language)   # warm-up
+
+    _translator = Translator(settings.default_language)  # warm-up
     logger.info("       Localisation ready — default_lang=%s", settings.default_language)
 
     # ── Step 8: Event bus ─────────────────────────────────────────────────
@@ -131,8 +137,54 @@ async def main() -> None:
     # ── Step 9: Scheduler ─────────────────────────────────────────────────
     logger.info("[9/15] Initialising scheduler…")
     from app.scheduler import Scheduler
+
     scheduler = Scheduler()
-    scheduler.register_jobs(sync_service=registry.get_or_none(__import__("app.services.outline_server_sync_service", fromlist=["OutlineServerSyncService"]).OutlineServerSyncService), reservation_service=registry.get_or_none(__import__("app.services.server_reservation_service", fromlist=["ServerReservationService"]).ServerReservationService), lifecycle_service=registry.get_or_none(__import__("app.services.vpn_lifecycle_service", fromlist=["VPNLifecycleService"]).VPNLifecycleService), job_service=registry.get_or_none(__import__("app.services.background_job_service", fromlist=["BackgroundJobService"]).BackgroundJobService), health_service=registry.get_or_none(__import__("app.services.health_service", fromlist=["HealthService"]).HealthService), order_service=registry.get_or_none(__import__("app.services.order_service", fromlist=["OrderService"]).OrderService), free_trial_upgrade_service=registry.get_or_none(__import__("app.services.free_trial_upgrade_service", fromlist=["FreeTrialUpgradeService"]).FreeTrialUpgradeService), backup_service=registry.get_or_none(__import__("app.services.backup_service", fromlist=["BackupService"]).BackupService), maintenance_service=registry.get_or_none(__import__("app.services.maintenance_service", fromlist=["MaintenanceService"]).MaintenanceService), alert_service=registry.get_or_none(__import__("app.services.operational_alert_service", fromlist=["OperationalAlertService"]).OperationalAlertService))
+    scheduler.register_jobs(
+        sync_service=registry.get_or_none(
+            __import__(
+                "app.services.outline_server_sync_service", fromlist=["OutlineServerSyncService"]
+            ).OutlineServerSyncService
+        ),
+        reservation_service=registry.get_or_none(
+            __import__(
+                "app.services.server_reservation_service", fromlist=["ServerReservationService"]
+            ).ServerReservationService
+        ),
+        lifecycle_service=registry.get_or_none(
+            __import__(
+                "app.services.vpn_lifecycle_service", fromlist=["VPNLifecycleService"]
+            ).VPNLifecycleService
+        ),
+        job_service=registry.get_or_none(
+            __import__(
+                "app.services.background_job_service", fromlist=["BackgroundJobService"]
+            ).BackgroundJobService
+        ),
+        health_service=registry.get_or_none(
+            __import__("app.services.health_service", fromlist=["HealthService"]).HealthService
+        ),
+        order_service=registry.get_or_none(
+            __import__("app.services.order_service", fromlist=["OrderService"]).OrderService
+        ),
+        free_trial_upgrade_service=registry.get_or_none(
+            __import__(
+                "app.services.free_trial_upgrade_service", fromlist=["FreeTrialUpgradeService"]
+            ).FreeTrialUpgradeService
+        ),
+        backup_service=registry.get_or_none(
+            __import__("app.services.backup_service", fromlist=["BackupService"]).BackupService
+        ),
+        maintenance_service=registry.get_or_none(
+            __import__(
+                "app.services.maintenance_service", fromlist=["MaintenanceService"]
+            ).MaintenanceService
+        ),
+        alert_service=registry.get_or_none(
+            __import__(
+                "app.services.operational_alert_service", fromlist=["OperationalAlertService"]
+            ).OperationalAlertService
+        ),
+    )
     scheduler.start()
     registry.inject_scheduler(scheduler)
     logger.info("       Scheduler ready")
@@ -141,18 +193,14 @@ async def main() -> None:
     from telegram.ext import Application, TypeHandler
     from telegram import Update
 
-    application = (
-        Application.builder()
-        .token(settings.bot_token)
-        .build()
-    )
+    application = Application.builder().token(settings.bot_token).build()
 
     # Expose shared resources to handlers via bot_data.
-    application.bot_data["db"]              = db
-    application.bot_data["registry"]        = registry
-    application.bot_data["cache"]           = cache
-    application.bot_data["scheduler"]       = scheduler
-    application.bot_data["settings"]        = settings
+    application.bot_data["db"] = db
+    application.bot_data["registry"] = registry
+    application.bot_data["cache"] = cache
+    application.bot_data["scheduler"] = scheduler
+    application.bot_data["settings"] = settings
     from app.services import (
         CustomerEntryService,
         CustomerNavigationService,
@@ -160,6 +208,7 @@ async def main() -> None:
         PreferenceService,
         UserService,
     )
+
     application.bot_data["user_service"] = registry.get(UserService)
     application.bot_data["language_service"] = registry.get(LanguageService)
     application.bot_data["preference_service"] = registry.get(PreferenceService)
@@ -177,10 +226,8 @@ async def main() -> None:
 
     # PTB executes at most one matching handler per group, so every
     # middleware gets its own group to guarantee deterministic ordering.
-    application.add_handler(
-        TypeHandler(Update, request_context_middleware_handler), group=-4
-    )
-    application.add_handler(TypeHandler(Update, auth_middleware_handler),     group=-3)
+    application.add_handler(TypeHandler(Update, request_context_middleware_handler), group=-4)
+    application.add_handler(TypeHandler(Update, auth_middleware_handler), group=-3)
     application.add_handler(TypeHandler(Update, language_middleware_handler), group=-2)
     application.add_handler(TypeHandler(Update, activity_middleware_handler), group=-1)
     logger.info("       Middlewares registered: request_context, auth, language, activity")
@@ -209,7 +256,9 @@ async def main() -> None:
     register_admin_server(application)
     register_admin_outline(application)
     register_admin_maintenance(application)
-    logger.info("       Handlers registered: start, package_catalog, customer_keys, customer_account, customer_navigation, admin, admin_server, admin_outline, admin_maintenance")
+    logger.info(
+        "       Handlers registered: start, package_catalog, customer_keys, customer_account, customer_navigation, admin, admin_server, admin_outline, admin_maintenance"
+    )
 
     # ── Step 12: Global error handler (must be last) ──────────────────────
     logger.info("[12/15] Registering global error handler…")
@@ -219,6 +268,7 @@ async def main() -> None:
     # ── Step 13: Startup health check ─────────────────────────────────────
     logger.info("[13/15] Running startup health check…")
     from app.utils.startup_checks import run_all_checks, StartupError
+
     try:
         await run_all_checks(
             settings=settings,
@@ -345,9 +395,7 @@ async def _shutdown(
         pass
 
     _shutdown_ms = (time.monotonic() - _shutdown_start) * 1000
-    logger.info(
-        "━━━ Bot stopped gracefully ━━━  shutdown took %.0fms", _shutdown_ms
-    )
+    logger.info("━━━ Bot stopped gracefully ━━━  shutdown took %.0fms", _shutdown_ms)
 
     # Lifecycle → STOPPED.
     try:

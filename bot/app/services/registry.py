@@ -203,7 +203,10 @@ class ServiceRegistry:
         from app.services.free_trial_upgrade_service import FreeTrialUpgradeService
         from app.services.referral_token_service import ReferralTokenService
         from app.services.referral_service import ReferralService
-        from app.services.referral_qualification_service import ReferralQualificationService, ReferralAbuseProtectionService as ReferralAbuseService
+        from app.services.referral_qualification_service import (
+            ReferralQualificationService,
+            ReferralAbuseProtectionService as ReferralAbuseService,
+        )
         from app.services.referral_reward_service import ReferralRewardService
         from app.services.membership_verification_service import MembershipVerificationService
         from app.services.mission_condition_service import MissionConditionService
@@ -241,33 +244,88 @@ class ServiceRegistry:
             self.register(MembershipVerificationService, MembershipVerificationService(db=self._db))
             logger.info("  ✓ MembershipVerificationService initialised")
         if not self.is_registered(ReferralAbuseService):
-            self.register(ReferralAbuseService, ReferralAbuseService(db=self._db, settings_service=self.get(SettingsService)))
+            self.register(
+                ReferralAbuseService,
+                ReferralAbuseService(db=self._db, settings_service=self.get(SettingsService)),
+            )
             logger.info("  ✓ ReferralAbuseProtectionService initialised")
         if not self.is_registered(ReferralRewardService):
-            self.register(ReferralRewardService, ReferralRewardService(db=self._db, settings_service=self.get(SettingsService), maintenance_service=self.get(MaintenanceService)))
+            self.register(
+                ReferralRewardService,
+                ReferralRewardService(
+                    db=self._db,
+                    settings_service=self.get(SettingsService),
+                    maintenance_service=self.get(MaintenanceService),
+                ),
+            )
             logger.info("  ✓ ReferralRewardService initialised")
         if not self.is_registered(ReferralQualificationService):
-            self.register(ReferralQualificationService, ReferralQualificationService(db=self._db, settings_service=self.get(SettingsService), membership_service=self.get(MembershipVerificationService), reward_service=self.get(ReferralRewardService), abuse_service=self.get(ReferralAbuseService)))
+            self.register(
+                ReferralQualificationService,
+                ReferralQualificationService(
+                    db=self._db,
+                    settings_service=self.get(SettingsService),
+                    membership_service=self.get(MembershipVerificationService),
+                    reward_service=self.get(ReferralRewardService),
+                    abuse_service=self.get(ReferralAbuseService),
+                ),
+            )
             logger.info("  ✓ ReferralQualificationService initialised")
         if not self.is_registered(PromoService):
-            self.register(PromoService, PromoService(db=self._db, settings_service=self.get(SettingsService)))
+            self.register(
+                PromoService, PromoService(db=self._db, settings_service=self.get(SettingsService))
+            )
         if not self.is_registered(PromoRedemptionService):
-            self.register(PromoRedemptionService, PromoRedemptionService(db=self._db, promo_service=self.get(PromoService), reward_service=self.get(ReferralRewardService), maintenance_service=self.get(MaintenanceService)))
+            self.register(
+                PromoRedemptionService,
+                PromoRedemptionService(
+                    db=self._db,
+                    promo_service=self.get(PromoService),
+                    reward_service=self.get(ReferralRewardService),
+                    maintenance_service=self.get(MaintenanceService),
+                ),
+            )
             logger.info("  ✓ Phase 6.4 promo services initialised")
         if not self.is_registered(MissionConditionService):
             self.register(MissionConditionService, MissionConditionService())
         if not self.is_registered(MissionService):
-            self.register(MissionService, MissionService(db=self._db, settings_service=self.get(SettingsService)))
+            self.register(
+                MissionService,
+                MissionService(db=self._db, settings_service=self.get(SettingsService)),
+            )
         if not self.is_registered(MissionProgressService):
-            self.register(MissionProgressService, MissionProgressService(db=self._db, mission_service=self.get(MissionService), condition_service=self.get(MissionConditionService), reward_service=self.get(ReferralRewardService), maintenance_service=self.get(MaintenanceService)))
+            self.register(
+                MissionProgressService,
+                MissionProgressService(
+                    db=self._db,
+                    mission_service=self.get(MissionService),
+                    condition_service=self.get(MissionConditionService),
+                    reward_service=self.get(ReferralRewardService),
+                    maintenance_service=self.get(MaintenanceService),
+                ),
+            )
             logger.info("  ✓ Phase 6.3 mission services initialised")
         if not self.is_registered(GrowthRewardService):
-            self.register(GrowthRewardService, GrowthRewardService(db=self._db, reward_service=self.get(ReferralRewardService), mission_progress_service=self.get(MissionProgressService), maintenance_service=self.get(MaintenanceService)))
+            self.register(
+                GrowthRewardService,
+                GrowthRewardService(
+                    db=self._db,
+                    reward_service=self.get(ReferralRewardService),
+                    mission_progress_service=self.get(MissionProgressService),
+                    maintenance_service=self.get(MaintenanceService),
+                ),
+            )
             logger.info("  ✓ Phase 6.6 GrowthRewardService initialised")
         if not self.is_registered(GrowthReconciliationService):
-            self.register(GrowthReconciliationService, GrowthReconciliationService(db=self._db, reward_service=self.get(ReferralRewardService)))
+            self.register(
+                GrowthReconciliationService,
+                GrowthReconciliationService(
+                    db=self._db, reward_service=self.get(ReferralRewardService)
+                ),
+            )
             logger.info("  ✓ Phase 6.6 GrowthReconciliationService initialised")
         if not getattr(self, "_referral_qualification_listener_registered", False):
+
             async def _qualify_on_attribution(**payload):
                 public_id = payload.get("referral_public_id")
                 if public_id is None:
@@ -275,10 +333,16 @@ class ServiceRegistry:
                 async with self._db.session() as session:
                     from sqlalchemy import select
                     from database.models.referral import ReferralORM
-                    row = (await session.execute(select(ReferralORM).where(ReferralORM.public_referral_id == public_id))).scalar_one_or_none()
+
+                    row = (
+                        await session.execute(
+                            select(ReferralORM).where(ReferralORM.public_referral_id == public_id)
+                        )
+                    ).scalar_one_or_none()
                     referral_id = row.id if row is not None else None
                 if referral_id is not None:
                     await self.get(ReferralQualificationService).evaluate(referral_id)
+
             async def _grant_on_qualification(**payload):
                 public_id = payload.get("referral_public_id")
                 if public_id is None:
@@ -286,70 +350,165 @@ class ServiceRegistry:
                 async with self._db.session() as session:
                     from sqlalchemy import select
                     from database.models.referral import ReferralORM
-                    row = (await session.execute(select(ReferralORM).where(ReferralORM.public_referral_id == public_id))).scalar_one_or_none()
+
+                    row = (
+                        await session.execute(
+                            select(ReferralORM).where(ReferralORM.public_referral_id == public_id)
+                        )
+                    ).scalar_one_or_none()
                 if row is not None:
                     await self.get(ReferralRewardService).build_rewards(row.id)
+
             bus.subscribe(EventType.REFERRAL_ATTRIBUTED, _qualify_on_attribution, priority=-50)
             bus.subscribe(EventType.REFERRAL_QUALIFIED, _grant_on_qualification, priority=-50)
             self._referral_qualification_listener_registered = True
             logger.info("  ✓ Referral qualification and reward bridges registered")
         if not getattr(self, "_mission_event_listeners_registered", False):
+
             async def _forward_mission_event(event_type, **payload):
                 user_id = payload.get("user_id")
-                source_reference = payload.get("source_reference") or payload.get("order_id") or payload.get("claim_id") or payload.get("referral_public_id")
-                if user_id is None and event_type == EventType.REFERRAL_QUALIFIED and payload.get("referral_public_id"):
+                source_reference = (
+                    payload.get("source_reference")
+                    or payload.get("order_id")
+                    or payload.get("claim_id")
+                    or payload.get("referral_public_id")
+                )
+                if (
+                    user_id is None
+                    and event_type == EventType.REFERRAL_QUALIFIED
+                    and payload.get("referral_public_id")
+                ):
                     async with self._db.session() as session:
                         from sqlalchemy import select
                         from database.models.referral import ReferralORM
-                        referral = (await session.execute(select(ReferralORM).where(ReferralORM.public_referral_id == payload["referral_public_id"]))).scalar_one_or_none()
+
+                        referral = (
+                            await session.execute(
+                                select(ReferralORM).where(
+                                    ReferralORM.public_referral_id == payload["referral_public_id"]
+                                )
+                            )
+                        ).scalar_one_or_none()
                         user_id = referral.referred_id if referral is not None else None
                 if user_id is None or source_reference is None:
                     return
-                await self.get(MissionProgressService).apply_event(user_id=int(user_id), event_type=event_type, payload=payload, source_reference=str(source_reference), trusted=True)
-            for _event_type in (EventType.REFERRAL_QUALIFIED, EventType.FREE_TRIAL_ACTIVATED, EventType.ORDER_PAID, EventType.WALLET_PAYMENT_COMPLETED):
+                await self.get(MissionProgressService).apply_event(
+                    user_id=int(user_id),
+                    event_type=event_type,
+                    payload=payload,
+                    source_reference=str(source_reference),
+                    trusted=True,
+                )
+
+            for _event_type in (
+                EventType.REFERRAL_QUALIFIED,
+                EventType.FREE_TRIAL_ACTIVATED,
+                EventType.ORDER_PAID,
+                EventType.WALLET_PAYMENT_COMPLETED,
+            ):
+
                 async def _listener(_event_type=_event_type, **payload):
                     await _forward_mission_event(_event_type, **payload)
+
                 bus.subscribe(_event_type, _listener, priority=-80)
             self._mission_event_listeners_registered = True
             logger.info("  ✓ Phase 6.3 trusted mission event bridges registered")
         if not self.is_registered(ReferralService):
-            self.register(ReferralService, ReferralService(db=self._db, token_service=self.get(ReferralTokenService), settings_service=self.get(SettingsService)))
+            self.register(
+                ReferralService,
+                ReferralService(
+                    db=self._db,
+                    token_service=self.get(ReferralTokenService),
+                    settings_service=self.get(SettingsService),
+                ),
+            )
             logger.info("  ✓ ReferralService initialised")
         if not self.is_registered(ReferralAnalyticsService):
-            self.register(ReferralAnalyticsService, ReferralAnalyticsService(db=self._db, settings_service=self.get(SettingsService)))
+            self.register(
+                ReferralAnalyticsService,
+                ReferralAnalyticsService(db=self._db, settings_service=self.get(SettingsService)),
+            )
         if not self.is_registered(ReferralRiskService):
-            self.register(ReferralRiskService, ReferralRiskService(db=self._db, settings_service=self.get(SettingsService), reward_service=self.get(ReferralRewardService), referral_service=self.get(ReferralService)))
+            self.register(
+                ReferralRiskService,
+                ReferralRiskService(
+                    db=self._db,
+                    settings_service=self.get(SettingsService),
+                    reward_service=self.get(ReferralRewardService),
+                    referral_service=self.get(ReferralService),
+                ),
+            )
             logger.info("  ✓ Phase 6.5 analytics and risk services initialised")
         if not getattr(self, "_referral_risk_listeners_registered", False):
+
             async def _monitor_referral_event(**payload):
-                user_id = payload.get("user_id") or payload.get("beneficiary_user_id") or payload.get("referrer_id")
+                user_id = (
+                    payload.get("user_id")
+                    or payload.get("beneficiary_user_id")
+                    or payload.get("referrer_id")
+                )
                 referral_id = payload.get("referral_id")
                 public_referral_id = payload.get("referral_public_id")
                 if user_id is None and public_referral_id:
                     async with self._db.session() as session:
                         from sqlalchemy import select
                         from database.models.referral import ReferralORM
-                        referral = (await session.execute(select(ReferralORM).where(ReferralORM.public_referral_id == public_referral_id))).scalar_one_or_none()
+
+                        referral = (
+                            await session.execute(
+                                select(ReferralORM).where(
+                                    ReferralORM.public_referral_id == public_referral_id
+                                )
+                            )
+                        ).scalar_one_or_none()
                         if referral is not None:
                             user_id, referral_id = referral.referrer_id, referral.id
                 if user_id is not None:
-                    await self.get(ReferralRiskService).evaluate_behavior(user_id=int(user_id), referral_id=referral_id, source_event=str(payload.get("event_type", "event")))
-            for _event_type in (EventType.REFERRAL_ATTRIBUTED, EventType.REFERRAL_QUALIFIED, EventType.REFERRAL_INVALIDATED, EventType.REFERRAL_REWARD_GRANTED, EventType.REFERRAL_REWARD_LIMIT_REACHED, EventType.MISSION_COMPLETED, EventType.PROMO_REDEEMED, EventType.ORDER_PAID):
+                    await self.get(ReferralRiskService).evaluate_behavior(
+                        user_id=int(user_id),
+                        referral_id=referral_id,
+                        source_event=str(payload.get("event_type", "event")),
+                    )
+
+            for _event_type in (
+                EventType.REFERRAL_ATTRIBUTED,
+                EventType.REFERRAL_QUALIFIED,
+                EventType.REFERRAL_INVALIDATED,
+                EventType.REFERRAL_REWARD_GRANTED,
+                EventType.REFERRAL_REWARD_LIMIT_REACHED,
+                EventType.MISSION_COMPLETED,
+                EventType.PROMO_REDEEMED,
+                EventType.ORDER_PAID,
+            ):
+
                 async def _risk_listener(_event_type=_event_type, **payload):
                     payload.setdefault("event_type", _event_type.value)
                     await _monitor_referral_event(**payload)
+
                 bus.subscribe(_event_type, _risk_listener, priority=-90)
             self._referral_risk_listeners_registered = True
             logger.info("  ✓ Phase 6.5 risk event bridges registered")
 
         if not self.is_registered(FreeTrialAbuseProtectionService):
-            self.register(FreeTrialAbuseProtectionService, FreeTrialAbuseProtectionService(db=self._db, settings_service=self.get(SettingsService)))
+            self.register(
+                FreeTrialAbuseProtectionService,
+                FreeTrialAbuseProtectionService(
+                    db=self._db, settings_service=self.get(SettingsService)
+                ),
+            )
             logger.info("  ✓ FreeTrialAbuseProtectionService initialised")
 
         if not self.is_registered(FreeTrialClaimService):
-            self.register(FreeTrialClaimService, FreeTrialClaimService(db=self._db, settings_service=self.get(SettingsService), abuse_service=self.get(FreeTrialAbuseProtectionService), maintenance_service=self.get(MaintenanceService)))
+            self.register(
+                FreeTrialClaimService,
+                FreeTrialClaimService(
+                    db=self._db,
+                    settings_service=self.get(SettingsService),
+                    abuse_service=self.get(FreeTrialAbuseProtectionService),
+                    maintenance_service=self.get(MaintenanceService),
+                ),
+            )
             logger.info("  ✓ FreeTrialClaimService initialised")
-
 
         if not self.is_registered(CustomerEntryService):
             entry_service = CustomerEntryService(
@@ -369,11 +528,14 @@ class ServiceRegistry:
             logger.info("  ✓ CustomerNavigationService initialised")
 
         if not self.is_registered(ProfileService):
-            self.register(ProfileService, ProfileService(
-                db=self._db,
-                user_service=self.get(UserService),
-                preference_service=self.get(PreferenceService),
-            ))
+            self.register(
+                ProfileService,
+                ProfileService(
+                    db=self._db,
+                    user_service=self.get(UserService),
+                    preference_service=self.get(PreferenceService),
+                ),
+            )
             logger.info("  ✓ ProfileService initialised")
 
         if not self.is_registered(WalletService):
@@ -381,7 +543,10 @@ class ServiceRegistry:
             logger.info("  ✓ WalletService initialised")
 
         if not self.is_registered(WalletPaymentService):
-            self.register(WalletPaymentService, WalletPaymentService(db=self._db, maintenance_service=self.get(MaintenanceService)))
+            self.register(
+                WalletPaymentService,
+                WalletPaymentService(db=self._db, maintenance_service=self.get(MaintenanceService)),
+            )
             logger.info("  ✓ WalletPaymentService initialised")
 
         if not self.is_registered(ManualPaymentService):
@@ -438,47 +603,85 @@ class ServiceRegistry:
         if not self.is_registered(ServerReservationService):
             self.register(ServerReservationService, ServerReservationService(db=self._db))
             logger.info("  ✓ ServerReservationService initialised")
-            outline_provider = providers.get_or_none("vpn", "outline") or providers.register("vpn", OutlineProvider(), name="outline", default=True)
+            outline_provider = providers.get_or_none("vpn", "outline") or providers.register(
+                "vpn", OutlineProvider(), name="outline", default=True
+            )
             if not self.is_registered(VPNProvisioningService):
-                self.register(VPNProvisioningService, VPNProvisioningService(db=self._db, selection_service=self.get(ServerSelectionService), reservation_service=self.get(ServerReservationService), provider_registry=providers, provider=outline_provider))
+                self.register(
+                    VPNProvisioningService,
+                    VPNProvisioningService(
+                        db=self._db,
+                        selection_service=self.get(ServerSelectionService),
+                        reservation_service=self.get(ServerReservationService),
+                        provider_registry=providers,
+                        provider=outline_provider,
+                    ),
+                )
                 logger.info("  ✓ VPNProvisioningService initialised")
         outline_provider = providers.get_or_none("vpn", "outline")
         if outline_provider is None:
-            outline_provider = providers.register("vpn", OutlineProvider(), name="outline", default=True)
+            outline_provider = providers.register(
+                "vpn", OutlineProvider(), name="outline", default=True
+            )
 
         if not self.is_registered(OutlineSetupService):
             self.register(OutlineSetupService, OutlineSetupService(db=self._db))
             logger.info("  ✓ OutlineSetupService initialised")
 
         if not self.is_registered(SSHDiscoveryService):
-            self.register(SSHDiscoveryService, SSHDiscoveryService(db=self._db, outline_setup=self.get(OutlineSetupService)))
+            self.register(
+                SSHDiscoveryService,
+                SSHDiscoveryService(db=self._db, outline_setup=self.get(OutlineSetupService)),
+            )
             logger.info("  ✓ SSHDiscoveryService initialised")
 
         if not self.is_registered(OutlineProvisioningService):
             ssh_discovery = self.get(SSHDiscoveryService)
-            self.register(OutlineProvisioningService, OutlineProvisioningService(outline_setup=self.get(OutlineSetupService), ssh=ssh_discovery.provider))
+            self.register(
+                OutlineProvisioningService,
+                OutlineProvisioningService(
+                    outline_setup=self.get(OutlineSetupService), ssh=ssh_discovery.provider
+                ),
+            )
             logger.info("  ✓ OutlineProvisioningService initialised")
             if not self.is_registered(OutlineServerSyncService):
                 self.register(OutlineServerSyncService, OutlineServerSyncService(db=self._db))
                 logger.info("  ✓ OutlineServerSyncService initialised")
 
         if not self.is_registered(VPNDataLimitService):
-            self.register(VPNDataLimitService, VPNDataLimitService(db=self._db, provider=outline_provider))
+            self.register(
+                VPNDataLimitService, VPNDataLimitService(db=self._db, provider=outline_provider)
+            )
             logger.info("  ✓ VPNDataLimitService initialised")
         if not self.is_registered(VPNLifecycleService):
-            self.register(VPNLifecycleService, VPNLifecycleService(db=self._db, provider=outline_provider, maintenance_service=self.get(MaintenanceService)))
+            self.register(
+                VPNLifecycleService,
+                VPNLifecycleService(
+                    db=self._db,
+                    provider=outline_provider,
+                    maintenance_service=self.get(MaintenanceService),
+                ),
+            )
             logger.info("  ✓ VPNLifecycleService initialised")
 
         if not self.is_registered(VPNRecoveryService):
-            self.register(VPNRecoveryService, VPNRecoveryService(db=self._db, provider=outline_provider))
+            self.register(
+                VPNRecoveryService, VPNRecoveryService(db=self._db, provider=outline_provider)
+            )
         if not self.is_registered(VPNReconciliationService):
-            self.register(VPNReconciliationService, VPNReconciliationService(db=self._db, provider=outline_provider))
+            self.register(
+                VPNReconciliationService,
+                VPNReconciliationService(db=self._db, provider=outline_provider),
+            )
 
         if not self.is_registered(SupportService):
-            self.register(SupportService, SupportService(
-                db=self._db,
-                settings_service=self.get(SettingsService),
-            ))
+            self.register(
+                SupportService,
+                SupportService(
+                    db=self._db,
+                    settings_service=self.get(SettingsService),
+                ),
+            )
             logger.info("  ✓ SupportService initialised")
 
         if not self.is_registered(PackageCatalogService):
@@ -486,11 +689,28 @@ class ServiceRegistry:
             logger.info("  ✓ PackageCatalogService initialised")
 
         if not self.is_registered(VPNProvisioningService):
-            self.register(VPNProvisioningService, VPNProvisioningService(db=self._db, selection_service=self.get(ServerSelectionService), reservation_service=self.get(ServerReservationService), provider_registry=providers, provider=outline_provider))
+            self.register(
+                VPNProvisioningService,
+                VPNProvisioningService(
+                    db=self._db,
+                    selection_service=self.get(ServerSelectionService),
+                    reservation_service=self.get(ServerReservationService),
+                    provider_registry=providers,
+                    provider=outline_provider,
+                ),
+            )
             logger.info("  ✓ VPNProvisioningService initialised")
 
         if not self.is_registered(VPNProvisioningEntryService):
-            self.register(VPNProvisioningEntryService, VPNProvisioningEntryService(db=self._db, provisioning_service=self.get(VPNProvisioningService), data_limit_service=self.get(VPNDataLimitService), maintenance_service=self.get(MaintenanceService)))
+            self.register(
+                VPNProvisioningEntryService,
+                VPNProvisioningEntryService(
+                    db=self._db,
+                    provisioning_service=self.get(VPNProvisioningService),
+                    data_limit_service=self.get(VPNDataLimitService),
+                    maintenance_service=self.get(MaintenanceService),
+                ),
+            )
             logger.info("  ✓ VPNProvisioningEntryService initialised")
 
         if not self.is_registered(FreeTrialProvisioningService):
@@ -523,6 +743,7 @@ class ServiceRegistry:
             logger.info("  ✓ FreeTrialUpgradeService initialised")
 
         if not getattr(self, "_free_trial_paid_listener_registered", False):
+
             async def _fulfill_free_trial_upgrade_on_paid(**payload):
                 order_id = payload.get("order_id")
                 if order_id is None:
@@ -538,11 +759,17 @@ class ServiceRegistry:
             logger.info("  ✓ CustomerKeyService initialised")
 
         if not self.is_registered(OrderService):
-            self.register(OrderService, OrderService(db=self._db, maintenance_service=self.get(MaintenanceService)))
+            self.register(
+                OrderService,
+                OrderService(db=self._db, maintenance_service=self.get(MaintenanceService)),
+            )
             logger.info("  ✓ OrderService initialised")
 
         if not self.is_registered(CheckoutService):
-            self.register(CheckoutService, CheckoutService(db=self._db, maintenance_service=self.get(MaintenanceService)))
+            self.register(
+                CheckoutService,
+                CheckoutService(db=self._db, maintenance_service=self.get(MaintenanceService)),
+            )
             logger.info("  ✓ CheckoutService initialised")
 
         # HealthService needs additional dependencies set after bot init.
@@ -551,7 +778,10 @@ class ServiceRegistry:
             logger.info("  ✓ BackgroundJobService initialised")
 
         if not self.is_registered(BackupService):
-            self.register(BackupService, BackupService(db=self._db, maintenance_service=self.get(MaintenanceService)))
+            self.register(
+                BackupService,
+                BackupService(db=self._db, maintenance_service=self.get(MaintenanceService)),
+            )
             logger.info("  ✓ BackupService initialised")
 
         if not self.is_registered(MaintenanceService):
@@ -560,21 +790,38 @@ class ServiceRegistry:
 
         if not self.is_registered(HealthService):
             from app.cache import cache as default_cache
+
             health = HealthService(db=self._db, cache=default_cache)
             health.set_registry(self)
             self.register(HealthService, health)
             logger.info("  ✓ HealthService initialised")
         if not self.is_registered(OperationalAlertService):
-            self.register(OperationalAlertService, OperationalAlertService(db=self._db, maintenance_service=self.get(MaintenanceService)))
+            self.register(
+                OperationalAlertService,
+                OperationalAlertService(
+                    db=self._db, maintenance_service=self.get(MaintenanceService)
+                ),
+            )
             logger.info("  ✓ OperationalAlertService initialised")
         if not self.is_registered(ProductionOperationsService):
             from app.lifecycle import lifecycle
-            self.register(ProductionOperationsService, ProductionOperationsService(health_service=self.get(HealthService), job_service=self.get(BackgroundJobService), scheduler=None, backup_service=self.get(BackupService), maintenance_service=self.get(MaintenanceService), alert_service=self.get(OperationalAlertService), settings=self.get(SettingsService), lifecycle_manager=lifecycle))
+
+            self.register(
+                ProductionOperationsService,
+                ProductionOperationsService(
+                    health_service=self.get(HealthService),
+                    job_service=self.get(BackgroundJobService),
+                    scheduler=None,
+                    backup_service=self.get(BackupService),
+                    maintenance_service=self.get(MaintenanceService),
+                    alert_service=self.get(OperationalAlertService),
+                    settings=self.get(SettingsService),
+                    lifecycle_manager=lifecycle,
+                ),
+            )
             logger.info("  ✓ ProductionOperationsService initialised")
 
-        logger.info(
-            "ServiceRegistry: %d services ready", len(self._instances)
-        )
+        logger.info("ServiceRegistry: %d services ready", len(self._instances))
 
     def inject_bot(self, bot) -> None:
         """
@@ -587,12 +834,16 @@ class ServiceRegistry:
         from app.services.notification_service import NotificationService
         from app.services.operational_alert_service import OperationalAlertService
         from app.services.settings_service import SettingsService
+
         health = self.get_or_none(HealthService)
         if health is not None:
             health._bot = bot
             logger.debug("ServiceRegistry: bot injected into HealthService")
         if not self.is_registered(NotificationService):
-            self.register(NotificationService, NotificationService(bot, settings=self.get_or_none(SettingsService), db=self._db))
+            self.register(
+                NotificationService,
+                NotificationService(bot, settings=self.get_or_none(SettingsService), db=self._db),
+            )
         alert_service = self.get_or_none(OperationalAlertService)
         if alert_service is not None:
             alert_service.notifications = self.get_or_none(NotificationService)
@@ -605,11 +856,13 @@ class ServiceRegistry:
             scheduler: Scheduler instance.
         """
         from app.services.health_service import HealthService
+
         health = self.get_or_none(HealthService)
         if health is not None:
             health._scheduler = scheduler
             logger.debug("ServiceRegistry: scheduler injected into HealthService")
         from app.services.production_operations_service import ProductionOperationsService
+
         operations = self.get_or_none(ProductionOperationsService)
         if operations is not None:
             operations.scheduler = scheduler

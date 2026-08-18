@@ -56,7 +56,12 @@ class NotificationService(BaseService):
                 last_error = type(exc).__name__
                 if attempt < self.max_retries:
                     await asyncio.sleep(0.05 * attempt)
-        result = {"delivered": False, "telegram_id": telegram_id, "attempts": self.max_retries, "error_code": "telegram_delivery_failed"}
+        result = {
+            "delivered": False,
+            "telegram_id": telegram_id,
+            "attempts": self.max_retries,
+            "error_code": "telegram_delivery_failed",
+        }
         self.last_delivery = result
         logger.warning("Operational notification delivery failed: %s", last_error)
         return result
@@ -76,6 +81,7 @@ class NotificationService(BaseService):
             return 0
         from sqlalchemy import select
         from database.models.user import UserORM
+
         async with self._db.session() as session:
             query = select(UserORM.telegram_id).where(UserORM.is_active.is_(True))
             if role_filter:
@@ -91,4 +97,8 @@ class NotificationService(BaseService):
         """Send an alert to all configured admin users."""
         admin_ids = tuple(getattr(self.settings, "admin_ids", ()) or ())
         results = [await self.send_message(int(admin_id), text) for admin_id in admin_ids]
-        return {"attempted": len(results), "delivered": sum(int(bool(item.get("delivered"))) for item in results), "results": results}
+        return {
+            "attempted": len(results),
+            "delivered": sum(int(bool(item.get("delivered"))) for item in results),
+            "results": results,
+        }

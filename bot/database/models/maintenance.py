@@ -1,4 +1,5 @@
 """Durable typed maintenance windows and operational incidents."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -74,24 +75,37 @@ class MaintenanceWindowORM(BaseModel):
 
     public_id: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     scope: Mapped[str] = mapped_column(String(40), nullable=False)
-    state: Mapped[str] = mapped_column(String(24), nullable=False, default=MaintenanceState.MAINTENANCE.value)
-    status: Mapped[str] = mapped_column(String(24), nullable=False, default=MaintenanceWindowStatus.SCHEDULED.value)
-    reason_code: Mapped[str] = mapped_column(String(40), nullable=False, default=MaintenanceReason.OPERATOR_ACTION.value)
+    state: Mapped[str] = mapped_column(
+        String(24), nullable=False, default=MaintenanceState.MAINTENANCE.value
+    )
+    status: Mapped[str] = mapped_column(
+        String(24), nullable=False, default=MaintenanceWindowStatus.SCHEDULED.value
+    )
+    reason_code: Mapped[str] = mapped_column(
+        String(40), nullable=False, default=MaintenanceReason.OPERATOR_ACTION.value
+    )
     customer_message_key: Mapped[str | None] = mapped_column(String(96), nullable=True)
     customer_message_text: Mapped[str | None] = mapped_column(String(600), nullable=True)
     starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    expected_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expected_ends_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_by: Mapped[int] = mapped_column(Integer, nullable=False)
     ended_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
     scheduled: Mapped[bool] = mapped_column(default=True, nullable=False)
-    alert_suppression_policy: Mapped[str] = mapped_column(String(40), nullable=False, default="scoped")
-    auto_end_policy: Mapped[str] = mapped_column(String(32), nullable=False, default=AutoEndPolicy.REQUIRE_ADMIN_APPROVAL.value)
+    alert_suppression_policy: Mapped[str] = mapped_column(
+        String(40), nullable=False, default="scoped"
+    )
+    auto_end_policy: Mapped[str] = mapped_column(
+        String(32), nullable=False, default=AutoEndPolicy.REQUIRE_ADMIN_APPROVAL.value
+    )
     incident_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class MaintenanceActionORM(BaseModel):
     """Durable operational control action for idempotency, audit, and throttling."""
+
     __tablename__ = "maintenance_actions"
     __table_args__ = (
         Index("ix_maintenance_actions_actor_created", "actor_id", "created_at"),
@@ -153,7 +167,9 @@ class OperationalAlertORM(BaseModel):
     fingerprint: Mapped[str] = mapped_column(String(160), unique=True, nullable=False)
     alert_type: Mapped[str] = mapped_column(String(64), nullable=False)
     component: Mapped[str] = mapped_column(String(80), nullable=False)
-    severity: Mapped[str] = mapped_column(String(16), nullable=False, default=AlertSeverity.WARNING.value)
+    severity: Mapped[str] = mapped_column(
+        String(16), nullable=False, default=AlertSeverity.WARNING.value
+    )
     status: Mapped[str] = mapped_column(String(24), nullable=False, default=AlertStatus.OPEN.value)
     title: Mapped[str] = mapped_column(String(160), nullable=False)
     safe_summary: Mapped[str] = mapped_column(String(600), nullable=False, default="")
@@ -178,8 +194,12 @@ class OperationalIncidentORM(BaseModel):
     public_id: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     title: Mapped[str] = mapped_column(String(160), nullable=False)
     incident_type: Mapped[str] = mapped_column(String(48), nullable=False)
-    severity: Mapped[str] = mapped_column(String(16), nullable=False, default=IncidentSeverity.WARNING.value)
-    status: Mapped[str] = mapped_column(String(24), nullable=False, default=IncidentStatus.OPEN.value)
+    severity: Mapped[str] = mapped_column(
+        String(16), nullable=False, default=IncidentSeverity.WARNING.value
+    )
+    status: Mapped[str] = mapped_column(
+        String(24), nullable=False, default=IncidentStatus.OPEN.value
+    )
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     detected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -187,6 +207,8 @@ class OperationalIncidentORM(BaseModel):
     owner_admin_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     maintenance_window_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     primary_alert_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    customer_impact: Mapped[str] = mapped_column(String(24), nullable=False, default=CustomerImpact.NONE.value)
+    customer_impact: Mapped[str] = mapped_column(
+        String(24), nullable=False, default=CustomerImpact.NONE.value
+    )
     safe_summary: Mapped[str] = mapped_column(String(600), nullable=False, default="")
     internal_reference: Mapped[str | None] = mapped_column(Text, nullable=True)
