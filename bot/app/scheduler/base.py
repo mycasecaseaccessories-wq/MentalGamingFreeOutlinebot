@@ -19,7 +19,7 @@ class Scheduler:
   self.job_service=None
   self.dispatcher=None
 
- def register_jobs(self,*,sync_service=None,reservation_service=None,lifecycle_service=None,job_service=None,health_service=None,order_service=None,free_trial_upgrade_service=None,backup_service=None,lifecycle_interval_seconds=120,lifecycle_batch_size=100):
+ def register_jobs(self,*,sync_service=None,reservation_service=None,lifecycle_service=None,job_service=None,health_service=None,order_service=None,free_trial_upgrade_service=None,backup_service=None,maintenance_service=None,lifecycle_interval_seconds=120,lifecycle_batch_size=100):
   self.job_service = job_service
   if job_service is None:
    if sync_service is not None:self.add_job(sync_service.sync_all,'interval',seconds=sync_service.policy.sync_interval_seconds,jitter=30,id='outline-server-sync',replace_existing=True,max_instances=1,coalesce=True)
@@ -58,6 +58,11 @@ class Scheduler:
    self._register_periodic(BackgroundJobORM.JOB_BACKUP_CREATION, 3600)
    self._register_periodic(BackgroundJobORM.JOB_BACKUP_RETENTION, 86400)
    self._register_periodic(BackgroundJobORM.JOB_BACKUP_RESTORE_TEST, 604800)
+  if maintenance_service is not None:
+   self.dispatcher.register_handler(BackgroundJobORM.JOB_MAINTENANCE_ACTIVATION, lambda _payload: maintenance_service.process_due_windows())
+   self.dispatcher.register_handler(BackgroundJobORM.JOB_MAINTENANCE_RECOVERY_CHECK, lambda _payload: maintenance_service.maintenance_recovery_snapshot())
+   self._register_periodic(BackgroundJobORM.JOB_MAINTENANCE_ACTIVATION, 30)
+   self._register_periodic(BackgroundJobORM.JOB_MAINTENANCE_RECOVERY_CHECK, 300)
   self.add_job(self.dispatcher.run_once, 'interval', seconds=5, id='durable-job-dispatcher', replace_existing=True, max_instances=1, coalesce=True)
 
  def _register_periodic(self, job_type: str, cadence_seconds: int):

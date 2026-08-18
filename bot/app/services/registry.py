@@ -217,8 +217,10 @@ class ServiceRegistry:
         from app.services.growth_reconciliation_service import GrowthReconciliationService
         from app.services.background_job_service import BackgroundJobService
         from app.services.backup_service import BackupService
+        from app.services.maintenance_service import MaintenanceService
 
         services_to_create = [
+            MaintenanceService,
             SettingsService,
             LanguageService,
             UserService,
@@ -240,7 +242,7 @@ class ServiceRegistry:
             self.register(ReferralAbuseService, ReferralAbuseService(db=self._db, settings_service=self.get(SettingsService)))
             logger.info("  ✓ ReferralAbuseProtectionService initialised")
         if not self.is_registered(ReferralRewardService):
-            self.register(ReferralRewardService, ReferralRewardService(db=self._db, settings_service=self.get(SettingsService)))
+            self.register(ReferralRewardService, ReferralRewardService(db=self._db, settings_service=self.get(SettingsService), maintenance_service=self.get(MaintenanceService)))
             logger.info("  ✓ ReferralRewardService initialised")
         if not self.is_registered(ReferralQualificationService):
             self.register(ReferralQualificationService, ReferralQualificationService(db=self._db, settings_service=self.get(SettingsService), membership_service=self.get(MembershipVerificationService), reward_service=self.get(ReferralRewardService), abuse_service=self.get(ReferralAbuseService)))
@@ -248,17 +250,17 @@ class ServiceRegistry:
         if not self.is_registered(PromoService):
             self.register(PromoService, PromoService(db=self._db, settings_service=self.get(SettingsService)))
         if not self.is_registered(PromoRedemptionService):
-            self.register(PromoRedemptionService, PromoRedemptionService(db=self._db, promo_service=self.get(PromoService), reward_service=self.get(ReferralRewardService)))
+            self.register(PromoRedemptionService, PromoRedemptionService(db=self._db, promo_service=self.get(PromoService), reward_service=self.get(ReferralRewardService), maintenance_service=self.get(MaintenanceService)))
             logger.info("  ✓ Phase 6.4 promo services initialised")
         if not self.is_registered(MissionConditionService):
             self.register(MissionConditionService, MissionConditionService())
         if not self.is_registered(MissionService):
             self.register(MissionService, MissionService(db=self._db, settings_service=self.get(SettingsService)))
         if not self.is_registered(MissionProgressService):
-            self.register(MissionProgressService, MissionProgressService(db=self._db, mission_service=self.get(MissionService), condition_service=self.get(MissionConditionService), reward_service=self.get(ReferralRewardService)))
+            self.register(MissionProgressService, MissionProgressService(db=self._db, mission_service=self.get(MissionService), condition_service=self.get(MissionConditionService), reward_service=self.get(ReferralRewardService), maintenance_service=self.get(MaintenanceService)))
             logger.info("  ✓ Phase 6.3 mission services initialised")
         if not self.is_registered(GrowthRewardService):
-            self.register(GrowthRewardService, GrowthRewardService(db=self._db, reward_service=self.get(ReferralRewardService), mission_progress_service=self.get(MissionProgressService)))
+            self.register(GrowthRewardService, GrowthRewardService(db=self._db, reward_service=self.get(ReferralRewardService), mission_progress_service=self.get(MissionProgressService), maintenance_service=self.get(MaintenanceService)))
             logger.info("  ✓ Phase 6.6 GrowthRewardService initialised")
         if not self.is_registered(GrowthReconciliationService):
             self.register(GrowthReconciliationService, GrowthReconciliationService(db=self._db, reward_service=self.get(ReferralRewardService)))
@@ -343,7 +345,7 @@ class ServiceRegistry:
             logger.info("  ✓ FreeTrialAbuseProtectionService initialised")
 
         if not self.is_registered(FreeTrialClaimService):
-            self.register(FreeTrialClaimService, FreeTrialClaimService(db=self._db, settings_service=self.get(SettingsService), abuse_service=self.get(FreeTrialAbuseProtectionService)))
+            self.register(FreeTrialClaimService, FreeTrialClaimService(db=self._db, settings_service=self.get(SettingsService), abuse_service=self.get(FreeTrialAbuseProtectionService), maintenance_service=self.get(MaintenanceService)))
             logger.info("  ✓ FreeTrialClaimService initialised")
 
 
@@ -377,7 +379,7 @@ class ServiceRegistry:
             logger.info("  ✓ WalletService initialised")
 
         if not self.is_registered(WalletPaymentService):
-            self.register(WalletPaymentService, WalletPaymentService(db=self._db))
+            self.register(WalletPaymentService, WalletPaymentService(db=self._db, maintenance_service=self.get(MaintenanceService)))
             logger.info("  ✓ WalletPaymentService initialised")
 
         if not self.is_registered(ManualPaymentService):
@@ -396,6 +398,7 @@ class ServiceRegistry:
                 PaymentSubmissionService(
                     db=self._db,
                     manual_payment_service=self.get(ManualPaymentService),
+                    maintenance_service=self.get(MaintenanceService),
                 ),
             )
             logger.info("  ✓ PaymentSubmissionService initialised")
@@ -461,7 +464,7 @@ class ServiceRegistry:
             self.register(VPNDataLimitService, VPNDataLimitService(db=self._db, provider=outline_provider))
             logger.info("  ✓ VPNDataLimitService initialised")
         if not self.is_registered(VPNLifecycleService):
-            self.register(VPNLifecycleService, VPNLifecycleService(db=self._db, provider=outline_provider))
+            self.register(VPNLifecycleService, VPNLifecycleService(db=self._db, provider=outline_provider, maintenance_service=self.get(MaintenanceService)))
             logger.info("  ✓ VPNLifecycleService initialised")
 
         if not self.is_registered(VPNRecoveryService):
@@ -485,7 +488,7 @@ class ServiceRegistry:
             logger.info("  ✓ VPNProvisioningService initialised")
 
         if not self.is_registered(VPNProvisioningEntryService):
-            self.register(VPNProvisioningEntryService, VPNProvisioningEntryService(db=self._db, provisioning_service=self.get(VPNProvisioningService), data_limit_service=self.get(VPNDataLimitService)))
+            self.register(VPNProvisioningEntryService, VPNProvisioningEntryService(db=self._db, provisioning_service=self.get(VPNProvisioningService), data_limit_service=self.get(VPNDataLimitService), maintenance_service=self.get(MaintenanceService)))
             logger.info("  ✓ VPNProvisioningEntryService initialised")
 
         if not self.is_registered(FreeTrialProvisioningService):
@@ -533,11 +536,11 @@ class ServiceRegistry:
             logger.info("  ✓ CustomerKeyService initialised")
 
         if not self.is_registered(OrderService):
-            self.register(OrderService, OrderService(db=self._db))
+            self.register(OrderService, OrderService(db=self._db, maintenance_service=self.get(MaintenanceService)))
             logger.info("  ✓ OrderService initialised")
 
         if not self.is_registered(CheckoutService):
-            self.register(CheckoutService, CheckoutService(db=self._db))
+            self.register(CheckoutService, CheckoutService(db=self._db, maintenance_service=self.get(MaintenanceService)))
             logger.info("  ✓ CheckoutService initialised")
 
         # HealthService needs additional dependencies set after bot init.
@@ -546,8 +549,12 @@ class ServiceRegistry:
             logger.info("  ✓ BackgroundJobService initialised")
 
         if not self.is_registered(BackupService):
-            self.register(BackupService, BackupService(db=self._db))
+            self.register(BackupService, BackupService(db=self._db, maintenance_service=self.get(MaintenanceService)))
             logger.info("  ✓ BackupService initialised")
+
+        if not self.is_registered(MaintenanceService):
+            self.register(MaintenanceService, MaintenanceService(db=self._db))
+            logger.info("  ✓ MaintenanceService initialised")
 
         if not self.is_registered(HealthService):
             from app.cache import cache as default_cache

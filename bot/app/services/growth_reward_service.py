@@ -17,6 +17,7 @@ from database.models.free_trial_entitlement import FreeTrialEntitlementORM
 from database.models.free_trial_entitlement_redemption import FreeTrialEntitlementRedemptionORM
 from database.models.referral_reward import ReferralRewardORM
 from database.models.user import UserORM
+from app.services.maintenance_service import MaintenanceService, MaintenanceBlockedError
 
 
 class GrowthRewardService:
@@ -42,10 +43,11 @@ class GrowthRewardService:
         "none": "none",
     }
 
-    def __init__(self, db, reward_service=None, mission_progress_service=None):
+    def __init__(self, db, reward_service=None, mission_progress_service=None, maintenance_service: MaintenanceService | None = None):
         self.db = db
         self.rewards = reward_service
         self.missions = mission_progress_service
+        self.maintenance_service = maintenance_service
 
     async def customer_center(self, user_id: int, *, limit: int = 20):
         async with self.db.session() as session:
@@ -131,6 +133,11 @@ class GrowthRewardService:
 
     async def consume_entitlement(self, *, user_id: int, entitlement_id: int, idempotency_key: str, units: int = 1):
         """Consume an entitlement once, with database-backed idempotency."""
+        if self.maintenance_service is not None:
+            try:
+                await self.maintenance_service.assert_operation_allowed("entitlements", "REDEEM")
+            except MaintenanceBlockedError:
+                return Failure("maintenance_active", "Entitlements are temporarily unavailable during maintenance.")
         units = int(units)
         if units <= 0 or units > 100:
             return Failure("invalid_units", "Invalid entitlement quantity.")
@@ -159,6 +166,11 @@ class GrowthRewardService:
             return Success({"status": "redeemed", "redemption_id": redemption.id, "entitlement_id": entitlement.id, "remaining_uses": entitlement.remaining_uses})
 
     async def claim_mission_reward(self, *, user_id: int, public_progress_id: str):
+        if self.maintenance_service is not None:
+            try:
+                await self.maintenance_service.assert_operation_allowed("rewards", "CLAIM")
+            except MaintenanceBlockedError:
+                return Failure("maintenance_active", "Rewards are temporarily unavailable during maintenance.")
         if self.missions is None:
             return Failure("unavailable", "Mission reward service unavailable.")
         return Success(await self.missions.claim_reward(user_id=user_id, public_progress_id=public_progress_id))

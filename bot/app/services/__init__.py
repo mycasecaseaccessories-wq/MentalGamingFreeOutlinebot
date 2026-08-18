@@ -41,6 +41,7 @@ from .growth_reward_service import GrowthRewardService
 from .growth_reconciliation_service import GrowthReconciliationService
 from .background_job_service import BackgroundJobService
 from .backup_service import BackupService
+from .maintenance_service import MaintenanceService, MaintenanceBlockedError
 from .notification_service import NotificationService
 from .customer_entry_service import CustomerEntryService
 from .order_service import OrderService
@@ -68,6 +69,8 @@ __all__ = [
     "GrowthReconciliationService",
     "BackgroundJobService",
     "BackupService",
+    "MaintenanceService",
+    "MaintenanceBlockedError",
     "NotificationService",
     "CustomerEntryService",
     "OrderService",

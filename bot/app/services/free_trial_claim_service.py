@@ -9,17 +9,24 @@ from database.models.free_trial_claim import FreeTrialClaimORM
 from database.models.free_trial_entitlement import FreeTrialEntitlementORM
 from database.models.package import PackageORM
 from database.models.user import UserORM
+from app.services.maintenance_service import MaintenanceBlockedError, MaintenanceService
 
 
 class FreeTrialClaimService:
     """Phase 5.3 transactional acceptance boundary; it never creates a VPN key."""
 
-    def __init__(self, db, settings_service=None, abuse_service=None):
+    def __init__(self, db, settings_service=None, abuse_service=None, maintenance_service: MaintenanceService | None = None):
         self.db = db
         self.settings_service = settings_service
         self.abuse_service = abuse_service
+        self.maintenance_service = maintenance_service
 
     async def accept_claim(self, *, user_id: int, package_id: int | None, idempotency_key: str, policy: dict[str, object]):
+        if self.maintenance_service is not None:
+            try:
+                await self.maintenance_service.assert_operation_allowed("free_trial", "CLAIM")
+            except MaintenanceBlockedError:
+                return Failure("maintenance_active", "Free VPN claims are temporarily unavailable during maintenance.")
         if user_id <= 0 or not idempotency_key:
             return Failure("invalid_claim", "Free Trial claim identity is invalid.")
         if self.abuse_service is not None:

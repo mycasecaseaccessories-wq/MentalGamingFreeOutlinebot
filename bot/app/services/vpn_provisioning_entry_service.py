@@ -3,6 +3,7 @@ from __future__ import annotations
 from app.core.result import Failure
 from app.models.vpn_provisioning import ProvisioningSource, VPNProvisioningRequest
 from .base import BaseService
+from .maintenance_service import MaintenanceBlockedError, MaintenanceService
 
 
 class VPNProvisioningEntryService(BaseService):
@@ -23,12 +24,18 @@ class VPNProvisioningEntryService(BaseService):
         },
     }
 
-    def __init__(self, db, *, provisioning_service, data_limit_service=None):
+    def __init__(self, db, *, provisioning_service, data_limit_service=None, maintenance_service: MaintenanceService | None = None):
         super().__init__(db)
         self.provisioning_service = provisioning_service
         self.data_limit_service = data_limit_service
+        self.maintenance_service = maintenance_service
 
     async def _provision_paid(self, request, *, actor_user_id: int):
+        if self.maintenance_service is not None:
+            try:
+                await self.maintenance_service.assert_operation_allowed("vpn_provisioning", "PROVISION")
+            except MaintenanceBlockedError:
+                return Failure("maintenance_active", "VPN key provisioning is temporarily unavailable during maintenance.")
         result = await self.provisioning_service.provision(request, actor_user_id=actor_user_id)
         if result.is_failure or self.data_limit_service is None:
             return result

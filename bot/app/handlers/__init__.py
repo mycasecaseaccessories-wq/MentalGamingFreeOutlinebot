@@ -21,6 +21,7 @@ from .start import register as register_start
 from .admin import register as register_admin
 from .admin_server import register as register_admin_server
 from .admin_outline import register as register_admin_outline
+from .admin_maintenance import register as register_admin_maintenance
 from .error import register as register_error
 from .customer_navigation import register as register_customer_navigation
 from .customer_account import register as register_customer_account
@@ -33,6 +34,7 @@ __all__ = [
     "register_admin",
     "register_admin_server",
     "register_admin_outline",
+    "register_admin_maintenance",
     "register_error",
     "register_customer_navigation",
     "register_customer_account",

@@ -18,6 +18,7 @@ from database.models.payment_submission import PaymentSubmissionORM
 from database.repositories.payment_submission_repository import PaymentSubmissionRepository
 from .base import BaseService
 from .manual_payment_service import ManualPaymentService
+from .maintenance_service import MaintenanceBlockedError, MaintenanceService
 
 
 class PaymentSubmissionService(BaseService):
@@ -28,9 +29,11 @@ class PaymentSubmissionService(BaseService):
         db=None,
         *,
         manual_payment_service: ManualPaymentService | None = None,
+        maintenance_service: MaintenanceService | None = None,
     ) -> None:
         super().__init__(db)
         self.manual_payment_service = manual_payment_service or ManualPaymentService(db)
+        self.maintenance_service = maintenance_service
 
     async def submit(
         self,
@@ -44,6 +47,11 @@ class PaymentSubmissionService(BaseService):
         proof_file_type: str | None = None,
     ) -> Result[PaymentSubmissionReceipt]:
         """Persist one pending-review submission in a single DB transaction."""
+        if self.maintenance_service is not None:
+            try:
+                await self.maintenance_service.assert_operation_allowed("payments", "CREATE")
+            except MaintenanceBlockedError:
+                return Failure("maintenance_active", "New payment submissions are temporarily unavailable during maintenance.")
         reference = _clean(transaction_reference, 256)
         proof_file_id = _clean(proof_file_id, 256)
         proof_file_unique_id = _clean(proof_file_unique_id, 256)

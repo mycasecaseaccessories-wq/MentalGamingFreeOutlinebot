@@ -15,6 +15,7 @@ from app.services.base import BaseService
 from app.events import EventType, bus
 from database.models.backup_record import BackupRecordORM, BackupStatus, BackupType, RestoreTestStatus
 from app.services.backup_provider import BackupProviderError, NativeBackupProvider
+from app.services.maintenance_service import MaintenanceService, MaintenanceBlockedError
 
 
 class BackupService(BaseService):
@@ -22,10 +23,11 @@ class BackupService(BaseService):
 
     RETENTION_DAYS = {"hourly": 2, "daily": 30, "weekly": 84, "monthly": 366, "emergency": 730}
 
-    def __init__(self, db=None, *, provider: NativeBackupProvider | None = None, database_url: str | None = None) -> None:
+    def __init__(self, db=None, *, provider: NativeBackupProvider | None = None, database_url: str | None = None, maintenance_service: MaintenanceService | None = None) -> None:
         super().__init__(db)
         self.database_url = database_url or getattr(db, "_database_url", "")
         self.provider = provider or NativeBackupProvider()
+        self.maintenance_service = maintenance_service
 
     @staticmethod
     def _now() -> datetime:
@@ -43,6 +45,11 @@ class BackupService(BaseService):
         created_by: int | None = None,
         job_id: int | None = None,
     ) -> dict:
+        if self.maintenance_service is not None:
+            try:
+                await self.maintenance_service.assert_operation_allowed("backup", "CREATE")
+            except MaintenanceBlockedError:
+                return {"status": BackupStatus.FAILED.value, "safe_error_code": "maintenance_active"}
         backup_type_value = backup_type.value if isinstance(backup_type, BackupType) else str(backup_type)
         public_id = f"bkp_{uuid.uuid4().hex[:24]}"
         now = self._now()

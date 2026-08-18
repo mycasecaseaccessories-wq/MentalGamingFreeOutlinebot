@@ -16,18 +16,25 @@ from database.models.user import UserORM
 from database.models.referral_reward import ReferralRewardORM
 from app.services.mission_condition_service import MissionConditionService
 from app.services.mission_service import MissionService
+from app.services.maintenance_service import MaintenanceService, MaintenanceBlockedError
 
 
 class MissionProgressService:
     _locks: dict[str, asyncio.Lock] = {}
 
-    def __init__(self, db, mission_service: MissionService, condition_service: MissionConditionService, reward_service):
+    def __init__(self, db, mission_service: MissionService, condition_service: MissionConditionService, reward_service, maintenance_service: MaintenanceService | None = None):
         self.db = db
         self.missions = mission_service
         self.conditions = condition_service
         self.rewards = reward_service
+        self.maintenance_service = maintenance_service
 
     async def apply_event(self, *, user_id: int, event_type: str, payload: dict | None = None, source_reference: str, occurred_at: datetime | None = None, trusted: bool = True):
+        if self.maintenance_service is not None:
+            try:
+                await self.maintenance_service.assert_operation_allowed("missions", "WRITE")
+            except MaintenanceBlockedError:
+                return {"status": "maintenance_active", "reason": "maintenance_active"}
         if not trusted:
             return {"status": "rejected", "reason": "untrusted_event"}
         payload = payload or {}
@@ -129,6 +136,11 @@ class MissionProgressService:
         return reward
 
     async def claim_reward(self, *, user_id: int, public_progress_id: str):
+        if self.maintenance_service is not None:
+            try:
+                await self.maintenance_service.assert_operation_allowed("rewards", "CLAIM")
+            except MaintenanceBlockedError:
+                return {"status": "maintenance_active", "reason": "maintenance_active"}
         lock = self._locks.setdefault(f"claim:{public_progress_id}", asyncio.Lock())
         async with lock:
             async with self.db.session() as session:

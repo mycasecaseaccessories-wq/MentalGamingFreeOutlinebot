@@ -21,6 +21,7 @@ from database.repositories.order_repository import OrderRepository
 from database.repositories.package_repository import PackageRepository
 from database.repositories.user_repository import UserRepository
 from .base import BaseService
+from .maintenance_service import MaintenanceService
 
 
 class OrderNotFoundError(LookupError):
@@ -45,6 +46,10 @@ class CustomerRestrictedError(PermissionError):
 
 class OrderService(BaseService):
     """Create/read/cancel orders while keeping payment and provisioning deferred."""
+
+    def __init__(self, db=None, maintenance_service: MaintenanceService | None = None):
+        super().__init__(db)
+        self.maintenance_service = maintenance_service
 
     _ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
         OrderORM.STATUS_PENDING: frozenset({
@@ -148,6 +153,8 @@ class OrderService(BaseService):
         payment_timeout_minutes: int = 30,
     ) -> Order:
         """Atomically create or return the open order for a checkout token."""
+        if self.maintenance_service is not None:
+            await self.maintenance_service.assert_operation_allowed("orders", "CREATE")
         if selection.user_id != user_id:
             raise OrderNotFoundError("Checkout session does not belong to this customer")
         if selection.expires_at <= datetime.now(timezone.utc):

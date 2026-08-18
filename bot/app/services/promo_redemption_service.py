@@ -10,17 +10,24 @@ from sqlalchemy import func, select
 from database.models.order import OrderORM
 from database.models.promo import PromoCodeORM, PromoRedemptionORM
 from app.services.promo_service import PromoService, normalize_code
+from app.services.maintenance_service import MaintenanceService, MaintenanceBlockedError
 
 
 class PromoRedemptionService:
     _locks: dict[str, asyncio.Lock] = {}
 
-    def __init__(self, db, promo_service: PromoService, reward_service=None):
+    def __init__(self, db, promo_service: PromoService, reward_service=None, maintenance_service: MaintenanceService | None = None):
         self.db = db
         self.promos = promo_service
         self.rewards = reward_service
+        self.maintenance_service = maintenance_service
 
     async def redeem(self, *, user_id: int, code: str, idempotency_key: str | None = None, order_id: int | None = None):
+        if self.maintenance_service is not None:
+            try:
+                await self.maintenance_service.assert_operation_allowed("promos", "REDEEM")
+            except MaintenanceBlockedError:
+                return {"status": "maintenance_active", "failure_reason": "maintenance_active"}
         normalized = normalize_code(code)
         key = idempotency_key or f"promo:{normalized}:user:{user_id}:order:{order_id or 'immediate'}"
         lock = self._locks.setdefault(key, asyncio.Lock())

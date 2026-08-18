@@ -408,3 +408,27 @@
 - [x] Push the validated Phase 7.4 implementation to GitHub after user confirmation.
 - [x] Update legacy migration-head regression assertions from Phase 7.3 revision 0034 to Phase 7.4 backup-record revision 0035.
 - [x] Commit and push the validated Phase 7.4 Backup & Disaster Recovery implementation, migration, tests, localization, and documentation to origin/main and verify the remote commit.
+
+## Phase 7.5 — Maintenance & Incident Mode
+
+- [x] Inspect Phase 7.5 requirements and existing settings, feature flags, permissions, middleware, command/callback routing, domain services, health, alerts, jobs, backup/restore, audit, events, notifications, localization, and tests.
+- [x] Define typed maintenance states, scopes, operations, effective-state precedence, transitions, incident records, suppression windows, recovery checks, and migration needs.
+- [x] Implement centralized MaintenanceService/MaintenancePolicyService without duplicating existing feature-control infrastructure.
+- [x] Enforce maintenance at authoritative domain/service boundaries for payments, orders, wallet writes, VPN provisioning/lifecycle, trials, referrals, missions, promos, rewards, entitlements, notifications, jobs, backup, and Admin operations while preserving safe reads/support/recovery.
+- [x] Integrate Admin Maintenance & Incident Control Center with global/feature controls, scheduling, incident lifecycle, alert suppression, recovery checks, emergency controls, and explicit bypass permissions.
+- [x] Add customer-safe EN/MY maintenance/degraded/read-only outcomes, audit/events, redaction, rate limits, no-secret leakage, and no accidental global shutdown behavior.
+- [x] Add focused transition/policy/domain-enforcement/concurrency/recovery tests, run full Phase 0–7.5 regression, document Phase 7.6 handoff, and push only after user confirmation.
+- [x] Add Phase 7.5 migration 0036, typed ORM models, ServiceRegistry export/registration, EventBus lifecycle events, durable scheduler activation/recovery jobs, and focused maintenance tests.
+- [x] Enforce payments, wallet spend, Free Trial claim, and paid VPN provisioning at service boundaries with safe maintenance outcomes; preserve payment-review finalization.
+- [x] Add an initial localized Admin Maintenance & Incident Center with emergency start, recovery-checked end, active-window status, and incident listing.
+- [x] Complete alert suppression persistence/evaluation boundary, feature-boundary enforcement for implemented order/referral/mission/promo/reward/entitlement/backup paths, customer navigation notices, maintenance-window locking, and operational audit/action rate limits.
+- [ ] Connect alert suppression to a concrete Phase 7.2 alert evaluator and production notification delivery when that service is introduced; NotificationService is currently a framework placeholder.
+
+## Phase 7.5 Completion Hardening — User-requested full completion before push
+- [x] Complete maintenance enforcement for implemented authoritative mutation boundaries: orders, VPN lifecycle, referrals/rewards, missions, promos, entitlements, backup, payments, wallet, trials, and provisioning, while preserving safe reads and recovery paths.
+- [x] Implement durable alert-suppression policy evaluation for planned maintenance as the Phase 7.2 evaluator integration boundary.
+- [x] Add customer-facing localized maintenance/degraded/read-only notices at handler/navigation boundaries without global-shutdown behavior or secret leakage.
+- [x] Add concurrency-safe maintenance-window conflict handling, explicit transition validation, bypass permissions, operational audit records, and action rate limits.
+- [x] Add focused tests for precedence, domain enforcement, suppression behavior, audit/idempotency, rate limits, bypass authorization, recovery, and EN/MY customer outcomes.
+- [x] Run full Phase 0–7.5 regression and update documentation only after every completion-hardening item passes.
+- [ ] Commit and push Phase 7.5 only after all completion-hardening items are marked complete and the user-requested full validation succeeds.

@@ -19,6 +19,7 @@ from database.repositories.transaction_repository import TransactionRepository
 from database.repositories.user_repository import UserRepository
 from database.repositories.wallet_repository import WalletRepository
 from .base import BaseService
+from .maintenance_service import MaintenanceBlockedError, MaintenanceService
 
 
 class WalletPaymentService(BaseService):
@@ -27,6 +28,10 @@ class WalletPaymentService(BaseService):
     The service deliberately does not call payment gateways, top-up providers,
     VPN providers, Outline APIs, key creation, or server-selection code.
     """
+
+    def __init__(self, db=None, *, maintenance_service: MaintenanceService | None = None) -> None:
+        super().__init__(db)
+        self.maintenance_service = maintenance_service
 
     async def preview(
         self,
@@ -86,6 +91,11 @@ class WalletPaymentService(BaseService):
         idempotency_key: str | None = None,
     ) -> Result[WalletPaymentReceipt]:
         """Return a safe conflict result when the database cannot acquire a lock."""
+        if self.maintenance_service is not None:
+            try:
+                await self.maintenance_service.assert_operation_allowed("wallet_write", "SPEND")
+            except MaintenanceBlockedError:
+                return Failure("maintenance_active", "Wallet payments are temporarily unavailable during maintenance.")
         try:
             return await self._pay_in_transaction(
                 user_id=user_id,

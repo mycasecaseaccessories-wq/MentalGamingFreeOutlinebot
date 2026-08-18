@@ -24,6 +24,7 @@ from app.middlewares.auth import PLATFORM_USER_KEY
 from app.models.enums import UserRole
 from app.models.navigation import CustomerMenuItem
 from app.services.customer_navigation_service import CustomerNavigationService
+from app.services.maintenance_service import MaintenanceScope, MaintenanceService
 from locales.translator import t
 
 logger = logging.getLogger(__name__)
@@ -60,6 +61,18 @@ def _language(user) -> str:
     except AttributeError:
         value = getattr(user, "language", "en")
     return value if value in {"en", "my"} else "en"
+
+
+def _maintenance_service(context: ContextTypes.DEFAULT_TYPE) -> MaintenanceService | None:
+    registry = context.bot_data.get("registry")
+    return registry.get_or_none(MaintenanceService) if registry is not None else None
+
+
+async def _customer_maintenance_notice(context: ContextTypes.DEFAULT_TYPE, scope: MaintenanceScope, language: str) -> str | None:
+    service = _maintenance_service(context)
+    if service is None:
+        return None
+    return await service.get_customer_notice(scope, language=language)
 
 
 def _is_customer_surface(user) -> bool:
@@ -180,6 +193,12 @@ async def customer_menu_message(
     if item in {CustomerMenuItem.BUY_VPN, CustomerMenuItem.MY_KEYS, CustomerMenuItem.WALLET, CustomerMenuItem.PROFILE, CustomerMenuItem.SUPPORT}:
         # Dedicated feature handlers own these destinations before the generic navigation group.
         return
+    lang = _language(user)
+    if item == CustomerMenuItem.FREE_TRIAL:
+        notice = await _customer_maintenance_notice(context, MaintenanceScope.FREE_TRIAL, lang)
+        if notice:
+            await message.reply_text(notice)
+            return
     if item == CustomerMenuItem.REFER_FRIENDS:
         from app.handlers.customer_referral import show_referral_menu
         await show_referral_menu(update, context)

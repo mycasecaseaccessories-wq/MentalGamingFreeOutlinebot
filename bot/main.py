@@ -132,7 +132,7 @@ async def main() -> None:
     logger.info("[9/15] Initialising scheduler…")
     from app.scheduler import Scheduler
     scheduler = Scheduler()
-    scheduler.register_jobs(sync_service=registry.get_or_none(__import__("app.services.outline_server_sync_service", fromlist=["OutlineServerSyncService"]).OutlineServerSyncService), reservation_service=registry.get_or_none(__import__("app.services.server_reservation_service", fromlist=["ServerReservationService"]).ServerReservationService), lifecycle_service=registry.get_or_none(__import__("app.services.vpn_lifecycle_service", fromlist=["VPNLifecycleService"]).VPNLifecycleService), job_service=registry.get_or_none(__import__("app.services.background_job_service", fromlist=["BackgroundJobService"]).BackgroundJobService), health_service=registry.get_or_none(__import__("app.services.health_service", fromlist=["HealthService"]).HealthService), order_service=registry.get_or_none(__import__("app.services.order_service", fromlist=["OrderService"]).OrderService), free_trial_upgrade_service=registry.get_or_none(__import__("app.services.free_trial_upgrade_service", fromlist=["FreeTrialUpgradeService"]).FreeTrialUpgradeService), backup_service=registry.get_or_none(__import__("app.services.backup_service", fromlist=["BackupService"]).BackupService))
+    scheduler.register_jobs(sync_service=registry.get_or_none(__import__("app.services.outline_server_sync_service", fromlist=["OutlineServerSyncService"]).OutlineServerSyncService), reservation_service=registry.get_or_none(__import__("app.services.server_reservation_service", fromlist=["ServerReservationService"]).ServerReservationService), lifecycle_service=registry.get_or_none(__import__("app.services.vpn_lifecycle_service", fromlist=["VPNLifecycleService"]).VPNLifecycleService), job_service=registry.get_or_none(__import__("app.services.background_job_service", fromlist=["BackgroundJobService"]).BackgroundJobService), health_service=registry.get_or_none(__import__("app.services.health_service", fromlist=["HealthService"]).HealthService), order_service=registry.get_or_none(__import__("app.services.order_service", fromlist=["OrderService"]).OrderService), free_trial_upgrade_service=registry.get_or_none(__import__("app.services.free_trial_upgrade_service", fromlist=["FreeTrialUpgradeService"]).FreeTrialUpgradeService), backup_service=registry.get_or_none(__import__("app.services.backup_service", fromlist=["BackupService"]).BackupService), maintenance_service=registry.get_or_none(__import__("app.services.maintenance_service", fromlist=["MaintenanceService"]).MaintenanceService))
     scheduler.start()
     registry.inject_scheduler(scheduler)
     logger.info("       Scheduler ready")
@@ -196,6 +196,7 @@ async def main() -> None:
         register_admin,
         register_admin_server,
         register_admin_outline,
+        register_admin_maintenance,
         register_error,
     )
 
@@ -207,7 +208,8 @@ async def main() -> None:
     register_admin(application)
     register_admin_server(application)
     register_admin_outline(application)
-    logger.info("       Handlers registered: start, package_catalog, customer_keys, customer_account, customer_navigation, admin, admin_server, admin_outline")
+    register_admin_maintenance(application)
+    logger.info("       Handlers registered: start, package_catalog, customer_keys, customer_account, customer_navigation, admin, admin_server, admin_outline, admin_maintenance")
 
     # ── Step 12: Global error handler (must be last) ──────────────────────
     logger.info("[12/15] Registering global error handler…")

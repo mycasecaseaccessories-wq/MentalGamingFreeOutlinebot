@@ -12,9 +12,13 @@ from database.models.server import ServerORM
 from database.models.user import UserORM
 from database.models.vpn_key import VPNKeyORM
 from .base import BaseService
+from .maintenance_service import MaintenanceService, MaintenanceBlockedError
 class VPNLifecycleService(BaseService):
- def __init__(self,db,*,provider=None,vault=None,policy=None): super().__init__(db); self.provider=provider or OutlineProvider(); self.vault=vault or CredentialVault(); self.policy=policy or VPNLifecyclePolicy()
+ def __init__(self,db,*,provider=None,vault=None,policy=None,maintenance_service: MaintenanceService | None = None): super().__init__(db); self.provider=provider or OutlineProvider(); self.vault=vault or CredentialVault(); self.policy=policy or VPNLifecyclePolicy(); self.maintenance_service=maintenance_service
  async def activate_key(self,*,key_id,actor_user_id,duration_days=None):
+  if self.maintenance_service is not None:
+   try: await self.maintenance_service.assert_operation_allowed("vpn_lifecycle", "UPDATE")
+   except MaintenanceBlockedError: return Failure('maintenance_active','VPN lifecycle changes are temporarily unavailable during maintenance.')
   async with self.db.session() as s:
    k=(await s.execute(select(VPNKeyORM).where(VPNKeyORM.id==key_id).with_for_update())).scalar_one_or_none()
    if k is None:return Failure('not_found','VPN key was not found.')
@@ -27,6 +31,9 @@ class VPNLifecycleService(BaseService):
   await bus.emit(EventType.VPN_KEY_ACTIVATED,key_id=key_id,expires_at=result.expires_at); return Success(result)
  async def extend_key_to(self, *, key_id, actor_user_id, target_expires_at):
   """Converge an active key to an absolute expiry target without double-extension."""
+  if self.maintenance_service is not None:
+   try: await self.maintenance_service.assert_operation_allowed("vpn_lifecycle", "UPDATE")
+   except MaintenanceBlockedError: return Failure('maintenance_active','VPN lifecycle changes are temporarily unavailable during maintenance.')
   async with self.db.session() as s:
    k=(await s.execute(select(VPNKeyORM).where(VPNKeyORM.id==key_id).with_for_update())).scalar_one_or_none()
    if k is None:return Failure('not_found','VPN key was not found.')

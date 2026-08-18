@@ -53,6 +53,7 @@ from .referral_reward import ReferralRewardORM, ReferralRiskEventORM
 from .referral_risk_observation import ReferralRiskObservationORM
 from .background_job import BackgroundJobORM, BackgroundJobStatus
 from .backup_record import BackupRecordORM, BackupStatus, BackupType, RestoreTestStatus
+from .maintenance import AutoEndPolicy, CustomerImpact, IncidentSeverity, IncidentStatus, MaintenanceActionORM, MaintenanceReason, MaintenanceScope, MaintenanceState, MaintenanceWindowORM, MaintenanceWindowStatus, OperationalIncidentORM
 from .mission import MissionORM, UserMissionProgressORM, MissionProgressEventORM
 from .promo import PromoCodeORM, PromoRedemptionORM
 
@@ -91,6 +92,17 @@ __all__ = [
     "BackupStatus",
     "BackupType",
     "RestoreTestStatus",
+    "MaintenanceActionORM",
+    "MaintenanceWindowORM",
+    "MaintenanceWindowStatus",
+    "MaintenanceState",
+    "MaintenanceScope",
+    "MaintenanceReason",
+    "AutoEndPolicy",
+    "OperationalIncidentORM",
+    "IncidentStatus",
+    "IncidentSeverity",
+    "CustomerImpact",
     "MissionORM",
     "UserMissionProgressORM",
     "MissionProgressEventORM",

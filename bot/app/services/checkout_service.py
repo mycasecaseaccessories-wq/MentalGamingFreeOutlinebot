@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from app.models.package_catalog import PackageSelection, PackageSummary
 from .base import BaseService
+from .maintenance_service import MaintenanceService
 from .order_service import (
     CheckoutExpiredError,
     OrderService,
@@ -17,10 +18,10 @@ from .package_catalog_service import PackageCatalogService
 class CheckoutService(BaseService):
     """Validate checkout sessions without rendering Telegram UI."""
 
-    def __init__(self, db=None) -> None:
+    def __init__(self, db=None, maintenance_service: MaintenanceService | None = None) -> None:
         super().__init__(db)
         self._catalog = PackageCatalogService(db=self.db)
-        self._orders = OrderService(db=self.db)
+        self._orders = OrderService(db=self.db, maintenance_service=maintenance_service)
 
     @staticmethod
     def _ensure_current(selection: PackageSelection, package: PackageSummary) -> None:

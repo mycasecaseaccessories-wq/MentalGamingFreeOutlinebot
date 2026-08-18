@@ -16,6 +16,7 @@ from database.models.referral_reward import ReferralRewardORM
 from database.models.transaction import TransactionORM
 from database.models.wallet import WalletORM
 from database.models.user import UserORM
+from app.services.maintenance_service import MaintenanceService, MaintenanceBlockedError
 
 
 class ReferralRewardService:
@@ -28,9 +29,10 @@ class ReferralRewardService:
     concurrent workers cannot create a second logical grant.
     """
 
-    def __init__(self, db, settings_service):
+    def __init__(self, db, settings_service, maintenance_service: MaintenanceService | None = None):
         self.db = db
         self.settings = settings_service
+        self.maintenance_service = maintenance_service
 
     async def build_rewards(self, referral_id: int):
         async with self.db.session() as session:
@@ -61,6 +63,11 @@ class ReferralRewardService:
 
     async def grant_reward(self, *, user_id: int, reward_type: str, reward_value: Decimal, source_reference: str, period_key: str, policy_revision: int = 1, reward_expiry_seconds: int = 0, delivery_mode: str = "auto_grant", apply_limits: bool = False, source_type: str = "mission"):
         """Grant a non-referral reward through the same Phase 6.2 ledger/fulfillment path."""
+        if self.maintenance_service is not None:
+            try:
+                await self.maintenance_service.assert_operation_allowed("rewards", "GRANT")
+            except MaintenanceBlockedError:
+                return {"status": ReferralRewardORM.STATUS_FAILED, "error": "maintenance_active"}
         reward_type = _normalize_reward_type(reward_type)
         if delivery_mode not in {"auto_grant", "manual_claim"}:
             raise ValueError("unsupported_delivery_mode")

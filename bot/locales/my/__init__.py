@@ -44,6 +44,9 @@ TRANSLATIONS: dict[str, str] = {
 
     # ── Maintenance ───────────────────────────────────────────────────────
     "maintenance.message":      "🔧 Bot ကို ယခုပြင်ဆင်နေသည်။ နောက်မှပြန်လာပါ။",
+    "customer.maintenance.default": "ဝန်ဆောင်မှုအချို့ကို ပြုပြင်ထိန်းသိမ်းနေပါသည်။ ရှိပြီးသား VPN key များကို ဆက်လက်ကြည့်ရှုနိုင်ပါသည်။",
+    "customer.maintenance.degraded": "လုပ်ဆောင်ချက်အချို့ကို ယာယီကန့်သတ်ထားပါသည်။ ရှိပြီးသား VPN key နှင့် အကူအညီကို ဆက်လက်အသုံးပြုနိုင်ပါသည်။",
+    "customer.maintenance.read_only": "ဝန်ဆောင်မှုသည် ဖတ်ရှုရန်သာ mode တွင်ရှိပါသည်။ ရှိပြီးသား VPN key များကို အသုံးပြုနိုင်သော်လည်း ပြောင်းလဲမှုအသစ်များကို ယာယီရပ်ထားပါသည်။",
 
     # ── Main menu ─────────────────────────────────────────────────────────
     "menu.packages":            "📦 ပက်ကေ့ဂျ်များ",
@@ -672,4 +675,20 @@ TRANSLATIONS.update({
     "admin.backup.action_result": "{action}\nအခြေအနေ: {status}\nSafe error: {error}",
     "admin.backup.restore_result": "Isolated restore test\nအခြေအနေ: {status}\nSafe error: {error}\nRestore ပြီးနောက် reconciliation လိုအပ်ပါသည်။",
     "admin.backup.retention_result": "Retention cleanup ပြီးပါပြီ။ ဖျက်လိုက်သော artifact: {deleted}။",
+    "admin.maintenance.menu": "🛠 ပြုပြင်ထိန်းသိမ်းမှုနှင့် ဖြစ်ရပ်များ",
+    "admin.maintenance.title": "🛠 ပြုပြင်ထိန်းသိမ်းမှု ထိန်းချုပ်ရေး",
+    "admin.maintenance.refresh": "🔄 ပြန်စစ်မည်",
+    "admin.maintenance.start_global": "🚨 Global Emergency စတင်မည်",
+    "admin.maintenance.end": "✅ Active Maintenance ပိတ်မည်",
+    "admin.maintenance.incidents": "📋 ဖြစ်ရပ်စင်တာ",
+    "admin.maintenance.normal": "🟢 ပုံမှန်",
+    "admin.maintenance.active": "လက်ရှိ Window: {count}",
+    "admin.maintenance.window": "{scope}: {state} ({status})",
+    "admin.maintenance.started": "Global Emergency maintenance စတင်ပြီးပါပြီ။",
+    "admin.maintenance.ended": "Recovery စစ်ဆေးမှုအောင်မြင်ပြီး Maintenance ပိတ်ပြီးပါပြီ။",
+    "admin.maintenance.no_active": "လက်ရှိ Maintenance မရှိပါ။",
+    "admin.maintenance.blocked": "Maintenance ကြောင့် ဤလုပ်ဆောင်ချက်ကို ယာယီကန့်သတ်ထားပါသည်။",
+    "admin.maintenance.incident_title": "📋 လုပ်ငန်းလည်ပတ်မှု ဖြစ်ရပ်များ",
+    "admin.maintenance.incident": "{severity} · {status}\n{title}\nသက်ရောက်မှု: {impact}\n{summary}",
+    "admin.maintenance.no_incidents": "လက်ရှိဖြစ်ရပ် မရှိပါ။",
 })

@@ -42,6 +42,9 @@ TRANSLATIONS: dict[str, str] = {
 
     # ── Maintenance ───────────────────────────────────────────────────────
     "maintenance.message":      "🔧 The bot is currently under maintenance. Please try again later.",
+    "customer.maintenance.default": "Some services are temporarily limited for maintenance. Existing VPN keys remain available.",
+    "customer.maintenance.degraded": "Some features are temporarily limited. You can still view existing VPN keys and support information.",
+    "customer.maintenance.read_only": "The service is in read-only mode. Existing VPN keys remain available; new changes are temporarily paused.",
 
     # ── Main menu ─────────────────────────────────────────────────────────
     "menu.packages":            "📦 Packages",
@@ -670,4 +673,20 @@ TRANSLATIONS.update({
     "admin.backup.action_result": "{action}\nStatus: {status}\nSafe error: {error}",
     "admin.backup.restore_result": "Isolated restore test\nStatus: {status}\nSafe error: {error}\nPost-restore reconciliation is required.",
     "admin.backup.retention_result": "Retention cleanup completed. Deleted artifacts: {deleted}.",
+    "admin.maintenance.menu": "🛠 Maintenance & Incidents",
+    "admin.maintenance.title": "🛠 Maintenance Control",
+    "admin.maintenance.refresh": "🔄 Refresh",
+    "admin.maintenance.start_global": "🚨 Start Global Emergency",
+    "admin.maintenance.end": "✅ End Active Maintenance",
+    "admin.maintenance.incidents": "📋 Incident Center",
+    "admin.maintenance.normal": "🟢 NORMAL",
+    "admin.maintenance.active": "Active windows: {count}",
+    "admin.maintenance.window": "{scope}: {state} ({status})",
+    "admin.maintenance.started": "Global emergency maintenance started.",
+    "admin.maintenance.ended": "Maintenance ended after recovery checks.",
+    "admin.maintenance.no_active": "No active maintenance windows.",
+    "admin.maintenance.blocked": "This operation is temporarily limited by maintenance.",
+    "admin.maintenance.incident_title": "📋 Operational Incidents",
+    "admin.maintenance.incident": "{severity} · {status}\n{title}\nImpact: {impact}\n{summary}",
+    "admin.maintenance.no_incidents": "No active incidents.",
 })
