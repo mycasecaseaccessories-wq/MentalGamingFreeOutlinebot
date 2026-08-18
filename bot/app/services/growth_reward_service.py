@@ -12,7 +12,9 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
+from app.core.exceptions import PermissionDeniedException
 from app.core.result import Failure, Success
+from app.services.admin_authorization_service import AdminAuthorizationService
 from database.models.free_trial_entitlement import FreeTrialEntitlementORM
 from database.models.free_trial_entitlement_redemption import FreeTrialEntitlementRedemptionORM
 from database.models.referral_reward import ReferralRewardORM
@@ -43,11 +45,19 @@ class GrowthRewardService:
         "none": "none",
     }
 
-    def __init__(self, db, reward_service=None, mission_progress_service=None, maintenance_service: MaintenanceService | None = None):
+    def __init__(
+        self,
+        db,
+        reward_service=None,
+        mission_progress_service=None,
+        maintenance_service: MaintenanceService | None = None,
+        authorization_service: AdminAuthorizationService | None = None,
+    ):
         self.db = db
         self.rewards = reward_service
         self.missions = mission_progress_service
         self.maintenance_service = maintenance_service
+        self.authorization = authorization_service
 
     async def customer_center(self, user_id: int, *, limit: int = 20):
         async with self.db.session() as session:
@@ -94,7 +104,7 @@ class GrowthRewardService:
 
     async def admin_overview(self, actor_user_id: int):
         async with self.db.session() as session:
-            if not await self._is_admin(session, actor_user_id):
+            if not await self._authorized_operator(actor_user_id):
                 return Failure("permission_denied", "Admin permission required.")
             rows = list((await session.execute(select(ReferralRewardORM))).scalars().all())
             entitlements = list((await session.execute(select(FreeTrialEntitlementORM))).scalars().all())
@@ -119,7 +129,7 @@ class GrowthRewardService:
 
     async def admin_reward_search(self, actor_user_id: int, *, public_reward_id: str | None = None, source_type: str | None = None, status: str | None = None, limit: int = 50):
         async with self.db.session() as session:
-            if not await self._is_admin(session, actor_user_id):
+            if not await self._authorized_operator(actor_user_id):
                 return Failure("permission_denied", "Admin permission required.")
             query = select(ReferralRewardORM)
             if public_reward_id:
@@ -238,9 +248,17 @@ class GrowthRewardService:
             "status": "available" if cls._entitlement_available(row) else ("expired" if row.expires_at and row.expires_at <= datetime.now(timezone.utc) else row.status),
         }
 
-    async def _is_admin(self, session, actor_user_id: int) -> bool:
-        actor = await session.get(UserORM, actor_user_id)
-        return actor is not None and actor.is_active and actor.role == "admin"
+    async def _authorized_operator(self, actor_user_id: int) -> bool:
+        if self.authorization is None:
+            return False
+        try:
+            await self.authorization.require_permission_for_user(
+                actor_user_id,
+                "manage_rewards",
+            )
+        except PermissionDeniedException:
+            return False
+        return True
 
     @staticmethod
     def _bytes(value) -> str:

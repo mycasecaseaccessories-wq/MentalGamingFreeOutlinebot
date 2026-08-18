@@ -6,6 +6,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 
 from app.core.result import Failure, Success
+from app.services.admin_authorization_service import AdminAuthorizationService
 from database.models.free_trial_claim import FreeTrialClaimORM
 from database.models.free_trial_upgrade import FreeTrialRestrictionORM, FreeTrialUpgradeORM
 from database.models.order import OrderORM
@@ -23,7 +24,7 @@ class FreeTrialAnalyticsService:
         from database.models.user import UserORM
         async with self.db.session() as session:
             actor = await session.get(UserORM, actor_user_id)
-            if actor is None or actor.role != "admin" or not actor.is_active:
+            if actor is None or not await AdminAuthorizationService(self.db).has_permission_for_user(actor.id, "view_audit"):
                 return Failure("permission_denied", "Admin permission required.")
             start = start or datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
             end = end or datetime.now(timezone.utc)

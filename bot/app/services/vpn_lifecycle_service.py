@@ -2,6 +2,7 @@ from __future__ import annotations
 from datetime import datetime,timezone
 from sqlalchemy import select
 from app.core.result import Failure,Success
+from app.services.admin_authorization_service import AdminAuthorizationService
 from app.events import EventType,bus
 from app.integrations.outline_provider import OutlineProvider,OutlineProviderError,OutlineProviderTimeout
 from app.models.enums import VPNKeyStatus
@@ -73,7 +74,11 @@ class VPNLifecycleService(BaseService):
   if requested is None:return None,('duration_required','Duration is required.')
   try:return self.policy.validate_duration(int(requested)),None
   except ValueError as e:return None,('invalid_duration',str(e))
- @staticmethod
- async def _auth(s,k,uid):
-  a=await s.get(UserORM,uid); return a is not None and a.is_active and (a.id==k.user_id or a.role=='admin')
+ async def _auth(self, s, k, uid):
+  a=await s.get(UserORM,uid)
+  if a is None or not a.is_active or a.status in {"banned", "suspended", "inactive"}:
+   return False
+  if a.id == k.user_id:
+   return True
+  return await AdminAuthorizationService(self.db).has_permission_for_user(a.id, "manage_users")
  def summary(self,k): return VPNLifecycleSummary(k.id,k.status,k.activated_at,k.expires_at,self.policy.remaining(k.expires_at),self.policy.is_expiring_soon(k.expires_at),k.lifecycle_cleanup_status)

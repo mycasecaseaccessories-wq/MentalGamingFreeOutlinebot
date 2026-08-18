@@ -392,6 +392,33 @@ class AdminAuthorizationService:
             return bool(context and context.chat_id in self.approved_chat_ids)
         return False
 
+    async def has_permission_for_user(self, user_id: int, permission: str) -> bool:
+        try:
+            await self.require_permission_for_user(user_id, permission)
+        except PermissionDeniedException:
+            return False
+        return True
+
+    async def require_permission_for_user(
+        self,
+        user_id: int,
+        permission: str,
+        *,
+        chat_type: str | None = None,
+        critical: bool = False,
+    ) -> AdminPrincipal:
+        """Reauthorize a persisted application user at a privileged service boundary."""
+        async with self.db.session() as session:
+            user = await session.get(UserORM, user_id)
+        if user is None:
+            raise PermissionDeniedException(message="Action not permitted.")
+        return await self.require_permission(
+            user.telegram_id,
+            permission,
+            chat_type=chat_type,
+            critical=critical,
+        )
+
     async def require_admin(self, telegram_id: int) -> AdminPrincipal:
         result = await self.authorize(telegram_id)
         if result.error is not None:

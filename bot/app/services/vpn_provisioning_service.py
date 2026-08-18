@@ -5,7 +5,9 @@ from datetime import datetime, timezone
 
 from sqlalchemy.exc import IntegrityError
 
+from app.core.exceptions import PermissionDeniedException
 from app.core.result import Failure, Success
+from app.services.admin_authorization_service import AdminAuthorizationService
 from app.events import EventType, bus
 from app.integrations.outline_provider import OutlineProvider, OutlineProviderError, OutlineProviderTimeout
 from app.models.server_selection import ServerSelectionRequest
@@ -29,13 +31,24 @@ _TERMINAL = {"completed", "failed", "cancelled", "compensation_required", "unkno
 class VPNProvisioningService(BaseService):
     """Phase 4.1 provisioning saga; remote mutation and local persistence are explicit."""
 
-    def __init__(self, db, *, selection_service, reservation_service, provider_registry=None, provider=None, vault=None):
+    def __init__(
+        self,
+        db,
+        *,
+        selection_service,
+        reservation_service,
+        provider_registry=None,
+        provider=None,
+        vault=None,
+        authorization_service: AdminAuthorizationService | None = None,
+    ):
         super().__init__(db)
         self.selection_service = selection_service
         self.reservation_service = reservation_service
         self.provider_registry = provider_registry
         self.provider = provider or OutlineProvider()
         self.vault = vault or CredentialVault()
+        self.authorization = authorization_service
 
     async def provision(self, request: VPNProvisioningRequest, *, actor_user_id: int | None = None):
         try:
@@ -152,8 +165,18 @@ class VPNProvisioningService(BaseService):
 
     async def _authorized(self, actor_id: int, target_id: int) -> bool:
         async with self.db.session() as session:
-            user = await session.get(UserORM, actor_id)
-            return bool(user and user.is_active and user.status not in {"banned", "suspended", "inactive"} and (user.id == target_id or user.role == "admin"))
+            actor = await session.get(UserORM, actor_id)
+            if actor is None or not actor.is_active or actor.status in {"banned", "suspended", "inactive"}:
+                return False
+            if actor.id == target_id:
+                return True
+        if self.authorization is None:
+            return False
+        try:
+            await self.authorization.require_permission_for_user(actor_id, "manage_users")
+        except PermissionDeniedException:
+            return False
+        return True
 
     async def _get_operation(self, request):
         async with self.db.session() as session:

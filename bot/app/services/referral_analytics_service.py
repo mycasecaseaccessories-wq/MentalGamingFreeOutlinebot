@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import func, select
 
 from app.core.result import Failure, Success
+from app.services.admin_authorization_service import AdminAuthorizationService
 from database.models.order import OrderORM
 from database.models.promo import PromoCodeORM, PromoRedemptionORM
 from database.models.referral import ReferralORM
@@ -70,7 +71,7 @@ class ReferralAnalyticsService:
 
     async def _admin(self, session, actor_user_id: int) -> bool:
         actor = await session.get(UserORM, actor_user_id)
-        return actor is not None and actor.is_active and actor.role == "admin"
+        return actor is not None and await AdminAuthorizationService(self.db).has_permission_for_user(actor.id, "view_audit")
 
     async def dashboard(self, *, actor_user_id: int, start=None, end=None, period="last_30_days"):
         start, end = await self._period(start=start, end=end, period=period)

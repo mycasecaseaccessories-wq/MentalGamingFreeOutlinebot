@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select, update
 
 from app.core.result import Failure, Result, Success
+from app.services.admin_authorization_service import AdminAuthorizationService
 from app.events import EventType, bus
 from app.models.payment_review import PaymentReviewDecision, PaymentReviewItem, PaymentReviewPage
 from locales.translator import t
@@ -91,7 +92,7 @@ class PaymentReviewService(BaseService):
             actor = (await session.execute(
                 select(UserORM).where(UserORM.telegram_id == actor_telegram_id).limit(1)
             )).scalar_one_or_none()
-            if actor is None or actor.role != "admin" or actor.status in {"banned", "suspended", "inactive"} or not actor.is_active:
+            if actor is None or not await AdminAuthorizationService(self.db).has_permission_for_user(actor.id, "manage_payments"):
                 return Failure("unauthorized", "Admin permission required.")
 
             repo = PaymentSubmissionRepository(session)

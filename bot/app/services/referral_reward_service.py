@@ -8,7 +8,9 @@ import secrets
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
+from app.core.exceptions import PermissionDeniedException
 from app.core.result import Failure, Success
+from app.services.admin_authorization_service import AdminAuthorizationService
 from app.events import EventType, bus
 from database.models.free_trial_entitlement import FreeTrialEntitlementORM
 from database.models.referral import ReferralORM
@@ -29,10 +31,17 @@ class ReferralRewardService:
     concurrent workers cannot create a second logical grant.
     """
 
-    def __init__(self, db, settings_service, maintenance_service: MaintenanceService | None = None):
+    def __init__(
+        self,
+        db,
+        settings_service,
+        maintenance_service: MaintenanceService | None = None,
+        authorization_service: AdminAuthorizationService | None = None,
+    ):
         self.db = db
         self.settings = settings_service
         self.maintenance_service = maintenance_service
+        self.authorization = authorization_service
 
     async def build_rewards(self, referral_id: int):
         async with self.db.session() as session:
@@ -248,10 +257,16 @@ class ReferralRewardService:
         return True, "eligible"
 
     async def release_held_reward(self, *, actor_user_id: int, reward_id: int):
+        if self.authorization is None:
+            return Failure("permission_denied", "Admin permission required.")
+        try:
+            await self.authorization.require_permission_for_user(
+                actor_user_id,
+                "manage_rewards",
+            )
+        except PermissionDeniedException:
+            return Failure("permission_denied", "Admin permission required.")
         async with self.db.session() as session:
-            actor = await session.get(UserORM, actor_user_id)
-            if actor is None or actor.role != "admin" or not actor.is_active:
-                return Failure("permission_denied", "Admin permission required.")
             row = (await session.execute(select(ReferralRewardORM).where(ReferralRewardORM.id == reward_id).with_for_update())).scalar_one_or_none()
             if row is None:
                 return Failure("not_found", "Reward not found.")

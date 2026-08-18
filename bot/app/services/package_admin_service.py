@@ -1,6 +1,7 @@
 from decimal import Decimal
 from sqlalchemy import select
 from app.core.result import Failure,Success
+from app.services.admin_authorization_service import AdminAuthorizationService
 from database.models.package import PackageORM
 from database.models.user import UserORM
 class PackageAdminService:
@@ -9,7 +10,7 @@ class PackageAdminService:
   if amount<0 or duration_days<=0 or (data_limit_gb is not None and data_limit_gb<=0) or (max_devices is not None and max_devices<=0):return Failure('invalid_package_policy','Free Trial policy values are invalid.')
   async with self.db.session() as s:
    actor=await s.get(UserORM,actor_user_id)
-   if actor is None or actor.role!='admin' or not actor.is_active:return Failure('unauthorized','Admin permission required.')
+   if actor is None or not await AdminAuthorizationService(self.db).has_permission_for_user(actor.id, "manage_promos"):return Failure('unauthorized','Admin permission required.')
    p=await s.get(PackageORM,package_id,with_for_update=True)
    if p is None or p.package_type!='free_trial':return Failure('not_found','Free Trial package not found.')
    p.price=amount;p.currency=currency.upper();p.duration_days=duration_days;p.data_limit_gb=data_limit_gb;p.max_devices=max_devices;p.visible=bool(visible);p.is_active=bool(enabled);p.status='active' if enabled else 'disabled';await s.commit();return Success(p.id)

@@ -481,3 +481,15 @@
 - [x] Inventory existing admin identity, authorization, role, permission, callback, session, audit, and privileged mutation paths before implementation.
 - [x] Implement only Phase 8.1 centralized admin security; preserve Phase 7 readiness and do not begin later Phase 8 work.
 - [x] Add focused security tests, migration validation, and full regression evidence for Phase 8.1: 5 focused tests, 492 full-regression tests, and migration head 0040.
+
+## Phase 8.1 Security Verdict Reassessment
+- [x] Map the attached SECURE / SECURE_WITH_WARNINGS / NOT_SECURE criteria to concrete implemented controls and identify any security blocker.
+- [x] Re-run focused security tests, full regression, migration, compile, quality, secret, and Git checks required for the verdict.
+- [x] Deliver exactly one Phase 8.1 security verdict and do not start Phase 8.2 before confirmation.
+
+## Phase 8.1 Privileged Service Remediation
+- [x] Inventory every caller and actor flow for referral-risk, growth-reward, and maintenance privileged mutations.
+- [x] Replace role-only and caller-controlled boolean authorization with AdminAuthorizationService reauthorization and exact permissions.
+- [x] Add blocker regression tests for legacy-role denial, suspended-admin denial, and mutation non-execution.
+- [x] Prove production-source `UNSAFE match = 0` for direct role-only and caller-controlled boolean privileged grants, then rerun all final gates: executable audit passed, 493 full tests passed.
+- [x] Deliver exactly one security verdict and do not start Phase 8.2 before confirmation.

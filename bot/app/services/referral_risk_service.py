@@ -7,7 +7,9 @@ import secrets
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
+from app.core.exceptions import PermissionDeniedException
 from app.core.result import Failure, Success
+from app.services.admin_authorization_service import AdminAuthorizationService
 from app.events import EventType, bus
 from database.models.audit_log import AuditLogORM
 from database.models.referral import ReferralORM
@@ -29,11 +31,19 @@ class ReferralRiskService:
     SIGNAL_REPEATED_REVIEW = "repeated_review_history"
     SIGNAL_SELF_REFERRAL = "self_referral_attempt"
 
-    def __init__(self, db, settings_service=None, reward_service=None, referral_service=None):
+    def __init__(
+        self,
+        db,
+        settings_service=None,
+        reward_service=None,
+        referral_service=None,
+        authorization_service: AdminAuthorizationService | None = None,
+    ):
         self.db = db
         self.settings = settings_service
         self.reward_service = reward_service
         self.referral_service = referral_service
+        self.authorization = authorization_service
 
     async def _setting(self, key: str, default):
         return await self.settings.get(key, default) if self.settings is not None else default
@@ -131,7 +141,7 @@ class ReferralRiskService:
 
     async def get_review_candidates(self, *, actor_user_id: int, status="open", limit=50):
         async with self.db.session() as session:
-            if not await self._is_admin(session, actor_user_id):
+            if not await self._authorized_operator(actor_user_id):
                 return Failure("permission_denied", "Admin permission required.")
             query = select(ReferralRiskObservationORM).order_by(ReferralRiskObservationORM.observed_at.asc()).limit(max(1, min(100, int(limit))))
             if status in {"open", "resolved", "held", "blocked"}:
@@ -144,7 +154,7 @@ class ReferralRiskService:
             return Failure("invalid_decision", "Invalid review decision.")
         async with self.db.session() as session:
             actor = await session.get(UserORM, actor_user_id)
-            if not await self._is_admin(session, actor_user_id):
+            if not await self._authorized_operator(actor_user_id):
                 return Failure("permission_denied", "Admin permission required.")
             row = (await session.execute(select(ReferralRiskObservationORM).where(ReferralRiskObservationORM.public_observation_id == public_observation_id).with_for_update())).scalar_one_or_none()
             if row is None:
@@ -188,14 +198,22 @@ class ReferralRiskService:
 
     async def user_summary(self, *, actor_user_id: int, user_id: int):
         async with self.db.session() as session:
-            if not await self._is_admin(session, actor_user_id):
+            if not await self._authorized_operator(actor_user_id):
                 return Failure("permission_denied", "Admin permission required.")
             rows = list((await session.execute(select(ReferralRiskObservationORM).where(ReferralRiskObservationORM.user_id == user_id).order_by(ReferralRiskObservationORM.observed_at.desc()).limit(50))).scalars().all())
         return Success({"user_id": user_id, "risk_level": self._risk_level(sum(row.risk_level in {"high", "critical"} for row in rows)), "open": sum(row.status == ReferralRiskObservationORM.STATUS_OPEN for row in rows), "observations": [self._observation(row) for row in rows]})
 
-    async def _is_admin(self, session, actor_user_id):
-        actor = await session.get(UserORM, actor_user_id)
-        return actor is not None and actor.is_active and actor.role == "admin"
+    async def _authorized_operator(self, actor_user_id: int) -> bool:
+        if self.authorization is None:
+            return False
+        try:
+            await self.authorization.require_permission_for_user(
+                actor_user_id,
+                "manage_referrals",
+            )
+        except PermissionDeniedException:
+            return False
+        return True
 
     @staticmethod
     def _risk_level(signal_count):

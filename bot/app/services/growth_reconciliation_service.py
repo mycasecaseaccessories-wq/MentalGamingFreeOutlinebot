@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 
 from app.core.result import Failure, Success
+from app.services.admin_authorization_service import AdminAuthorizationService
 from app.events import EventType, bus
 from database.models.free_trial_entitlement import FreeTrialEntitlementORM
 from database.models.referral_reward import ReferralRewardORM
@@ -22,7 +23,7 @@ class GrowthReconciliationService:
     async def scan(self, *, actor_user_id: int, stale_after_seconds: int = 900, limit: int = 100):
         async with self.db.session() as session:
             actor = await session.get(UserORM, actor_user_id)
-            if actor is None or not actor.is_active or actor.role != "admin":
+            if actor is None or not await AdminAuthorizationService(self.db).has_permission_for_user(actor.id, "manage_rewards"):
                 return Failure("permission_denied", "Admin permission required.")
             now = datetime.now(timezone.utc)
             cutoff = now - timedelta(seconds=max(60, min(86400, int(stale_after_seconds))))
@@ -58,7 +59,7 @@ class GrowthReconciliationService:
             return Success({"expired": 0})
         async with self.db.session() as session:
             actor = await session.get(UserORM, actor_user_id)
-            if actor is None or not actor.is_active or actor.role != "admin":
+            if actor is None or not await AdminAuthorizationService(self.db).has_permission_for_user(actor.id, "manage_rewards"):
                 return Failure("permission_denied", "Admin permission required.")
             rows = list((await session.execute(select(FreeTrialEntitlementORM).where(FreeTrialEntitlementORM.id.in_(ids)).with_for_update())).scalars().all())
             changed = 0

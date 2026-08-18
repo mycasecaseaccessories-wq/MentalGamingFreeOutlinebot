@@ -5,9 +5,11 @@ import pytest
 import pytest_asyncio
 from sqlalchemy import select
 
+from app.services.admin_authorization_service import AdminAuthorizationService
 from app.services.referral_analytics_service import ReferralAnalyticsService
 from app.services.referral_reward_service import ReferralRewardService
 from app.services.referral_risk_service import ReferralRiskService
+from database.models.admin_security import AdminPrincipalORM
 from database.models.referral import ReferralORM
 from database.models.referral_reward import ReferralRewardORM, ReferralRiskEventORM
 from database.models.referral_risk_observation import ReferralRiskObservationORM
@@ -83,6 +85,7 @@ async def _admin(db, telegram_id=659900):
         row = UserORM(telegram_id=telegram_id, full_name="admin", role="admin", language="en", status="active", is_active=True, is_verified=True)
         session.add(row)
         await session.flush()
+        session.add(AdminPrincipalORM(public_id=f"APR-{telegram_id}", user_id=row.id, status="active", role="admin", created_by=row.id, bootstrap_source="test"))
         return row.id
 
 
@@ -138,7 +141,11 @@ async def test_risk_velocity_observation_is_deduplicated_and_reviewable(phase65_
             idempotency_key="phase65-risk-event-1",
             safe_metadata={"source": "server"},
         ))
-    service = ReferralRiskService(phase65_db, settings)
+    service = ReferralRiskService(
+        phase65_db,
+        settings,
+        authorization_service=AdminAuthorizationService(phase65_db),
+    )
     first = await service.evaluate_behavior(user_id=user_id, source_event="referral.attributed")
     second = await service.evaluate_behavior(user_id=user_id, source_event="referral.attributed")
     assert first.is_success and second.is_success

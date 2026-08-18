@@ -8,7 +8,9 @@ from uuid import uuid4
 
 from sqlalchemy import func, select
 
+from app.core.exceptions import PermissionDeniedException
 from app.events import EventType, bus
+from app.services.admin_authorization_service import AdminAuthorizationService
 from app.services.base import BaseService
 from locales.translator import t
 from database.models.audit_log import AuditLogORM
@@ -37,6 +39,14 @@ class MaintenanceBlockedError(RuntimeError):
 
 class MaintenanceService(BaseService):
     """Database-backed source of truth for maintenance and incident policy."""
+
+    def __init__(
+        self,
+        db=None,
+        authorization_service: AdminAuthorizationService | None = None,
+    ) -> None:
+        super().__init__(db)
+        self.authorization = authorization_service
 
     _STATE_STRENGTH = {
         MaintenanceState.NORMAL.value: 0,
@@ -208,16 +218,23 @@ class MaintenanceService(BaseService):
     ) -> bool:
         state = (await self.get_effective_state(scope))["state"]
         op = operation.upper()
-        actor = actor or {}
-        if actor.get("maintenance_bypass") is True and actor.get("is_admin") is True:
-            return True
         if state == MaintenanceState.NORMAL.value:
             return True
         if op in self._SAFE_OPERATIONS:
             return True
         if state == MaintenanceState.DEGRADED.value and op not in self._MUTATING_OPERATIONS:
             return True
-        return False
+        actor_user_id = (actor or {}).get("actor_user_id")
+        if actor_user_id is None or self.authorization is None:
+            return False
+        try:
+            await self.authorization.require_permission_for_user(
+                int(actor_user_id),
+                "manage_maintenance",
+            )
+        except (PermissionDeniedException, TypeError, ValueError):
+            return False
+        return True
 
     async def assert_operation_allowed(
         self, scope: str | MaintenanceScope, operation: str, *, actor: dict | None = None
@@ -351,11 +368,20 @@ class MaintenanceService(BaseService):
         ended_by: int,
         force: bool = False,
         recovery_ok: bool = True,
-        bypass_authorized: bool = False,
+        actor_user_id: int | None = None,
         idempotency_key: str | None = None,
     ) -> dict:
-        if force and not bypass_authorized:
-            return {"ended": False, "safe_error_code": "bypass_not_authorized"}
+        if force:
+            if actor_user_id is None or self.authorization is None:
+                return {"ended": False, "safe_error_code": "bypass_not_authorized"}
+            try:
+                await self.authorization.require_permission_for_user(
+                    actor_user_id,
+                    "manage_emergency",
+                    critical=True,
+                )
+            except PermissionDeniedException:
+                return {"ended": False, "safe_error_code": "bypass_not_authorized"}
         async with self.db.session() as session:
             row = (
                 await session.execute(

@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 
 from app.core.result import Failure, Result, Success
+from app.services.admin_authorization_service import AdminAuthorizationService
 from app.events import EventType, bus
 from app.models.server_management import ServerItem, ServerMutation, ServerPage
 from database.models.audit_log import AuditLogORM
@@ -138,7 +139,7 @@ class ServerService(BaseService):
 
     async def _authorized_actor(self, session, telegram_id: int):
         actor = (await session.execute(select(UserORM).where(UserORM.telegram_id == telegram_id).limit(1))).scalar_one_or_none()
-        if actor is None or actor.role != "admin" or not actor.is_active or actor.status in {"banned", "suspended", "inactive"}: return None
+        if actor is None or not await AdminAuthorizationService(self.db).has_permission_for_user(actor.id, "manage_servers"): return None
         return actor
 
     async def _new_public_id(self, session) -> str:

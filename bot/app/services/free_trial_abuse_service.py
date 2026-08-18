@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.core.result import Failure, Success
+from app.services.admin_authorization_service import AdminAuthorizationService
 from app.events import EventType, bus
 from database.models.free_trial_rate_limit import FreeTrialRateLimitORM
 from database.models.free_trial_upgrade import FreeTrialRestrictionORM
@@ -101,7 +102,7 @@ class FreeTrialAbuseProtectionService:
     async def _set_restriction(self, *, actor_user_id: int, user_id: int, blocked: bool, reason: str | None):
         async with self.db.session() as session:
             actor = await session.get(UserORM, actor_user_id)
-            if actor is None or actor.role != "admin" or not actor.is_active:
+            if actor is None or not await AdminAuthorizationService(self.db).has_permission_for_user(actor.id, "manage_users"):
                 return Failure("permission_denied", "Admin permission required.")
             row = (await session.execute(select(FreeTrialRestrictionORM).where(FreeTrialRestrictionORM.user_id == user_id).with_for_update())).scalar_one_or_none()
             if row is None:

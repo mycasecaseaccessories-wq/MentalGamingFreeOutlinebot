@@ -2,6 +2,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from sqlalchemy import select
 from app.core.result import Failure, Success
+from app.services.admin_authorization_service import AdminAuthorizationService
 from database.models.membership_verification import MembershipTargetORM, UserMembershipVerificationORM
 from database.models.user import UserORM
 class MembershipVerificationService:
@@ -11,7 +12,7 @@ class MembershipVerificationService:
         if target_type not in {'channel','group'} or not target_id: return Failure('invalid_target','Membership target is invalid.')
         async with self.db.session() as s:
             actor=await s.get(UserORM,actor_user_id)
-            if actor is None or actor.role!='admin' or not actor.is_active: return Failure('unauthorized','Admin permission required.')
+            if actor is None or not await AdminAuthorizationService(self.db).has_permission_for_user(actor.id, "manage_users"): return Failure('unauthorized','Admin permission required.')
             for row in (await s.execute(select(MembershipTargetORM).where(MembershipTargetORM.enabled.is_(True)))).scalars().all(): row.enabled=False
             t=(await s.execute(select(MembershipTargetORM).where(MembershipTargetORM.target_type==target_type,MembershipTargetORM.target_id==target_id))).scalar_one_or_none()
             if t is None: t=MembershipTargetORM(target_type=target_type,target_id=target_id,invite_url=invite_url,revision=1,enabled=enabled,updated_by=actor_user_id); s.add(t)

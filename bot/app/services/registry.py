@@ -226,13 +226,28 @@ class ServiceRegistry:
         from app.services.production_operations_service import ProductionOperationsService
 
         services_to_create = [
-            MaintenanceService,
             SettingsService,
             AdminAuthorizationService,
             LanguageService,
             UserService,
             PreferenceService,
         ]
+
+        if not self.is_registered(AdminAuthorizationService):
+            self.register(
+                AdminAuthorizationService,
+                AdminAuthorizationService(db=self._db),
+            )
+            logger.info("  ✓ AdminAuthorizationService initialised")
+        if not self.is_registered(MaintenanceService):
+            self.register(
+                MaintenanceService,
+                MaintenanceService(
+                    db=self._db,
+                    authorization_service=self.get(AdminAuthorizationService),
+                ),
+            )
+            logger.info("  ✓ MaintenanceService initialised")
 
         for service_class in services_to_create:
             if not self.is_registered(service_class):
@@ -258,6 +273,7 @@ class ServiceRegistry:
                     db=self._db,
                     settings_service=self.get(SettingsService),
                     maintenance_service=self.get(MaintenanceService),
+                    authorization_service=self.get(AdminAuthorizationService),
                 ),
             )
             logger.info("  ✓ ReferralRewardService initialised")
@@ -315,6 +331,7 @@ class ServiceRegistry:
                     reward_service=self.get(ReferralRewardService),
                     mission_progress_service=self.get(MissionProgressService),
                     maintenance_service=self.get(MaintenanceService),
+                    authorization_service=self.get(AdminAuthorizationService),
                 ),
             )
             logger.info("  ✓ Phase 6.6 GrowthRewardService initialised")
@@ -438,6 +455,7 @@ class ServiceRegistry:
                     settings_service=self.get(SettingsService),
                     reward_service=self.get(ReferralRewardService),
                     referral_service=self.get(ReferralService),
+                    authorization_service=self.get(AdminAuthorizationService),
                 ),
             )
             logger.info("  ✓ Phase 6.5 analytics and risk services initialised")
@@ -700,6 +718,7 @@ class ServiceRegistry:
                     reservation_service=self.get(ServerReservationService),
                     provider_registry=providers,
                     provider=outline_provider,
+                    authorization_service=self.get(AdminAuthorizationService),
                 ),
             )
             logger.info("  ✓ VPNProvisioningService initialised")

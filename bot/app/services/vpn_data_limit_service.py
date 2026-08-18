@@ -3,6 +3,7 @@ from datetime import datetime,timezone
 from decimal import Decimal
 from sqlalchemy import select
 from app.core.result import Failure,Success
+from app.services.admin_authorization_service import AdminAuthorizationService
 from app.events import EventType,bus
 from app.integrations.outline_provider import OutlineProvider,OutlineProviderError,OutlineProviderTimeout
 from app.models.vpn_limits import VPNDataLimitPolicy,VPNLimitApplicationResult,VPNLimitStatus
@@ -20,7 +21,10 @@ class VPNDataLimitService(BaseService):
    k=(await s.execute(select(VPNKeyORM).where(VPNKeyORM.id==key_id).with_for_update())).scalar_one_or_none()
    if k is None:return Failure('not_found','VPN key was not found.')
    a=await s.get(UserORM,actor_user_id)
-   if a is None or not a.is_active or (a.id!=k.user_id and a.role!='admin'):return Failure('permission_denied','Data-limit permission denied.')
+   if a is None or not a.is_active or a.status in {"banned", "suspended", "inactive"}:
+    return Failure('permission_denied','Data-limit permission denied.')
+   if a.id != k.user_id and not await AdminAuthorizationService(self.db).has_permission_for_user(a.id, "manage_users"):
+    return Failure('permission_denied','Data-limit permission denied.')
    p,err=await self._policy(s,k,requested_limit_bytes)
    if err:return Failure(*err)
    try:p.validate(maximum_bytes=self.max_limit_bytes)
