@@ -18,6 +18,7 @@ def admin_payment_menu_keyboard(language: str) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(t("admin.jobs.menu", language=language), callback_data="admin:jobs:menu")],
         [InlineKeyboardButton(t("admin.backup.menu", language=language), callback_data="admin:backup:menu")],
         [InlineKeyboardButton(t("admin.maintenance.menu", language=language), callback_data="admin:maintenance:menu")],
+        [InlineKeyboardButton("🔐 Admin Security", callback_data="admin:security:menu")],
         [InlineKeyboardButton(t("nav.back", language=language), callback_data="admin:home")],
     ])
 

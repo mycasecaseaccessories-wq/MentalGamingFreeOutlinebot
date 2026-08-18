@@ -3,7 +3,7 @@ from __future__ import annotations
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, ContextTypes
 
-from app.handlers.base import admin_required
+from app.handlers.base import permission_required
 from app.middlewares.auth import PLATFORM_USER_KEY
 from app.events import EventType, bus
 from app.services.referral_service import ReferralService
@@ -48,7 +48,7 @@ def _menu(language: str, enabled: bool = True) -> InlineKeyboardMarkup:
     ])
 
 
-@admin_required
+@permission_required("manage_referrals")
 async def admin_referral_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     service = _service(context)

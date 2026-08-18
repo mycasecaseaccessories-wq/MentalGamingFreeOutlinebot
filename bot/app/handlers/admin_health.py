@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, ContextTypes
 
-from app.handlers.base import admin_required
+from app.handlers.base import permission_required
 from app.middlewares.auth import PLATFORM_USER_KEY
 from app.services.health_service import HealthCheckResult, HealthService, HealthSnapshot, OperationalHealthStatus
 from locales.translator import t
@@ -82,7 +82,7 @@ def _overview(snapshot: HealthSnapshot, language: str) -> str:
     return "\n".join(lines)
 
 
-@admin_required
+@permission_required("manage_health")
 async def admin_health_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     message = update.effective_message

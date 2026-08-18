@@ -136,6 +136,7 @@ class EventType(str, Enum):
     INCIDENT_CREATED = "incident.created"
     INCIDENT_UPDATED = "incident.updated"
     INCIDENT_RESOLVED = "incident.resolved"
+    SECURITY_EVENT_RECORDED = "security.event_recorded"
 
 
 class EventBus:

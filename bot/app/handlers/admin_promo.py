@@ -3,7 +3,7 @@ from __future__ import annotations
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, ContextTypes
 
-from app.handlers.base import admin_required
+from app.handlers.base import permission_required
 from app.middlewares.auth import PLATFORM_USER_KEY
 from app.services.promo_service import PromoService
 from app.services.promo_redemption_service import PromoRedemptionService
@@ -37,7 +37,7 @@ def _menu(language, rows):
     return InlineKeyboardMarkup(buttons)
 
 
-@admin_required
+@permission_required("manage_promos")
 async def admin_promo_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     if query is None:

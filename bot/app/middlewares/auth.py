@@ -79,12 +79,35 @@ async def auth_middleware_handler(
     # Attach to context so handlers don't need to call UserService themselves.
     context.user_data[PLATFORM_USER_KEY] = user
     context.user_data["is_new_user"] = created
+
+    # Phase 8.1: establish legacy bootstrap once, then resolve current
+    # database-backed principal state on every request. A revoked/suspended
+    # principal is never resurrected by the old ADMIN_IDS configuration.
+    registry = context.bot_data.get("registry")
+    authorization_service = None
+    if registry is not None:
+        from app.services.admin_authorization_service import AdminAuthorizationService
+        authorization_service = registry.get_or_none(AdminAuthorizationService)
+    if authorization_service is not None:
+        settings = context.bot_data.get("settings")
+        configured_admin_ids = getattr(settings, "admin_ids", frozenset())
+        principal = await authorization_service.ensure_bootstrap_admin(
+            tg_user.id, configured_admin_ids
+        )
+        if principal is None:
+            principal = await authorization_service.resolve_principal(tg_user.id)
+        context.user_data["admin_principal"] = principal
+
     request = request_ctx.get()
     if request is not None:
         request.current_user = user
         request.user_id = user.telegram_id
+        request.application_user_id = user.id
         request.username = user.username or user.full_name
         request.current_role = user.role.value
+        request.admin_principal_id = getattr(
+            context.user_data.get("admin_principal"), "id", None
+        )
 
     # For /start, let CustomerEntryService produce the localized routing
     # decision. Other updates are stopped here so restricted accounts cannot

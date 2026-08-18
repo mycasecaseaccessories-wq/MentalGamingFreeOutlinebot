@@ -75,6 +75,13 @@ from .maintenance import (
 )
 from .mission import MissionORM, UserMissionProgressORM, MissionProgressEventORM
 from .promo import PromoCodeORM, PromoRedemptionORM
+from .admin_security import (
+    AdminPermissionGrantORM,
+    AdminPrincipalORM,
+    AdminSessionORM,
+    PrivilegedActionChallengeORM,
+    SecurityEventORM,
+)
 
 __all__ = [
     "UserORM",
@@ -130,4 +137,9 @@ __all__ = [
     "MissionProgressEventORM",
     "PromoCodeORM",
     "PromoRedemptionORM",
+    "AdminPrincipalORM",
+    "AdminSessionORM",
+    "AdminPermissionGrantORM",
+    "PrivilegedActionChallengeORM",
+    "SecurityEventORM",
 ]

@@ -17,6 +17,7 @@ from app.models.user_preference import PreferenceKey
 from app.services.base import BaseService
 from app.services.preference_service import PreferenceService
 from app.services.user_service import UserService
+from app.services.admin_authorization_service import AdminAuthorizationService
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +32,12 @@ class CustomerEntryService(BaseService):
         db=None,
         user_service: Optional[UserService] = None,
         preference_service: Optional[PreferenceService] = None,
+        authorization_service: Optional[AdminAuthorizationService] = None,
     ) -> None:
         super().__init__(db)
         self.user_service = user_service or UserService(db)
         self.preference_service = preference_service or PreferenceService(db)
+        self.authorization_service = authorization_service
 
     @staticmethod
     def sanitize_start_parameter(raw: str | None) -> str | None:
@@ -55,15 +58,30 @@ class CustomerEntryService(BaseService):
         """Return the transport-neutral routing decision for `/start`."""
         safe_param = self.sanitize_start_parameter(start_parameter)
 
-        # Environment-configured admins are authoritative. Keep DB role in sync
-        # without changing roles for ordinary returning users.
-        admin_set = set(admin_ids)
-        if user.telegram_id in admin_set and user.role != UserRole.ADMIN:
-            updated = await self.user_service.change_role(
-                user.telegram_id, UserRole.ADMIN.value
+        authorized_admin = False
+        if self.authorization_service is not None:
+            principal = await self.authorization_service.ensure_bootstrap_admin(
+                user.telegram_id, admin_ids
             )
-            if updated is not None:
-                user = updated
+            if principal is None:
+                principal = await self.authorization_service.resolve_principal(user.telegram_id)
+            authorized_admin = bool(
+                principal is not None
+                and principal.status == "active"
+            )
+        else:
+            # Compatibility path for pre-Phase-8 isolated callers only. The
+            # production registry always supplies authorization_service.
+            admin_set = set(admin_ids)
+            if user.telegram_id in admin_set and user.role != UserRole.ADMIN:
+                updated = await self.user_service.change_role(
+                    user.telegram_id, UserRole.ADMIN.value
+                )
+                if updated is not None:
+                    user = updated
+                authorized_admin = True
+            else:
+                authorized_admin = user.role == UserRole.ADMIN
 
         if user.status in {UserStatus.BANNED, UserStatus.SUSPENDED}:
             key = "auth.banned" if user.status == UserStatus.BANNED else "auth.suspended"
@@ -97,7 +115,9 @@ class CustomerEntryService(BaseService):
                 start_parameter=safe_param,
             )
 
-        route = self._role_route(user.role)
+        route = EntryRoute.ADMIN if authorized_admin else self._role_route(
+            UserRole.CUSTOMER if user.role == UserRole.ADMIN else user.role
+        )
         await bus.emit(
             EventType.USER_STARTED_BOT,
             telegram_id=user.telegram_id,

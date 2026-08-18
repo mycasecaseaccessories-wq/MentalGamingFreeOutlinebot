@@ -76,6 +76,11 @@ class RequestContext:
     language:       Optional[str]  = field(default=None)
     current_user:   Any = field(default=None, repr=False)
     current_role:   Optional[str] = field(default=None)
+    application_user_id: Optional[int] = field(default=None)
+    admin_principal_id: Optional[int] = field(default=None)
+    chat_id: Optional[int] = field(default=None)
+    update_id: Optional[int] = field(default=None)
+    callback_query_id: Optional[str] = field(default=None)
     current_settings: Any = field(default=None, repr=False)
     timestamp:       datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -95,8 +100,14 @@ class RequestContext:
             "correlation_id": self.correlation_id,
             "user_id":        self.user_id,
             "language":       self.language,
-            "role":           self.current_role,
-            "timestamp":      self.timestamp.isoformat(),
+                        "role":           self.current_role,
+            "application_user_id": self.application_user_id,
+            "admin_principal_id": self.admin_principal_id,
+            "chat_id":         self.chat_id,
+            "update_id":       self.update_id,
+            "callback_query_id": self.callback_query_id,
+            "timestamp":       self.timestamp.isoformat(),
+
         }
 
     def __repr__(self) -> str:

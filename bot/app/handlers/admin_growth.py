@@ -4,7 +4,7 @@ from __future__ import annotations
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, ContextTypes
 
-from app.handlers.base import admin_required
+from app.handlers.base import permission_required
 from app.middlewares.auth import PLATFORM_USER_KEY
 from app.services.growth_reward_service import GrowthRewardService
 from app.services.growth_reconciliation_service import GrowthReconciliationService
@@ -51,7 +51,7 @@ async def _render_menu(message, language: str) -> None:
     await message.reply_text(t("admin.growth.menu", language=language), reply_markup=_keyboard(language))
 
 
-@admin_required
+@permission_required("manage_rewards")
 async def admin_growth_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     message = update.effective_message

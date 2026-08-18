@@ -63,6 +63,19 @@ def log_handler(handler: Callable) -> Callable:
 # Role-based access decorators
 # ---------------------------------------------------------------------------
 
+def permission_required(permission: str, *, critical: bool = False) -> Callable:
+    """Authorize the Telegram sender for one centralized permission key."""
+    def decorator(handler: Callable) -> Callable:
+        @functools.wraps(handler)
+        async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+            from app.middlewares.role import check_admin
+            if not await check_admin(update, context, permission, critical=critical):
+                return
+            await handler(update, context)
+        return wrapper
+    return decorator
+
+
 def admin_required(handler: Callable) -> Callable:
     """
     Decorator that restricts a handler to Admin users only.

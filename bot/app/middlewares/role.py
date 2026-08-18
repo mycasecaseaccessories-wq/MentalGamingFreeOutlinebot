@@ -72,6 +72,9 @@ async def check_role(
 async def check_admin(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
+    permission: str | None = None,
+    *,
+    critical: bool = False,
 ) -> bool:
     """
     Return True if the resolved user is an Admin.
@@ -84,17 +87,32 @@ async def check_admin(
             await update.effective_message.reply_text("⛔ Authentication required.")
         return False
 
-    if user.role != UserRole.ADMIN:
-        from locales.translator import t
-        lang = user.language.value if user.language else "en"
-        await update.effective_message.reply_text(t("error.admin_only", language=lang))
-        logger.info(
-            "check_admin: access denied — user_id=%s role=%s",
-            user.telegram_id, user.role.value,
-        )
+    registry = context.bot_data.get("registry")
+    if registry is None:
+        logger.warning("check_admin: authorization registry unavailable — denying")
+        if update.effective_message:
+            await update.effective_message.reply_text("⛔ Action not permitted.")
         return False
-
-    return True
+    from app.services.admin_authorization_service import AdminAuthorizationService
+    service = registry.get_or_none(AdminAuthorizationService)
+    if service is None:
+        logger.warning("check_admin: authorization service unavailable — denying")
+        if update.effective_message:
+            await update.effective_message.reply_text("⛔ Action not permitted.")
+        return False
+    result = await service.authorize(
+        user.telegram_id,
+        permission,
+        chat_type=getattr(getattr(update, "effective_chat", None), "type", None),
+        critical=critical,
+    )
+    if result.is_success:
+        context.user_data["admin_principal"] = result.unwrap()
+        return True
+    if update.effective_message:
+        await update.effective_message.reply_text("⛔ Action not permitted.")
+    logger.info("check_admin: centralized authorization denied — telegram_id=%s", user.telegram_id)
+    return False
 
 
 def get_resolved_user(context: ContextTypes.DEFAULT_TYPE) -> Optional[object]:

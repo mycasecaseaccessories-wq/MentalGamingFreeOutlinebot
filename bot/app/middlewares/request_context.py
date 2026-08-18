@@ -55,7 +55,14 @@ async def request_context_middleware_handler(
     Runs at group=-2, before all other middlewares.
     """
     # 1. Create and activate request context.
-    ctx = new_request_context()
+    ctx = new_request_context(
+        user_id=update.effective_user.id if update.effective_user else None,
+    )
+    ctx.update_id = update.update_id
+    ctx.chat_id = update.effective_chat.id if update.effective_chat else None
+    ctx.callback_query_id = (
+        update.callback_query.id if update.callback_query is not None else None
+    )
     # Capture stable request-scoped settings at the boundary. User and role
     # are filled by auth middleware after the account has been resolved.
     ctx.current_settings = context.bot_data.get("settings")

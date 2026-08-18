@@ -8,7 +8,7 @@ from datetime import datetime
 from telegram import ForceReply, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
-from app.handlers.base import admin_required
+from app.handlers.base import permission_required
 from app.keyboards.admin_server import server_detail_keyboard, server_list_keyboard, server_menu_keyboard
 from app.keyboards.admin_outline_setup import outline_setup_methods_keyboard
 from app.middlewares.auth import PLATFORM_USER_KEY
@@ -59,7 +59,7 @@ async def _menu(update, context):
         await update.effective_message.reply_text(t("admin.servers.menu", language=_lang(context)), reply_markup=server_menu_keyboard(_lang(context)))
 
 
-@admin_required
+@permission_required("manage_servers")
 async def server_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query; message = update.effective_message; actor = _actor(update); language = _lang(context)
     if query is None or message is None or actor is None: return
@@ -136,7 +136,7 @@ async def server_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await message.reply_text(t("order.invalid_callback", language=language))
 
 
-@admin_required
+@permission_required("manage_servers")
 async def server_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = update.effective_message; actor = _actor(update); state = context.user_data.get(_STATE) or {}
     if message is None or actor is None or state.get("actor") != actor: return

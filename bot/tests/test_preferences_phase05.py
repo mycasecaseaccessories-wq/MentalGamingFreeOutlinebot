@@ -470,6 +470,6 @@ async def test_migration_head_is_current(tmp_path):
         result = await session.execute(text("SELECT version_num FROM alembic_version"))
         revision = result.scalar()
     await db.close()
-    assert revision == "0039_phase72_alert_notification_cycles", (
-        f"Expected integrated HEAD 0039_phase72_alert_notification_cycles, got {revision!r}"
+    assert revision == "0040_phase81_admin_security", (
+        f"Expected integrated HEAD 0040_phase81_admin_security, got {revision!r}"
     )

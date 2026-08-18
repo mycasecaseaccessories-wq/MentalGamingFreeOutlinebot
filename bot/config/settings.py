@@ -127,6 +127,20 @@ class Settings:
     session_secret: str = field(
         default_factory=lambda: _require("SESSION_SECRET")
     )
+    admin_confirmation_ttl_seconds: int = field(
+        default_factory=lambda: _parse_int("ADMIN_CONFIRMATION_TTL_SECONDS", 180)
+    )
+    """Short-lived confirmation challenge TTL; production policy defaults to 3 minutes."""
+
+    admin_chat_policy: str = field(
+        default_factory=lambda: os.getenv("ADMIN_CHAT_POLICY", "private_only").lower()
+    )
+    """Admin context policy: private_only, approved_chats, or any_chat_with_permission."""
+
+    admin_approved_chat_ids: List[int] = field(
+        default_factory=lambda: _parse_int_list("ADMIN_APPROVED_CHAT_IDS")
+    )
+    """Approved Telegram chat IDs used when admin_chat_policy=approved_chats."""
     """
     Secret key used for signing session tokens and HMAC-protected payloads.
     Must be a long random string; never commit the actual value.

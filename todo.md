@@ -476,3 +476,8 @@
 ## Attached Phase 7.6 Specification Reconciliation
 - [x] Reconcile the attached cleanup specification with the actual post-push repository state; rerun only required verification and do not reopen completed implementation work.
 - [x] Reconcile changed-file formatter findings and validate Alembic against a disposable up-to-date database; do not reformat unrelated legacy files or alter readiness behavior.
+
+## Phase 8.1 Authentication & Admin Security
+- [x] Inventory existing admin identity, authorization, role, permission, callback, session, audit, and privileged mutation paths before implementation.
+- [x] Implement only Phase 8.1 centralized admin security; preserve Phase 7 readiness and do not begin later Phase 8 work.
+- [x] Add focused security tests, migration validation, and full regression evidence for Phase 8.1: 5 focused tests, 492 full-regression tests, and migration head 0040.

@@ -4,7 +4,7 @@ from __future__ import annotations
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, ContextTypes
 
-from app.handlers.base import admin_required
+from app.handlers.base import permission_required
 from app.middlewares.auth import PLATFORM_USER_KEY
 from app.services.maintenance_service import MaintenanceScope, MaintenanceService, MaintenanceState
 from locales.translator import t
@@ -37,7 +37,7 @@ def _state_text(windows: list[dict], language: str) -> str:
     return "\n".join(t("admin.maintenance.window", language=language, scope=row["scope"], state=row["state"].upper(), status=row["status"]) for row in windows)
 
 
-@admin_required
+@permission_required("manage_maintenance")
 async def admin_maintenance_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     message = update.effective_message

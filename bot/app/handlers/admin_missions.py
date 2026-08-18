@@ -6,7 +6,7 @@ import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, ContextTypes
 
-from app.handlers.base import admin_required
+from app.handlers.base import permission_required
 from app.middlewares.auth import PLATFORM_USER_KEY
 from app.services.mission_service import MissionService
 from database.models.mission import MissionORM
@@ -34,7 +34,7 @@ def _menu(language: str, missions: list[dict]):
     return InlineKeyboardMarkup(buttons)
 
 
-@admin_required
+@permission_required("manage_missions")
 async def admin_missions_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     service = _service(context)

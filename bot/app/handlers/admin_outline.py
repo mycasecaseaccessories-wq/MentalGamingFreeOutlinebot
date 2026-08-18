@@ -5,7 +5,7 @@ from __future__ import annotations
 from telegram import ForceReply, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
-from app.handlers.base import admin_required
+from app.handlers.base import permission_required
 from app.keyboards.admin_outline_setup import outline_not_found_keyboard, outline_review_keyboard, outline_setup_methods_keyboard, provisioning_confirm_keyboard, ssh_auth_keyboard, ssh_test_keyboard
 from app.models.outline_setup import OutlineCredentialInput, OutlineSetupReview
 from app.models.ssh_discovery import OutlineSSHDiscoveryResult
@@ -59,7 +59,7 @@ async def _start_metadata(message, context, flow_id: str, review: OutlineSetupRe
     await message.reply_text(t("admin.outline.metadata_name", language=language), reply_markup=ForceReply(selective=True))
 
 
-@admin_required
+@permission_required("manage_servers")
 async def outline_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query; message = update.effective_message; actor = _actor(update); language = _language(context); service = _service(context); ssh_service = _ssh_service(context)
     if query is None or message is None or actor is None: return
@@ -139,7 +139,7 @@ async def outline_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         else: await message.reply_text(t("admin.outline.error", language=language))
 
 
-@admin_required
+@permission_required("manage_servers")
 async def outline_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = update.effective_message; actor = _actor(update); state = context.user_data.get(_STATE) or {}; language = _language(context); service = _service(context); ssh_service = _ssh_service(context)
     if message is None or actor is None or state.get("actor") != actor: return
@@ -196,7 +196,7 @@ async def outline_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await message.reply_text(_review_text(review, language, ssh=state.get("ssh_discovery")), reply_markup=outline_review_keyboard(language, flow_id)); return
 
 
-@admin_required
+@permission_required("manage_servers")
 async def outline_cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     state = context.user_data.pop(_STATE, None)
     if state and update.effective_user:

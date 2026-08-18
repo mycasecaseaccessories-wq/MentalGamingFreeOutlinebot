@@ -4,7 +4,7 @@ from __future__ import annotations
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, ContextTypes
 
-from app.handlers.base import admin_required
+from app.handlers.base import permission_required
 from app.services.background_job_service import BackgroundJobService
 from locales.translator import t
 
@@ -41,7 +41,7 @@ def _summary(rows: list[dict], language: str) -> str:
     return "\n".join(lines)
 
 
-@admin_required
+@permission_required("manage_jobs")
 async def admin_jobs_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     message = update.effective_message

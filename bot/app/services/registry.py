@@ -162,6 +162,7 @@ class ServiceRegistry:
           HealthService   → depends on db (injected post-init via set_db)
         """
         from app.services.settings_service import SettingsService
+        from app.services.admin_authorization_service import AdminAuthorizationService
         from app.services.language_service import LanguageService
         from app.services.user_service import UserService
         from app.services.preference_service import PreferenceService
@@ -227,6 +228,7 @@ class ServiceRegistry:
         services_to_create = [
             MaintenanceService,
             SettingsService,
+            AdminAuthorizationService,
             LanguageService,
             UserService,
             PreferenceService,
@@ -515,6 +517,7 @@ class ServiceRegistry:
                 db=self._db,
                 user_service=self.get(UserService),
                 preference_service=self.get(PreferenceService),
+                authorization_service=self.get(AdminAuthorizationService),
             )
             self.register(CustomerEntryService, entry_service)
             logger.info("  ✓ CustomerEntryService initialised")

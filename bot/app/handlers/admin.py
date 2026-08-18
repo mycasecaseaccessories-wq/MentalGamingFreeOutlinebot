@@ -9,7 +9,7 @@ from datetime import datetime
 from telegram import ForceReply, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
-from app.handlers.base import admin_required, log_handler
+from app.handlers.base import admin_required, log_handler, permission_required
 from app.middlewares.auth import PLATFORM_USER_KEY
 from app.keyboards.admin_payment_review import (
     admin_approval_confirmation_keyboard,
@@ -83,7 +83,7 @@ async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     await _show_payment_menu(update, context)
 
 
-@admin_required
+@permission_required("manage_payments")
 async def admin_payments_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     message = update.effective_message
@@ -262,6 +262,8 @@ def register(application: Application) -> None:
     register_admin_jobs(application)
     from app.handlers.admin_backup import register as register_admin_backup
     register_admin_backup(application)
+    from app.handlers.admin_security import register as register_admin_security
+    register_admin_security(application)
     application.add_handler(CommandHandler("cancel", admin_review_cancel), group=7)
     application.add_handler(MessageHandler(filters.REPLY & filters.TEXT & ~filters.COMMAND, admin_review_text), group=7)
     application.add_handler(
