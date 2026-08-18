@@ -389,5 +389,5 @@
 
 ## Phase 7.3 Delivery and Phase 7.4 Discussion
 
-- [ ] Commit and push the validated Phase 7.3 durable background-job implementation, migration, tests, localization, Admin Jobs dashboard, and documentation to origin/main.
+- [x] Commit and push the validated Phase 7.3 durable background-job implementation, migration, tests, localization, Admin Jobs dashboard, and documentation to origin/main.
 - [ ] Prepare a detailed Phase 7.4 Backup & Disaster Recovery design discussion without implementing Phase 7.4 before agreement.
