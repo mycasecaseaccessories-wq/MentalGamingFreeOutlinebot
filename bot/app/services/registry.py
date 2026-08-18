@@ -53,7 +53,7 @@ class ServiceRegistry:
     on first get() call, or eagerly via initialise_all().
     """
 
-    def __init__(self, db) -> None:
+    def __init__(self, db: Any) -> None:
         """
         Args:
             db: Initialised DatabaseManager passed to all services.
@@ -94,7 +94,7 @@ class ServiceRegistry:
                 f"Service {service_class.__name__!r} is not registered. "
                 f"Call initialise_all() or register() first."
             )
-        return instance  # type: ignore[return-value]
+        return instance
 
     def get_or_none(self, service_class: Type[T]) -> T | None:
         """
@@ -103,7 +103,7 @@ class ServiceRegistry:
         Use this when a service is optional (e.g. only registered in
         production, not in test environments).
         """
-        return self._instances.get(service_class)  # type: ignore[return-value]
+        return self._instances.get(service_class)
 
     def is_registered(self, service_class: type) -> bool:
         """Return True when *service_class* has a registered instance."""
@@ -218,6 +218,8 @@ class ServiceRegistry:
         from app.services.background_job_service import BackgroundJobService
         from app.services.backup_service import BackupService
         from app.services.maintenance_service import MaintenanceService
+        from app.services.operational_alert_service import OperationalAlertService
+        from app.services.production_operations_service import ProductionOperationsService
 
         services_to_create = [
             MaintenanceService,
@@ -562,6 +564,13 @@ class ServiceRegistry:
             health.set_registry(self)
             self.register(HealthService, health)
             logger.info("  ✓ HealthService initialised")
+        if not self.is_registered(OperationalAlertService):
+            self.register(OperationalAlertService, OperationalAlertService(db=self._db, maintenance_service=self.get(MaintenanceService)))
+            logger.info("  ✓ OperationalAlertService initialised")
+        if not self.is_registered(ProductionOperationsService):
+            from app.lifecycle import lifecycle
+            self.register(ProductionOperationsService, ProductionOperationsService(health_service=self.get(HealthService), job_service=self.get(BackgroundJobService), scheduler=None, backup_service=self.get(BackupService), maintenance_service=self.get(MaintenanceService), alert_service=self.get(OperationalAlertService), settings=self.get(SettingsService), lifecycle_manager=lifecycle))
+            logger.info("  ✓ ProductionOperationsService initialised")
 
         logger.info(
             "ServiceRegistry: %d services ready", len(self._instances)
@@ -575,10 +584,18 @@ class ServiceRegistry:
             bot: telegram.Bot instance (available after application.initialize()).
         """
         from app.services.health_service import HealthService
+        from app.services.notification_service import NotificationService
+        from app.services.operational_alert_service import OperationalAlertService
+        from app.services.settings_service import SettingsService
         health = self.get_or_none(HealthService)
         if health is not None:
             health._bot = bot
             logger.debug("ServiceRegistry: bot injected into HealthService")
+        if not self.is_registered(NotificationService):
+            self.register(NotificationService, NotificationService(bot, settings=self.get_or_none(SettingsService), db=self._db))
+        alert_service = self.get_or_none(OperationalAlertService)
+        if alert_service is not None:
+            alert_service.notifications = self.get_or_none(NotificationService)
 
     def inject_scheduler(self, scheduler) -> None:
         """
@@ -592,6 +609,11 @@ class ServiceRegistry:
         if health is not None:
             health._scheduler = scheduler
             logger.debug("ServiceRegistry: scheduler injected into HealthService")
+        from app.services.production_operations_service import ProductionOperationsService
+        operations = self.get_or_none(ProductionOperationsService)
+        if operations is not None:
+            operations.scheduler = scheduler
+            logger.debug("ServiceRegistry: scheduler injected into ProductionOperationsService")
 
     def list_registered(self) -> list[str]:
         """Return the names of all registered service classes."""

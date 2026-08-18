@@ -19,7 +19,7 @@ class Scheduler:
   self.job_service=None
   self.dispatcher=None
 
- def register_jobs(self,*,sync_service=None,reservation_service=None,lifecycle_service=None,job_service=None,health_service=None,order_service=None,free_trial_upgrade_service=None,backup_service=None,maintenance_service=None,lifecycle_interval_seconds=120,lifecycle_batch_size=100):
+ def register_jobs(self,*,sync_service=None,reservation_service=None,lifecycle_service=None,job_service=None,health_service=None,alert_service=None,order_service=None,free_trial_upgrade_service=None,backup_service=None,maintenance_service=None,lifecycle_interval_seconds=120,lifecycle_batch_size=100):
   self.job_service = job_service
   if job_service is None:
    if sync_service is not None:self.add_job(sync_service.sync_all,'interval',seconds=sync_service.policy.sync_interval_seconds,jitter=30,id='outline-server-sync',replace_existing=True,max_instances=1,coalesce=True)
@@ -49,7 +49,14 @@ class Scheduler:
    self.dispatcher.register_handler(BackgroundJobORM.JOB_FREE_TRIAL_EXPIRATION, lambda _payload: free_trial_upgrade_service.recover_pending_fulfillment(limit=50))
    self._register_periodic(BackgroundJobORM.JOB_FREE_TRIAL_EXPIRATION, 120)
   if health_service is not None:
-   self.dispatcher.register_handler(BackgroundJobORM.JOB_HEALTH_CHECK, lambda _payload: health_service.check_system())
+   async def _health_check_and_evaluate(_payload):
+    snapshot = await health_service.check_system()
+    if alert_service is not None:
+     for result in snapshot.components:
+      if result.component == "outline_apis":
+       await alert_service.evaluate_health_result(result)
+    return snapshot
+   self.dispatcher.register_handler(BackgroundJobORM.JOB_HEALTH_CHECK, _health_check_and_evaluate)
    self._register_periodic(BackgroundJobORM.JOB_HEALTH_CHECK, 300)
   if backup_service is not None:
    self.dispatcher.register_handler(BackgroundJobORM.JOB_BACKUP_CREATION, lambda _payload: backup_service.create_backup(backup_type='automatic', retention_class='daily'))

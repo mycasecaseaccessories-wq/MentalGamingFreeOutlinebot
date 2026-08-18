@@ -89,6 +89,7 @@ class MaintenanceService(BaseService):
     @staticmethod
     def _incident_public(row: OperationalIncidentORM) -> dict:
         return {
+            "id": row.id,
             "public_id": row.public_id,
             "title": row.title,
             "incident_type": row.incident_type,
@@ -247,6 +248,21 @@ class MaintenanceService(BaseService):
         await bus.emit(EventType.INCIDENT_CREATED, public_id=result["public_id"], severity=severity, incident_type=incident_type, created_by=created_by)
         return result
 
+    async def resolve_incident(self, public_id: str, *, resolved_by: int = 0, resolution_summary: str = "Provider recovered and monitoring is normal.") -> dict:
+        async with self.db.session() as session:
+            row = (await session.execute(select(OperationalIncidentORM).where(OperationalIncidentORM.public_id == public_id).with_for_update())).scalar_one_or_none()
+            if row is None:
+                return {"resolved": False, "safe_error_code": "incident_not_found"}
+            if row.status in {IncidentStatus.RESOLVED.value, IncidentStatus.CLOSED.value}:
+                return {"resolved": True, "incident": self._incident_public(row), "idempotent": True}
+            row.status = IncidentStatus.RESOLVED.value
+            row.resolved_at = self._now()
+            row.owner_admin_id = resolved_by or row.owner_admin_id
+            row.safe_summary = resolution_summary[:600]
+            result = self._incident_public(row)
+        await bus.emit(EventType.INCIDENT_RESOLVED, public_id=public_id, resolved_by=resolved_by)
+        return {"resolved": True, "incident": result, "idempotent": False}
+
     async def list_incidents(self, *, active_only: bool = True, limit: int = 50) -> list[dict]:
         async with self.db.session() as session:
             query = select(OperationalIncidentORM).order_by(OperationalIncidentORM.started_at.desc()).limit(min(max(limit, 1), 100))
@@ -266,9 +282,11 @@ class MaintenanceService(BaseService):
             suppressed = False
         return {"suppressed": suppressed, "alert_key": alert_key, "scope": getattr(scope, "value", scope), "window": window, "reason": "planned_maintenance" if suppressed else None}
 
-    async def recovery_check(self, scope: str | MaintenanceScope) -> dict:
+    async def recovery_check(self, scope: str | MaintenanceScope, *, provider_healthy: bool | None = None, queue_healthy: bool = True) -> dict:
         effective = await self.get_effective_state(scope)
-        return {"scope": getattr(scope, "value", scope), "healthy": effective["state"] in {MaintenanceState.NORMAL.value, MaintenanceState.DEGRADED.value}, "state": effective["state"], "safe_error_code": None}
+        policy_healthy = effective["state"] in {MaintenanceState.NORMAL.value, MaintenanceState.DEGRADED.value}
+        healthy = (provider_healthy if provider_healthy is not None else policy_healthy) and queue_healthy
+        return {"scope": getattr(scope, "value", scope), "healthy": healthy, "provider_healthy": provider_healthy, "queue_healthy": queue_healthy, "state": effective["state"], "safe_error_code": None if healthy else "recovery_dependencies_unhealthy"}
 
     async def process_due_windows(self, *, at: datetime | None = None) -> dict:
         """Activate due windows and safely process expected end times.

@@ -186,12 +186,17 @@ class HealthService:
         self._settings  = settings
         self._cache     = cache
         self._registry  = None
+        self._provider_probes: dict[str, object] = {}
         self._latest_snapshot: HealthSnapshot | None = None
         self._freshness_seconds = 300
 
     def set_registry(self, registry) -> None:
         """Attach ServiceRegistry after initialization for optional adapters."""
         self._registry = registry
+
+    def set_provider_probe(self, component: str, probe) -> None:
+        """Register an explicit provider health adapter for production or controlled tests."""
+        self._provider_probes[component] = probe
 
     def get_latest_snapshot(self) -> HealthSnapshot | None:
         return self._latest_snapshot
@@ -389,6 +394,16 @@ class HealthService:
 
     def check_provider_snapshot(self, component: str, *, checked_at: datetime | None = None) -> HealthCheckResult:
         checked_at = checked_at or datetime.now(timezone.utc)
+        probe = self._provider_probes.get(component)
+        if probe is not None:
+            try:
+                result = probe(checked_at) if callable(probe) else probe
+                if isinstance(result, HealthCheckResult):
+                    return result
+                status = result if isinstance(result, OperationalHealthStatus) else OperationalHealthStatus.HEALTHY if bool(result) else OperationalHealthStatus.UNHEALTHY
+                return HealthCheckResult(component, status, checked_at, message_code="provider_probe_result", critical=False, safe_details={"adapter": type(probe).__name__})
+            except Exception:
+                return HealthCheckResult(component, OperationalHealthStatus.UNHEALTHY, checked_at, message_code="provider_probe_failed", error_code="provider_unreachable", critical=False)
         return HealthCheckResult(component, OperationalHealthStatus.UNKNOWN, checked_at, message_code="provider_probe_unavailable", safe_details={"supported": False}, critical=False)
 
     async def _check_components(self, checked_at: datetime) -> list[HealthCheckResult]:

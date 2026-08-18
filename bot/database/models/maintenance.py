@@ -129,6 +129,44 @@ class CustomerImpact(StrEnum):
     MAJOR_OUTAGE = "major_outage"
 
 
+class AlertStatus(StrEnum):
+    OPEN = "open"
+    ACKNOWLEDGED = "acknowledged"
+    SNOOZED = "snoozed"
+    RESOLVED = "resolved"
+
+
+class AlertSeverity(StrEnum):
+    WARNING = "warning"
+    ERROR = "error"
+    CRITICAL = "critical"
+
+
+class OperationalAlertORM(BaseModel):
+    __tablename__ = "operational_alerts"
+    __table_args__ = (
+        Index("ix_operational_alerts_status_type", "status", "alert_type"),
+        Index("ix_operational_alerts_component_status", "component", "status"),
+    )
+
+    public_id: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    fingerprint: Mapped[str] = mapped_column(String(160), unique=True, nullable=False)
+    alert_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    component: Mapped[str] = mapped_column(String(80), nullable=False)
+    severity: Mapped[str] = mapped_column(String(16), nullable=False, default=AlertSeverity.WARNING.value)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default=AlertStatus.OPEN.value)
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    safe_summary: Mapped[str] = mapped_column(String(600), nullable=False, default="")
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    occurrence_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    incident_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    recovery_metadata_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notification_state: Mapped[str] = mapped_column(String(24), nullable=False, default="none")
+    notification_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
 class OperationalIncidentORM(BaseModel):
     __tablename__ = "operational_incidents"
     __table_args__ = (

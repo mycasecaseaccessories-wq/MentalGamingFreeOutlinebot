@@ -431,4 +431,44 @@
 - [x] Add concurrency-safe maintenance-window conflict handling, explicit transition validation, bypass permissions, operational audit records, and action rate limits.
 - [x] Add focused tests for precedence, domain enforcement, suppression behavior, audit/idempotency, rate limits, bypass authorization, recovery, and EN/MY customer outcomes.
 - [x] Run full Phase 0–7.5 regression and update documentation only after every completion-hardening item passes.
-- [ ] Commit and push Phase 7.5 only after all completion-hardening items are marked complete and the user-requested full validation succeeds.
+- [x] Commit and push Phase 7.5 only after all completion-hardening items are marked complete and the user-requested full validation succeeds.
+
+## Phase 7.6 — Production Operations Final Integration
+- [x] Inspect authoritative Phase 7.1–7.5 health, alert, job, scheduler, backup, maintenance, incident, provider, configuration, startup, shutdown, and test components before adding orchestration.
+- [x] Define one deterministic evidence gate with exactly one verdict: READY, READY_WITH_WARNINGS, or NOT_READY; never infer production readiness from an unexecuted test plan.
+- [x] Implement a thin ProductionOperationsService and typed operations snapshot/readiness report that aggregates existing subsystem truth without duplicating domain logic.
+- [x] Verify the controlled flow: HealthService provider failure → alert → incident → scoped VPN maintenance → safe localized customer message → provider recovery → recovery check → maintenance exit → alert resolution → incident resolution. Live external-provider outage evidence remains deployment-specific.
+- [x] Add startup/readiness/liveness/shutdown/configuration/dependency/deployment safety checks and explicit blocking versus warning classifications.
+- [x] Add deterministic readiness-gate failure-injection tests plus HealthService-driven alert-flow evidence for missing-health, missing-alert, missing-flow, dead-letter, lifecycle failure, provider recovery, deduplication, and notification retry states.
+- [x] Run the full Phase 0–7.6 test gate: 486 passed, 32 known datetime warnings; report only the evidence-backed verdict: NOT_READY pending live external-provider evidence.
+- [x] Document the evidence package, known warnings, and Phase 7.6 verdict; do not claim production readiness without passing evidence.
+
+## Phase 7.2 Completion + Phase 7.6 Readiness Blocker Fix
+- [x] Inspect the existing alert, notification-provider, incident, health-transition, readiness, and provider failure-injection architecture before adding implementations.
+- [x] Implement the concrete operational alert evaluator with typed provider/VPN failure rules, deterministic fingerprints, persisted OPEN state, deduplication, and idempotent recovery resolution.
+- [x] Link one operational incident to the authoritative alert and implement incident deduplication and service-driven resolution.
+- [x] Replace notification placeholders with real configured-provider operational delivery, localized safe admin routing, transient retry handling, durable notification-cycle idempotency, and delivery evidence without creating a second Telegram client.
+- [x] Execute the controlled provider-failure → HealthService detection → alert → incident → scoped maintenance → EN/MY customer-safe notice → recovery → recovery-check → maintenance-exit → alert-resolve → incident-resolve integration path.
+- [x] Re-run the complete regression and readiness gate without changing required evidence keys or weakening the NOT_READY blocker: 487 passed; live external-provider execution remains the only deployment-specific blocker.
+
+## Phase 7.2/7.6 Correction Specification Audit
+- [x] Audit every correction requirement against the current alert evaluator, persisted alert state, deduplication, incident linkage, notification delivery, customer UX, maintenance transitions, recovery checks, readiness evidence, scheduler bridge, and tests.
+- [x] Verify no evidence key is manually asserted, no readiness blocker is removed, no duplicate health/alert/notification engine exists, and no production readiness claim is made without executed evidence.
+- [x] Close the authoritative evidence/test gap by adding the controlled ten-key readiness verdict test, then rerun focused and full validation: 487 passed, 32 known warnings.
+- [x] Deliver the final evidence-backed verdict: controlled flow passes, overall repository verdict remains NOT_READY only because live external-provider outage/recovery evidence is deployment-specific and was not run in the sandbox.
+
+## Phase 7.6 Final Readiness Verification — Verification-only gate
+- [x] Execute and record the authoritative ten-key evidence result without manually setting or weakening any evidence key.
+- [x] Verify alerts availability, blocking reasons, warning reasons, health, scheduler, lifecycle, emergency state, provider recovery, maintenance end, and incident resolution.
+- [x] Run and record full regression, compile, lint, type-check, migration validation, and git diff checks.
+- [ ] Verify clean Git status, commit hash, pushed remote commit, and local synchronization with origin/main.
+- [ ] Return exactly one final verdict and do not advance to Phase 8.
+
+## Phase 7.6 Final Cleanup & Delivery
+- [x] Establish HEAD/origin-main baseline versus current Ruff, format, and mypy counts, including findings in changed Phase 7.2/7.6 files.
+- [x] Fix only newly introduced Phase 7.2/7.6 lint, format, and type regressions; do not mass-reformat or refactor unrelated legacy files.
+- [x] Validate the real repository migration mechanism and document whether standalone Alembic commands are applicable: use `alembic -c bot/alembic.ini`; head is `0039_phase72_alert_notification_cycles`.
+- [x] Re-run focused/full functional tests and changed-file quality checks; preserve all evidence keys and the readiness gate.
+- [x] Review diff for secrets, credentials, generated artifacts, local databases, temporary files, and unrelated changes.
+- [ ] Commit intended Phase 7.2/7.6 changes, push to origin/main, and verify clean status plus HEAD == origin/main.
+- [ ] Report baseline counts, deltas, validation results, commit/push evidence, remaining blockers/debt, and exactly one final verdict.

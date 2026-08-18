@@ -42,6 +42,8 @@ from .growth_reconciliation_service import GrowthReconciliationService
 from .background_job_service import BackgroundJobService
 from .backup_service import BackupService
 from .maintenance_service import MaintenanceService, MaintenanceBlockedError
+from .operational_alert_service import OperationalAlertService
+from .production_operations_service import ProductionOperationsService, ProductionReadinessReport, ProductionOperationsSnapshot, ReadinessVerdict, OperationsStatus
 from .notification_service import NotificationService
 from .customer_entry_service import CustomerEntryService
 from .order_service import OrderService
@@ -71,6 +73,12 @@ __all__ = [
     "BackupService",
     "MaintenanceService",
     "MaintenanceBlockedError",
+    "OperationalAlertService",
+    "ProductionOperationsService",
+    "ProductionReadinessReport",
+    "ProductionOperationsSnapshot",
+    "ReadinessVerdict",
+    "OperationsStatus",
     "NotificationService",
     "CustomerEntryService",
     "OrderService",
