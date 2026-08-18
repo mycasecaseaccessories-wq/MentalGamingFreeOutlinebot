@@ -405,6 +405,6 @@
 - [x] Integrate Admin Backup & Disaster Recovery dashboard, manual backup/verify/restore-test/retention controls, lifecycle events, EN/MY localization, redaction, and safe operational states.
 - [ ] Add production alert delivery, persistent audit expansion, and action rate limits after the existing provider contracts are selected.
 - [x] Add focused backup/restore/reconciliation tests, run full Phase 0–7.4 regression, and write the DR runbook/RPO/RTO documentation.
-- [ ] Push the validated Phase 7.4 implementation to GitHub after user confirmation.
+- [x] Push the validated Phase 7.4 implementation to GitHub after user confirmation.
 - [x] Update legacy migration-head regression assertions from Phase 7.3 revision 0034 to Phase 7.4 backup-record revision 0035.
-- [ ] Commit and push the validated Phase 7.4 Backup & Disaster Recovery implementation, migration, tests, localization, and documentation to origin/main and verify the remote commit.
+- [x] Commit and push the validated Phase 7.4 Backup & Disaster Recovery implementation, migration, tests, localization, and documentation to origin/main and verify the remote commit.
