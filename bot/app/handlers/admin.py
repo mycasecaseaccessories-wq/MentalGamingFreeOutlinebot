@@ -260,6 +260,8 @@ def register(application: Application) -> None:
     register_admin_health(application)
     from app.handlers.admin_jobs import register as register_admin_jobs
     register_admin_jobs(application)
+    from app.handlers.admin_backup import register as register_admin_backup
+    register_admin_backup(application)
     application.add_handler(CommandHandler("cancel", admin_review_cancel), group=7)
     application.add_handler(MessageHandler(filters.REPLY & filters.TEXT & ~filters.COMMAND, admin_review_text), group=7)
     application.add_handler(

@@ -216,6 +216,7 @@ class ServiceRegistry:
         from app.services.growth_reward_service import GrowthRewardService
         from app.services.growth_reconciliation_service import GrowthReconciliationService
         from app.services.background_job_service import BackgroundJobService
+        from app.services.backup_service import BackupService
 
         services_to_create = [
             SettingsService,
@@ -543,6 +544,10 @@ class ServiceRegistry:
         if not self.is_registered(BackgroundJobService):
             self.register(BackgroundJobService, BackgroundJobService(db=self._db))
             logger.info("  ✓ BackgroundJobService initialised")
+
+        if not self.is_registered(BackupService):
+            self.register(BackupService, BackupService(db=self._db))
+            logger.info("  ✓ BackupService initialised")
 
         if not self.is_registered(HealthService):
             from app.cache import cache as default_cache

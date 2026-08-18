@@ -384,10 +384,27 @@
 - [x] Add Admin job operations visibility and safe stale-lease recovery controls with EN/MY localization, EventBus lifecycle observability, redaction, and no customer credential exposure.
 - [ ] Add production-grade Admin job action rate limiting and expanded audit persistence.
 - [x] Add focused crash/concurrency/idempotency/retry tests, run full Phase 0–7.3 regression, and document the Phase 7.4 handoff.
-- [ ] Push the validated Phase 7.3 implementation to GitHub after user confirmation.
+- [x] Push the validated Phase 7.3 implementation to GitHub after user confirmation.
 - [x] Update legacy migration-head regression assertions from Phase 6.6 revision 0033 to Phase 7.3 durable-jobs revision 0034.
 
 ## Phase 7.3 Delivery and Phase 7.4 Discussion
 
 - [x] Commit and push the validated Phase 7.3 durable background-job implementation, migration, tests, localization, Admin Jobs dashboard, and documentation to origin/main.
-- [ ] Prepare a detailed Phase 7.4 Backup & Disaster Recovery design discussion without implementing Phase 7.4 before agreement.
+- [x] Prepare a detailed Phase 7.4 Backup & Disaster Recovery design discussion without implementing Phase 7.4 before agreement.
+
+## Phase 7.4 — Backup & Disaster Recovery
+
+- [x] Inspect actual database engine/ORM/migrations, storage providers, secrets, encryption, scheduler/jobs, health/alerts, audit, permissions, deployment, and existing backup/restore contracts.
+- [x] Define typed BackupRecord/status/type contracts, database-aware strategy, provider abstraction, encryption boundary, metadata manifest, retention classes, and RPO/RTO policy.
+- [x] Implement database-native backup creation, local provider abstraction, checksum/integrity verification, retention cleanup, and durable Phase 7.3 job integration.
+- [ ] Add and validate a configured off-site object-storage provider for production deployment.
+- [x] Implement isolated SQLite restore-test workflow, controlled production restore preparation, restore verification, second-admin/maintenance safety flags, and pre-restore protection boundary.
+- [ ] Implement provider-specific production restore execution and pre-restore snapshot/maintenance lock integration.
+- [x] Implement report-only post-restore reconciliation foundation for Outline VPN keys/lifecycle, payment-provider transactions/orders/wallet ledger, rewards, entitlements, and background-job state without blind destructive repair.
+- [ ] Implement provider-specific comparison adapters and Admin-approved repair workflows for external-state mismatches.
+- [x] Integrate Admin Backup & Disaster Recovery dashboard, manual backup/verify/restore-test/retention controls, lifecycle events, EN/MY localization, redaction, and safe operational states.
+- [ ] Add production alert delivery, persistent audit expansion, and action rate limits after the existing provider contracts are selected.
+- [x] Add focused backup/restore/reconciliation tests, run full Phase 0–7.4 regression, and write the DR runbook/RPO/RTO documentation.
+- [ ] Push the validated Phase 7.4 implementation to GitHub after user confirmation.
+- [x] Update legacy migration-head regression assertions from Phase 7.3 revision 0034 to Phase 7.4 backup-record revision 0035.
+- [ ] Commit and push the validated Phase 7.4 Backup & Disaster Recovery implementation, migration, tests, localization, and documentation to origin/main and verify the remote commit.

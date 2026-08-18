@@ -48,6 +48,9 @@ class BackgroundJobORM(BaseModel):
     JOB_HEALTH_CHECK = "health_check"
     JOB_ALERT_EVALUATION = "alert_evaluation"
     JOB_ALERT_REMINDER = "alert_reminder"
+    JOB_BACKUP_CREATION = "backup_creation"
+    JOB_BACKUP_RETENTION = "backup_retention"
+    JOB_BACKUP_RESTORE_TEST = "backup_restore_test"
 
     public_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     job_type: Mapped[str] = mapped_column(String(64), index=True)
