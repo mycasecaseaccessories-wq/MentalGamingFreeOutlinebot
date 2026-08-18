@@ -650,4 +650,11 @@ TRANSLATIONS.update({
     "admin.health.failures_detail": "Operational Failures\nFailed Jobs: {failed}\nStale Operations: {stale}",
     "admin.health.providers_detail": "Provider Health\n{details}",
     "admin.health.component_unknown": "Component health is unavailable.",
+    "admin.jobs.menu": "⚙️ Background Jobs",
+    "admin.jobs.title": "⚙️ Background Jobs",
+    "admin.jobs.refresh": "🔄 Refresh",
+    "admin.jobs.recover": "🛠 Recover Stale Leases",
+    "admin.jobs.total": "Visible jobs: {count}",
+    "admin.jobs.status": "{status}: {count}",
+    "admin.jobs.recovered": "Lease recovery completed. Requeued: {recovered}; Dead-lettered: {dead_lettered}.",
 })

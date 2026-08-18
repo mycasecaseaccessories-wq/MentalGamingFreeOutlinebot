@@ -132,7 +132,7 @@ async def main() -> None:
     logger.info("[9/15] Initialising scheduler…")
     from app.scheduler import Scheduler
     scheduler = Scheduler()
-    scheduler.register_jobs(sync_service=registry.get_or_none(__import__("app.services.outline_server_sync_service", fromlist=["OutlineServerSyncService"]).OutlineServerSyncService), reservation_service=registry.get_or_none(__import__("app.services.server_reservation_service", fromlist=["ServerReservationService"]).ServerReservationService), lifecycle_service=registry.get_or_none(__import__("app.services.vpn_lifecycle_service", fromlist=["VPNLifecycleService"]).VPNLifecycleService))
+    scheduler.register_jobs(sync_service=registry.get_or_none(__import__("app.services.outline_server_sync_service", fromlist=["OutlineServerSyncService"]).OutlineServerSyncService), reservation_service=registry.get_or_none(__import__("app.services.server_reservation_service", fromlist=["ServerReservationService"]).ServerReservationService), lifecycle_service=registry.get_or_none(__import__("app.services.vpn_lifecycle_service", fromlist=["VPNLifecycleService"]).VPNLifecycleService), job_service=registry.get_or_none(__import__("app.services.background_job_service", fromlist=["BackgroundJobService"]).BackgroundJobService), health_service=registry.get_or_none(__import__("app.services.health_service", fromlist=["HealthService"]).HealthService), order_service=registry.get_or_none(__import__("app.services.order_service", fromlist=["OrderService"]).OrderService), free_trial_upgrade_service=registry.get_or_none(__import__("app.services.free_trial_upgrade_service", fromlist=["FreeTrialUpgradeService"]).FreeTrialUpgradeService))
     scheduler.start()
     registry.inject_scheduler(scheduler)
     logger.info("       Scheduler ready")

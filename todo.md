@@ -372,3 +372,22 @@
 - [x] Add focused Phase 7.1 tests, run full Phase 0–7.1 regression, and document the explicit 7.2 alerting boundary.
 - [x] Push the validated Phase 7.1 implementation to GitHub after user confirmation.
 - [x] Commit and push the validated Phase 7.1 System Health & Operational Dashboard implementation to origin/main and verify the remote commit.
+
+## Phase 7.3 — Background Jobs & Scheduler Hardening
+
+- [x] Inspect existing application bootstrap, scheduler, task, worker, queue, retry, recovery, Phase 7.1/7.2 operations, Phase 4/6 domain jobs, settings, permissions, audit, events, migrations, and tests.
+- [x] Define or reuse typed durable job identity/status/lease/retry/dead-letter contracts without creating a parallel task framework.
+- [x] Add durable job persistence and migration only where existing infrastructure lacks the required crash-safe state.
+- [x] Implement atomic enqueue/deduplication, lease acquisition, heartbeat/timeout, stale-lease recovery, retry backoff, dead-letter, misfire handling, and bounded concurrency for multi-instance safety.
+- [x] Register currently-supported authoritative VPN expiration, pending-order expiration, free-trial fulfillment recovery, server sync/reservation cleanup, and health snapshot jobs without moving business logic into the scheduler; defer unsupported domain operations until explicit safe service contracts exist.
+- [ ] Add explicit bounded service contracts for remaining promo expiration, mission rollover, reward retry/reconciliation, VPN recovery, alert evaluation, and growth reconciliation jobs.
+- [x] Add Admin job operations visibility and safe stale-lease recovery controls with EN/MY localization, EventBus lifecycle observability, redaction, and no customer credential exposure.
+- [ ] Add production-grade Admin job action rate limiting and expanded audit persistence.
+- [x] Add focused crash/concurrency/idempotency/retry tests, run full Phase 0–7.3 regression, and document the Phase 7.4 handoff.
+- [ ] Push the validated Phase 7.3 implementation to GitHub after user confirmation.
+- [x] Update legacy migration-head regression assertions from Phase 6.6 revision 0033 to Phase 7.3 durable-jobs revision 0034.
+
+## Phase 7.3 Delivery and Phase 7.4 Discussion
+
+- [ ] Commit and push the validated Phase 7.3 durable background-job implementation, migration, tests, localization, Admin Jobs dashboard, and documentation to origin/main.
+- [ ] Prepare a detailed Phase 7.4 Backup & Disaster Recovery design discussion without implementing Phase 7.4 before agreement.

@@ -51,6 +51,7 @@ from .free_trial_rate_limit import FreeTrialRateLimitORM
 from .referral_token import ReferralTokenORM
 from .referral_reward import ReferralRewardORM, ReferralRiskEventORM
 from .referral_risk_observation import ReferralRiskObservationORM
+from .background_job import BackgroundJobORM, BackgroundJobStatus
 from .mission import MissionORM, UserMissionProgressORM, MissionProgressEventORM
 from .promo import PromoCodeORM, PromoRedemptionORM
 
@@ -83,6 +84,8 @@ __all__ = [
     "ReferralRewardORM",
     "ReferralRiskEventORM",
     "ReferralRiskObservationORM",
+    "BackgroundJobORM",
+    "BackgroundJobStatus",
     "MissionORM",
     "UserMissionProgressORM",
     "MissionProgressEventORM",

@@ -652,4 +652,11 @@ TRANSLATIONS.update({
     "admin.health.failures_detail": "လုပ်ဆောင်မှု မအောင်မြင်မှု\nမအောင်မြင်သော Job: {failed}\nStale Operation: {stale}",
     "admin.health.providers_detail": "Provider Health\n{details}",
     "admin.health.component_unknown": "Component health ကို ယခုမရရှိနိုင်သေးပါ။",
+    "admin.jobs.menu": "⚙️ နောက်ခံ Job များ",
+    "admin.jobs.title": "⚙️ နောက်ခံ Job များ",
+    "admin.jobs.refresh": "🔄 ပြန်စစ်မည်",
+    "admin.jobs.recover": "🛠 Stale Lease ပြန်လည်ပြင်မည်",
+    "admin.jobs.total": "မြင်ရသော Job: {count}",
+    "admin.jobs.status": "{status}: {count}",
+    "admin.jobs.recovered": "Lease recovery ပြီးပါပြီ။ ပြန်တန်းစီ: {recovered}; Dead-letter: {dead_lettered}။",
 })

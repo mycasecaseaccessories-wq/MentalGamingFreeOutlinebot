@@ -215,6 +215,7 @@ class ServiceRegistry:
         from app.services.referral_risk_service import ReferralRiskService
         from app.services.growth_reward_service import GrowthRewardService
         from app.services.growth_reconciliation_service import GrowthReconciliationService
+        from app.services.background_job_service import BackgroundJobService
 
         services_to_create = [
             SettingsService,
@@ -539,6 +540,10 @@ class ServiceRegistry:
             logger.info("  ✓ CheckoutService initialised")
 
         # HealthService needs additional dependencies set after bot init.
+        if not self.is_registered(BackgroundJobService):
+            self.register(BackgroundJobService, BackgroundJobService(db=self._db))
+            logger.info("  ✓ BackgroundJobService initialised")
+
         if not self.is_registered(HealthService):
             from app.cache import cache as default_cache
             health = HealthService(db=self._db, cache=default_cache)
