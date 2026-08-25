@@ -97,8 +97,8 @@ async def test_migration_alembic_version_at_head(tmp_path):
         revision = result.scalar()
 
     await db.close()
-    assert revision == "0041_phase82_callback_security", (
-        f"Expected integrated HEAD 0041_phase82_callback_security, got {revision!r}"
+    assert revision == "0042_phase83_payment_wallet_security", (
+        f"Expected integrated HEAD 0042_phase83_payment_wallet_security, got {revision!r}"
     )
 
 
@@ -211,8 +211,8 @@ async def test_migration_phase02_database_gets_category_column(tmp_path):
         "category column not added to Phase 0.2 database by migration 0002"
     )
     assert legacy_value == "legacy_value", "Existing data was lost during migration"
-    assert revision == "0041_phase82_callback_security", (
-        f"Expected integrated HEAD 0041_phase82_callback_security, got {revision!r}"
+    assert revision == "0042_phase83_payment_wallet_security", (
+        f"Expected integrated HEAD 0042_phase83_payment_wallet_security, got {revision!r}"
     )
 
 

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from decimal import Decimal
+from datetime import datetime  # noqa: TC003
+from decimal import Decimal  # noqa: TC003
 from typing import Any
 
-from sqlalchemy import DateTime, Integer, JSON, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import JSON, DateTime, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database.base import BaseModel
@@ -19,6 +19,11 @@ class PaymentSubmissionORM(BaseModel):
     __table_args__ = (
         UniqueConstraint("public_payment_id", name="uq_payment_submissions_public_id"),
         UniqueConstraint("idempotency_key", name="uq_payment_submissions_idempotency"),
+        UniqueConstraint(
+            "provider",
+            "provider_reference",
+            name="uq_payment_submissions_provider_reference",
+        ),
     )
 
     STATUS_DRAFT = "draft"
@@ -37,11 +42,16 @@ class PaymentSubmissionORM(BaseModel):
     amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     transaction_reference: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    provider: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    provider_reference: Mapped[str | None] = mapped_column(String(256), nullable=True, index=True)
     proof_file_id: Mapped[str | None] = mapped_column(String(256), nullable=True)
     proof_file_unique_id: Mapped[str | None] = mapped_column(String(256), nullable=True)
     proof_file_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
     status: Mapped[str] = mapped_column(
-        String(32), nullable=False, default=STATUS_PENDING_REVIEW, index=True,
+        String(32),
+        nullable=False,
+        default=STATUS_PENDING_REVIEW,
+        index=True,
     )
     submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -51,5 +61,7 @@ class PaymentSubmissionORM(BaseModel):
     rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     metadata_json: Mapped[dict[str, Any] | None] = mapped_column(
-        "metadata", JSON, nullable=True,
+        "metadata",
+        JSON,
+        nullable=True,
     )

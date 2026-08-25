@@ -19,6 +19,7 @@ from database.models.transaction import TransactionORM
 from database.models.wallet import WalletORM
 from database.models.user import UserORM
 from app.services.maintenance_service import MaintenanceService, MaintenanceBlockedError
+from app.services.wallet_accounting_service import WalletAccountingService
 
 
 class ReferralRewardService:
@@ -161,7 +162,7 @@ class ReferralRewardService:
                 idempotency_key=key,
                 limit_result="eligible" if allowed else reason,
                 risk_result="blocked" if reason == "referral_reward_blocked" else "safe",
-            ) if existing is None else row
+            ) if existing is None else existing
             if existing is not None:
                 row.status = ReferralRewardORM.STATUS_PENDING if allowed else ReferralRewardORM.STATUS_REVIEW_REQUIRED if reason == "referral_reward_blocked" else ReferralRewardORM.STATUS_LIMIT_REACHED
                 row.limit_result = "eligible" if allowed else reason
@@ -199,18 +200,21 @@ class ReferralRewardService:
                     await session.flush()
                     row.entitlement_id = entitlement.id
                 elif reward_type == ReferralRewardORM.TYPE_WALLET_CREDIT:
-                    wallet = (await session.execute(select(WalletORM).where(WalletORM.user_id == user_id).with_for_update())).scalar_one_or_none()
-                    if wallet is None:
-                        wallet = WalletORM(user_id=user_id, currency=policy["wallet_currency"], balance=Decimal("0"), is_frozen=False)
-                        session.add(wallet)
-                        await session.flush()
-                    if wallet.currency != policy["wallet_currency"] or wallet.is_frozen:
-                        raise ValueError("wallet_unavailable")
-                    wallet.balance = Decimal(str(wallet.balance)) + value
-                    tx = TransactionORM(wallet_id=wallet.id, amount=value, currency=wallet.currency, type=TransactionORM.TYPE_BONUS, reference=row.public_reward_id, idempotency_key=key, note=f"{source_type.title()} reward")
-                    session.add(tx)
-                    await session.flush()
-                    row.wallet_transaction_id = tx.id
+                    accounting = WalletAccountingService(self.db)
+                    credited = await accounting.credit_in_session(
+                        session,
+                        user_id=user_id,
+                        amount=value,
+                        currency=policy["wallet_currency"],
+                        source_type=source_type,
+                        source_reference=row.public_reward_id,
+                        idempotency_key=key,
+                        transaction_type=TransactionORM.TYPE_BONUS,
+                        note=f"{source_type.title()} reward",
+                    )
+                    if credited.is_failure:
+                        raise ValueError(credited.error.code)
+                    row.wallet_transaction_id = credited.unwrap().transaction_id
                 row.status = ReferralRewardORM.STATUS_GRANTED
                 row.granted_at = now
                 await session.flush()

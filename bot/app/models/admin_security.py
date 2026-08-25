@@ -130,6 +130,7 @@ CRITICAL_ACTIONS = frozenset(
         "admin.role_change",
         "admin.permission_change",
         "wallet.adjust",
+        "payment_account.update",
         "maintenance.emergency_enable",
         "maintenance.force_exit",
         "backup.restore_prepare",

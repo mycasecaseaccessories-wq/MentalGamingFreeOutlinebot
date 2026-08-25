@@ -39,6 +39,7 @@ class BackgroundJobORM(BaseModel):
     JOB_PROMO_EXPIRATION = "promo_expiration"
     JOB_MISSION_ROLLOVER = "mission_rollover"
     JOB_PAYMENT_TIMEOUT = "payment_timeout"
+    JOB_PAYMENT_REFUND_RECONCILIATION = "payment_refund_reconciliation"
     JOB_ORDER_EXPIRATION = "order_expiration"
     JOB_REWARD_RETRY = "reward_retry"
     JOB_REWARD_RECONCILIATION = "reward_reconciliation"
@@ -59,19 +60,31 @@ class BackgroundJobORM(BaseModel):
     public_id: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     job_type: Mapped[str] = mapped_column(String(64), index=True)
     logical_key: Mapped[str] = mapped_column(String(255), nullable=False)
-    status: Mapped[str] = mapped_column(String(24), nullable=False, default=BackgroundJobStatus.PENDING.value, index=True)
+    status: Mapped[str] = mapped_column(
+        String(24), nullable=False, default=BackgroundJobStatus.PENDING.value, index=True
+    )
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=100)
     payload_safe: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
-    scheduled_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
-    available_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    scheduled_for: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+    available_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
     lease_owner: Mapped[str | None] = mapped_column(String(128), nullable=True)
-    lease_acquired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    last_heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    lease_acquired_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    lease_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_heartbeat_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=300)
     last_error_code: Mapped[str | None] = mapped_column(String(128), nullable=True)
     last_error_message: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -20,6 +20,7 @@ from database.repositories.user_repository import UserRepository
 from database.repositories.wallet_repository import WalletRepository
 from .base import BaseService
 from .maintenance_service import MaintenanceBlockedError, MaintenanceService
+from .wallet_accounting_service import WalletAccountingService
 
 
 class WalletPaymentService(BaseService):
@@ -95,7 +96,10 @@ class WalletPaymentService(BaseService):
             try:
                 await self.maintenance_service.assert_operation_allowed("wallet_write", "SPEND")
             except MaintenanceBlockedError:
-                return Failure("maintenance_active", "Wallet payments are temporarily unavailable during maintenance.")
+                return Failure(
+                    "maintenance_active",
+                    "Wallet payments are temporarily unavailable during maintenance.",
+                )
         try:
             return await self._pay_in_transaction(
                 user_id=user_id,
@@ -168,48 +172,35 @@ class WalletPaymentService(BaseService):
 
             amount = self._amount(order)
             balance_before = Decimal(str(wallet.balance))
-            if balance_before < amount:
-                return Failure(
-                    "insufficient_balance",
-                    "Insufficient wallet balance.",
-                    details={
-                        "amount": str(amount),
-                        "balance": str(balance_before),
-                        "needed": str(amount - balance_before),
-                        "currency": order.currency,
-                    },
-                )
-
+            payment_reference = f"wallet:{order.public_order_id}"
             try:
-                updated_wallet = await wallets.debit_if_sufficient(
-                    wallet.id,
-                    amount,
-                    currency=order.currency,
-                )
                 await self._after_debit(order, wallet)
+                accounting = WalletAccountingService(self.db)
+                debit = await accounting.debit_in_session(
+                    session,
+                    user_id=user_id,
+                    amount=amount,
+                    currency=order.currency,
+                    source_type="wallet_payment",
+                    source_reference=order.public_order_id,
+                    idempotency_key=payment_key,
+                    order_id=order.id,
+                    note=f"Wallet payment for {order.public_order_id}",
+                )
             except OperationalError:
                 return Failure("payment_conflict", "Payment could not be committed; please retry.")
-            if updated_wallet is None:
-                return Failure("balance_changed", "Wallet balance changed; please retry.")
-
-            payment_reference = f"wallet:{order.public_order_id}"
-            ledger_row = TransactionORM(
-                wallet_id=wallet.id,
-                order_id=order.id,
-                amount=-amount,
-                currency=order.currency,
-                type=TransactionORM.TYPE_PURCHASE,
-                reference=payment_reference,
-                idempotency_key=payment_key,
-                note=f"Wallet payment for {order.public_order_id}",
-            )
-            session.add(ledger_row)
-            await session.flush()
+            if debit.is_failure:
+                return debit
+            receipt_data = debit.unwrap()
+            fresh_wallet = await session.get(WalletORM, wallet.id)
+            if fresh_wallet is None:
+                return Failure("wallet_not_found", "Wallet not found.")
+            remaining_balance = Decimal(str(fresh_wallet.balance))
 
             order.payment_method = "wallet"
             order.payment_status = OrderORM.PAYMENT_PAID
             order.status = OrderORM.STATUS_PAID
-            order.wallet_transaction_id = ledger_row.id
+            order.wallet_transaction_id = receipt_data.transaction_id
             order.payment_reference = payment_reference
             order.payment_ref = payment_reference
             order.paid_at = now
@@ -221,16 +212,18 @@ class WalletPaymentService(BaseService):
                     action="wallet.debited",
                     entity_type="Order",
                     entity_id=order.id,
-                    new_value=json.dumps({
-                        "public_order_id": order.public_order_id,
-                        "wallet_id": wallet.id,
-                        "transaction_id": ledger_row.id,
-                        "payment_reference": payment_reference,
-                        "amount": str(amount),
-                        "currency": order.currency,
-                        "balance_before": str(balance_before),
-                        "balance_after": str(updated_wallet.balance),
-                    }),
+                    new_value=json.dumps(
+                        {
+                            "public_order_id": order.public_order_id,
+                            "wallet_id": wallet.id,
+                            "transaction_id": receipt_data.transaction_id,
+                            "payment_reference": payment_reference,
+                            "amount": str(amount),
+                            "currency": order.currency,
+                            "balance_before": str(balance_before),
+                            "balance_after": str(remaining_balance),
+                        }
+                    ),
                     note=f"Wallet payment committed for {order.public_order_id}",
                 )
             )
@@ -238,11 +231,11 @@ class WalletPaymentService(BaseService):
 
             receipt = WalletPaymentReceipt(
                 public_order_id=order.public_order_id,
-                transaction_id=ledger_row.id,
+                transaction_id=receipt_data.transaction_id,
                 payment_reference=payment_reference,
                 amount=amount,
                 currency=order.currency,
-                remaining_balance=Decimal(str(updated_wallet.balance)),
+                remaining_balance=remaining_balance,
                 paid_at=now,
             )
 

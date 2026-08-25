@@ -16,7 +16,7 @@ note        Human-readable description shown to the user.
 
 from __future__ import annotations
 
-from sqlalchemy import Integer, Numeric, String, Text
+from sqlalchemy import Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database.base import BaseModel
@@ -39,12 +39,19 @@ class TransactionORM(BaseModel):
     """
 
     __tablename__ = "transactions"
+    __table_args__ = (
+        UniqueConstraint(
+            "provider",
+            "provider_reference",
+            name="uq_transactions_provider_reference",
+        ),
+    )
 
     # Type constants.
-    TYPE_TOP_UP     = "top_up"
-    TYPE_PURCHASE   = "purchase"
-    TYPE_REFUND     = "refund"
-    TYPE_BONUS      = "bonus"
+    TYPE_TOP_UP = "top_up"
+    TYPE_PURCHASE = "purchase"
+    TYPE_REFUND = "refund"
+    TYPE_BONUS = "bonus"
     TYPE_ADJUSTMENT = "adjustment"
 
     wallet_id: Mapped[int] = mapped_column(
@@ -79,6 +86,18 @@ class TransactionORM(BaseModel):
         String(256),
         nullable=True,
         comment="External reference: order ID, payment gateway TX ID, etc.",
+    )
+    provider: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+        comment="Provider namespace for externally verified transactions",
+    )
+    provider_reference: Mapped[str | None] = mapped_column(
+        String(256),
+        nullable=True,
+        index=True,
+        comment="Provider-scoped immutable transaction/reference ID",
     )
     idempotency_key: Mapped[str | None] = mapped_column(
         String(128),

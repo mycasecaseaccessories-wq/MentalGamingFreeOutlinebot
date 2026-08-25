@@ -81,6 +81,7 @@ class EventType(str, Enum):
     WALLET_DEBITED = "wallet.debited"
     WALLET_PAYMENT_COMPLETED = "wallet.payment_completed"
     ORDER_PAID = "order.paid"
+    ORDER_REFUNDED = "order.refunded"
     MANUAL_PAYMENT_SUBMITTED = "manual_payment.submitted"
     MANUAL_PAYMENT_APPROVED = "manual_payment.approved"
     MANUAL_PAYMENT_REJECTED = "manual_payment.rejected"

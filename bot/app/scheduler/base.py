@@ -36,6 +36,7 @@ class Scheduler:
         free_trial_upgrade_service=None,
         backup_service=None,
         maintenance_service=None,
+        payment_refund_service=None,
         lifecycle_interval_seconds=120,
         lifecycle_batch_size=100,
     ):
@@ -82,6 +83,11 @@ class Scheduler:
             return
 
         self.dispatcher = BackgroundJobDispatcher(job_service)
+        if payment_refund_service is not None:
+            self.dispatcher.register_handler(
+                BackgroundJobORM.JOB_PAYMENT_REFUND_RECONCILIATION,
+                payment_refund_service.reconcile_job,
+            )
         if sync_service is not None:
             self.dispatcher.register_handler(
                 BackgroundJobORM.JOB_VPN_LIFECYCLE_SYNC,
