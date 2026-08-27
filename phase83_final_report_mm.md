@@ -29,16 +29,16 @@ Phase 8.3 specification အတိုင်း payment/provider settlement နှ
 
 | စစ်ဆေးမှု | ရလဒ် |
 |---|---:|
-| Full pytest regression suite | **513 passed, 33 warnings** |
+| Full pytest regression suite | **515 passed, 33 warnings** |
 | Provider settlement/refund focused tests | **11 passed** |
 | Manual refund compensating-ledger tests | **1 passed** |
 | Admin confirmation-to-accounting E2E tests | **4 passed** |
 | Wallet accounting focused tests | **4 passed** (concurrent debit ပါဝင်) |
-| Receipt/history/manual-payment/trial/VPN/promo/callback integrity regression | **26 passed** |
+| Receipt/history/manual-payment/trial/VPN/promo/callback integrity regression | **28 passed** |
 | Paid trial/VPN automation regression | **11 passed** |
 | Compile check | အောင်မြင် |
 | Financial security audit | **UNSAFE FINANCIAL MATCHES = 0** |
-| Phase 8.3 production-service Mypy | **Success: no issues found in 4 changed services** |
+| Phase 8.3 changed production Mypy | **Success: no issues found in 8 source files** |
 | Changed service Ruff check | အောင်မြင် |
 | Git whitespace/diff check | အောင်မြင် |
 | Independent wallet-to-ledger consistency audit | **PASS — isolated local DB; no mismatch** |
@@ -47,11 +47,11 @@ Phase 8.3 specification အတိုင်း payment/provider settlement နှ
 | Secret scan | Credential/private-key matches မတွေ့ပါ; configuration references only |
 | Manual refund compensating ledger | **PASS — one durable/idempotent refund ledger effect** |
 | Admin confirmation-to-accounting E2E | **PASS — active permission, replay, cross-binding, suspension freshness** |
-| Unsigned payment confirmation callback | **PASS — legacy approve/reject confirmation fails closed** |
+| Unsigned payment confirmation callback | **PASS — legacy routes removed, missing challenge fails closed** |
 | PostgreSQL concurrency | **NOT_EXECUTED — PostgreSQL service unavailable** |
 | Payment provider sandbox | **NOT_APPLICABLE — project uses manual payment** |
 
-Warnings များသည် အဓိကအားဖြင့် `pytest-asyncio` fixture deprecation နှင့် legacy `datetime.utcnow()` အသုံးပြုမှုများ ဖြစ်သည်။ Comparable whole-app Mypy baseline/current check သည် Phase 8.2 baseline **655 errors / 97 files** မှ လက်ရှိ **715 errors / 102 files** သို့ ပြောင်းပြီး **+60 errors / +5 files** delta ဖြစ်သည်။ Phase 8.3 ပြင်ဆင်ထားသော production services ၄ ခုသည် သီးခြား Mypy check တွင် clean ဖြစ်သော်လည်း repository-wide typing cleanup ကျန်ရှိနေသည်။
+Warnings များသည် အဓိကအားဖြင့် `pytest-asyncio` fixture deprecation နှင့် legacy `datetime.utcnow()` အသုံးပြုမှုများ ဖြစ်သည်။ Comparable whole-app Mypy baseline/current check သည် Phase 8.2 baseline **655 errors / 97 files** မှ လက်ရှိ **715 errors / 102 files** သို့ ပြောင်းပြီး **+60 errors / +5 files** delta ဖြစ်သည်။ Phase 8.3 ပြင်ဆင်ထားသော production files ၈ ခုသည် သီးခြား Mypy check တွင် clean ဖြစ်သော်လည်း repository-wide typing cleanup ကျန်ရှိနေသည်။
 
 ## ထည့်သွင်း/ပြင်ဆင်ထားသော အဓိကဖိုင်များ
 
@@ -71,9 +71,9 @@ PostgreSQL concurrency verification မလုပ်နိုင်သေးခ�
 
 ## Production မတင်မီ မပြီးသေးသော blockers
 
-Manual payment model အရ external payment-provider sandbox မလိုအပ်ပါ။ Manual refund compensating ledger နှင့် Admin wallet adjustment confirmation-to-accounting E2E ကို code/test ဖြင့် ပြီးစီးထားပါသည်။
+Manual payment model အရ external payment-provider sandbox မလိုအပ်ပါ။ Manual refund compensating ledger, Admin wallet adjustment confirmation-to-accounting E2E, signed payment callback enforcement, နှင့် custom-rejection authorization ကို code/test ဖြင့် ပြီးစီးထားပါသည်။
 
-Refund intent, manual compensating ledger transaction, repeated refund idempotency နှင့် order/audit finalization ကို ပြီးစီးထားပါသည်။ စတုတ္ထအချက်အနေဖြင့် concurrency test သည် local SQLite အပေါ် အောင်မြင်သော်လည်း PostgreSQL service မရရှိသောကြောင့် production database အပေါ် multi-process tests များ **NOT_EXECUTED** ဖြစ်နေသည်။ Mypy current check သည် Phase 8.3 changed production services ၄ ခုအပေါ် `Success: no issues found` ဖြစ်ပြီး formal whole-app delta သည် **+60 errors / +5 files** ဖြစ်သည်။ Static financial audit script က authoritative service အပြင်ဘက်တွင် unsafe financial matches `0` ပြထားသည်။ Independent ledger consistency audit ကို isolated local SQLite database ပေါ် run လုပ်ရာ wallet 0 rows နှင့် mismatch မရှိကြောင်းရသော်လည်း production-like populated PostgreSQL dataset audit မဟုတ်ပါ။
+Refund intent, manual compensating ledger transaction, repeated refund idempotency နှင့် order/audit finalization ကို ပြီးစီးထားပါသည်။ စတုတ္ထအချက်အနေဖြင့် concurrency test သည် local SQLite အပေါ် အောင်မြင်သော်လည်း PostgreSQL service မရရှိသောကြောင့် production database အပေါ် multi-process tests များ **NOT_EXECUTED** ဖြစ်နေသည်။ Mypy current check သည် Phase 8.3 changed production files ၈ ခုအပေါ် `Success: no issues found` ဖြစ်ပြီး formal whole-app delta သည် **+60 errors / +5 files** ဖြစ်သည်။ Static financial audit script က authoritative service အပြင်ဘက်တွင် unsafe financial matches `0` ပြထားသည်။ Independent ledger consistency audit ကို isolated local SQLite database ပေါ် run လုပ်ရာ wallet 0 rows နှင့် mismatch မရှိကြောင်းရသော်လည်း production-like populated PostgreSQL dataset audit မဟုတ်ပါ။
 
 ## NOT_EXECUTED
 
@@ -87,4 +87,4 @@ PostgreSQL concurrency suite ကို PostgreSQL service မရှိသဖြ�
 
 ## အဆုံးသတ်အခြေအနေ
 
-Phase 8.3 ၏ **accounting/security foundation ကို implementation နှင့် regression coverage အဆင့်အထိ ဆက်လက်လုပ်ဆောင်ပြီး** full suite သည် **513 tests** အောင်မြင်ထားသည်။ Receipt ownership/access, trial-upgrade gate, VPN wallet purchase, referral/promo wallet-credit path နှင့် independent local ledger consistency ကိုလည်း စစ်ဆေးထားသည်။ Manual-payment Admin E2E, signed callback enforcement, နှင့် refund compensating ledger ကို ပြီးစီးထားသော်လည်း PostgreSQL verification/independent audit မပြီးသေးသောကြောင့် repository ကို **Phase 8.3 — implementation in progress, NOT_SECURE** အဖြစ် သတ်မှတ်ထားသည်။ Commit/push မပြုလုပ်ရသေးဘဲ Phase 8.4 readiness သည် **`NOT_READY`** ဖြစ်ပြီး Phase 8.4 မစသေးပါ။
+Phase 8.3 ၏ **accounting/security foundation ကို implementation နှင့် regression coverage အဆင့်အထိ ဆက်လက်လုပ်ဆောင်ပြီး** full suite သည် **515 tests** အောင်မြင်ထားသည်။ Receipt ownership/access, trial-upgrade gate, VPN wallet purchase, referral/promo wallet-credit path နှင့် independent local ledger consistency ကိုလည်း စစ်ဆေးထားသည်။ Manual-payment Admin E2E, signed callback enforcement, centralized custom-rejection authorization, နှင့် refund compensating ledger ကို ပြီးစီးထားသော်လည်း PostgreSQL verification/independent audit မပြီးသေးသောကြောင့် repository ကို **Phase 8.3 — implementation in progress, NOT_SECURE** အဖြစ် သတ်မှတ်ထားသည်။ Commit/push မပြုလုပ်ရသေးဘဲ Phase 8.4 readiness သည် **`NOT_READY`** ဖြစ်ပြီး Phase 8.4 မစသေးပါ။
