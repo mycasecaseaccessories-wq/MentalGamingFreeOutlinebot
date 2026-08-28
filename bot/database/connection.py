@@ -184,14 +184,18 @@ class DatabaseManager:
                 alembic_command.upgrade(cfg, "head")
                 logger.info("Alembic migrations applied — schema is at HEAD.")
 
-            except ImportError:
-                # Alembic not installed: fall back to create_all with a warning.
+            except ImportError as exc:
+                # Never silently bootstrap a production database outside migrations.
+                if not self._database_url.startswith("sqlite"):
+                    raise RuntimeError(
+                        "Alembic is required for non-SQLite database startup."
+                    ) from exc
                 logger.warning(
-                    "Alembic is not installed — falling back to create_all(). "
-                    "Install alembic for proper migration support."
+                    "Alembic is not installed — using create_all() only for "
+                    "the SQLite development/test database."
                 )
                 import asyncio as _asyncio
-                from database.base import Base
+
                 _asyncio.run(self._create_all_fallback())
 
         await asyncio.to_thread(_upgrade)
