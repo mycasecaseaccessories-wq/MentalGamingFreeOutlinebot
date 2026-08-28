@@ -32,6 +32,8 @@ class VPNDataLimitService(BaseService):
    if k.limit_status==VPNLimitStatus.APPLIED.value and k.data_limit_bytes==p.limit_bytes:return Success(self._result(k,operation_id,p.limit_bytes))
    k.limit_status=VPNLimitStatus.PENDING.value;k.limit_operation_id=operation_id;await s.flush();server=await s.get(ServerORM,k.server_id)
    if server is None or not getattr(k,'provider_type','outline')=='outline' or not server.credential_ciphertext:k.limit_status=VPNLimitStatus.UNSUPPORTED.value;await s.flush();return Failure('provider_unavailable','Data-limit provider unavailable.')
+   if not all(callable(getattr(self.provider,name,None)) for name in ('set_data_limit','get_data_limit','get_key_usage')):
+    k.limit_status=VPNLimitStatus.UNSUPPORTED.value;await s.flush();return Failure('provider_unavailable','Data-limit provider unavailable.')
    try:
     url=self.vault.decrypt(server.credential_ciphertext);await self.provider.set_data_limit(management_url=url,provider_key_id=k.outline_key_id,limit_bytes=p.limit_bytes);remote=await self.provider.get_data_limit(management_url=url,provider_key_id=k.outline_key_id)
     if remote!=p.limit_bytes:k.limit_status=VPNLimitStatus.DRIFTED.value;k.remote_limit_bytes=remote;await s.flush();return Failure('limit_drifted','Remote data limit drifted.')
@@ -46,6 +48,7 @@ class VPNDataLimitService(BaseService):
    if k is None:return Failure('not_found','VPN key was not found.')
    server=await s.get(ServerORM,k.server_id)
    if server is None or not server.credential_ciphertext:return Failure('provider_unavailable','Usage provider unavailable.')
+   if not callable(getattr(self.provider,'get_key_usage',None)):return Failure('provider_unavailable','Usage provider unavailable.')
    try:u=await self.provider.get_key_usage(management_url=self.vault.decrypt(server.credential_ciphertext),provider_key_id=k.outline_key_id)
    except (OutlineProviderTimeout,OutlineProviderError) as e:return Failure('usage_sync_failed',str(e))
    k.used_bytes=max(0,int(u.used_bytes)-int(k.usage_baseline_bytes or 0));k.last_usage_sync_at=u.measured_at;k.last_synced_at=u.measured_at;await s.flush();return Success({'key_id':k.id,'used_bytes':k.used_bytes,'remaining_bytes':self._remaining(k.data_limit_bytes,k.used_bytes),'last_synced_at':u.measured_at})
