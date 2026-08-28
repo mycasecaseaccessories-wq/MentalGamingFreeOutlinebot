@@ -126,7 +126,21 @@ class VPNProvisioningService(BaseService):
 
         await self._set(operation.public_operation_id, "creating_remote_key")
         try:
-            remote = await provider.create_key(management_url=management_url, name=provider.safe_key_name(public_order_id=getattr(order, "public_order_id", None), operation_id=operation.public_operation_id))
+            key_name = provider.safe_key_name(
+                public_order_id=getattr(order, "public_order_id", None),
+                operation_id=operation.public_operation_id,
+            )
+            if isinstance(provider, OutlineProvider):
+                remote = await provider.create_key(
+                    management_url=management_url,
+                    name=key_name,
+                    expected_cert_sha256=server.cert_sha256,
+                )
+            else:
+                remote = await provider.create_key(
+                    management_url=management_url,
+                    name=key_name,
+                )
         except OutlineProviderTimeout as exc:
             if reservation_token:
                 await self.reservation_service.release_reservation(reservation_token)
@@ -144,7 +158,17 @@ class VPNProvisioningService(BaseService):
             local_id = await self._persist(request, order, package, server, operation.public_operation_id, remote)
         except Exception:
             try:
-                await provider.delete_key(management_url=management_url, provider_key_id=remote.provider_key_id)
+                if isinstance(provider, OutlineProvider):
+                    await provider.delete_key(
+                        management_url=management_url,
+                        provider_key_id=remote.provider_key_id,
+                        expected_cert_sha256=server.cert_sha256,
+                    )
+                else:
+                    await provider.delete_key(
+                        management_url=management_url,
+                        provider_key_id=remote.provider_key_id,
+                    )
             except Exception:
                 await self._set(operation.public_operation_id, "compensation_required", provider_key_id=remote.provider_key_id, error_code="compensation_failed", error_message="Remote compensation failed; administrator reconciliation required.")
                 if reservation_token:

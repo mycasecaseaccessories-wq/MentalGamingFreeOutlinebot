@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
 import hashlib
+from dataclasses import dataclass
+from datetime import UTC, datetime
 
 import httpx
 
 from app.models.vpn_provisioning import RemoteVPNKeyResult
+from app.security.outline_tls import OutlineTLSIdentityError, verify_certificate_fingerprint
 from app.security.outline_url_policy import validate_outline_url
 
 
@@ -30,8 +31,22 @@ class OutlineProvider:
     def __init__(self, *, config: OutlineProviderConfig | None = None) -> None:
         self.config = config or OutlineProviderConfig()
 
-    async def create_key(self, *, management_url: str, name: str) -> RemoteVPNKeyResult:
+    async def create_key(
+        self,
+        *,
+        management_url: str,
+        name: str,
+        expected_cert_sha256: str | None = None,
+    ) -> RemoteVPNKeyResult:
         validated = await validate_outline_url(management_url, allow_private=True)
+        try:
+            await verify_certificate_fingerprint(
+                management_url,
+                expected_cert_sha256,
+                timeout=self.config.connect_timeout_seconds,
+            )
+        except OutlineTLSIdentityError as exc:
+            raise OutlineProviderError("Outline server identity verification failed.") from exc
         timeout = httpx.Timeout(
             self.config.read_timeout_seconds,
             connect=self.config.connect_timeout_seconds,
@@ -81,12 +96,26 @@ class OutlineProvider:
             int(payload["id"]),
             payload["accessUrl"],
             self.provider_name,
-            datetime.now(timezone.utc),
+            datetime.now(UTC),
             {"name": name},
         )
 
-    async def delete_key(self, *, management_url: str, provider_key_id: int) -> None:
+    async def delete_key(
+        self,
+        *,
+        management_url: str,
+        provider_key_id: int,
+        expected_cert_sha256: str | None = None,
+    ) -> None:
         validated = await validate_outline_url(management_url, allow_private=True)
+        try:
+            await verify_certificate_fingerprint(
+                management_url,
+                expected_cert_sha256,
+                timeout=self.config.connect_timeout_seconds,
+            )
+        except OutlineTLSIdentityError as exc:
+            raise OutlineProviderError("Outline server identity verification failed.") from exc
         timeout = httpx.Timeout(
             self.config.read_timeout_seconds,
             connect=self.config.connect_timeout_seconds,
