@@ -20,9 +20,10 @@ The new executable tests cover valid hexadecimal fingerprints, prefixed fingerpr
 | Outline TLS/client Ruff | **PASS** |
 | Outline TLS/client Mypy | **PASS** |
 | Phase 8.3 financial audit | **UNSAFE FINANCIAL MATCHES = 0** |
+| Full regression after lifecycle fix | **522 passed**, 33 warnings |
 
 ## Remaining Phase 8.4 work
 
-Phase 8.4 is **in progress**, not complete. The remaining implementation areas are to audit VPN key ownership and IDOR boundaries, verify lifecycle and renewal replay behavior, review admin server operations for execution-time authorization and confirmation, validate provider response handling, and add the corresponding tests.
+Phase 8.4 is **in progress**, not complete. The lifecycle cleanup path was additionally corrected so concrete Outline providers use the supported certificate-pinned `delete_key` operation rather than an unavailable `revoke_key` method; alternate providers retain their existing revoke interface. Remaining implementation areas are to audit VPN key ownership and IDOR boundaries, verify renewal replay behavior, review admin server operations for execution-time authorization and confirmation, validate provider response handling, and add the corresponding tests.
 
 Phase 8.3 remains `NOT_SECURE / BLOCKED_PENDING_POSTGRESQL_VERIFICATION`; no PostgreSQL result was fabricated, and Phase 8.4 does not change that verdict.

@@ -58,7 +58,12 @@ class VPNLifecycleService(BaseService):
    if k.status==VPNKeyStatus.EXPIRED.value and k.lifecycle_cleanup_status==ProviderCleanupStatus.COMPLETED.value:return Success(self.summary(k))
    VPNKeyStateMachine.validate_transition(k.status,VPNKeyStatus.EXPIRED.value); k.status=VPNKeyStatus.EXPIRED.value; k.is_active=False; k.lifecycle_reason=LifecycleReason.EXPIRY.value; k.lifecycle_cleanup_status=ProviderCleanupStatus.PENDING.value; await s.flush(); server=await s.get(ServerORM,k.server_id)
    if server is None or not server.credential_ciphertext:k.lifecycle_cleanup_status=ProviderCleanupStatus.FAILED.value; await s.flush(); return Failure('provider_unavailable','Provider cleanup unavailable.')
-   try: await self.provider.revoke_key(management_url=self.vault.decrypt(server.credential_ciphertext),provider_key_id=k.outline_key_id)
+   try:
+    management_url=self.vault.decrypt(server.credential_ciphertext)
+    if isinstance(self.provider, OutlineProvider):
+     await self.provider.delete_key(management_url=management_url,provider_key_id=k.outline_key_id,expected_cert_sha256=server.cert_sha256)
+    else:
+     await self.provider.revoke_key(management_url=management_url,provider_key_id=k.outline_key_id)
    except (OutlineProviderTimeout,OutlineProviderError) as e:k.lifecycle_cleanup_status=ProviderCleanupStatus.FAILED.value; k.lifecycle_cleanup_attempts=int(k.lifecycle_cleanup_attempts or 0)+1; k.lifecycle_cleanup_error=str(e)[:128]; await s.flush(); return Failure('cleanup_failed','Provider cleanup failed.')
    k.lifecycle_cleanup_status=ProviderCleanupStatus.COMPLETED.value; k.lifecycle_cleanup_at=datetime.now(timezone.utc); k.lifecycle_cleanup_error=None; await s.flush(); result=self.summary(k)
   await bus.emit(EventType.VPN_KEY_EXPIRED,key_id=key_id); return Success(result)
